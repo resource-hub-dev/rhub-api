@@ -1,0 +1,8 @@
+version: '3'
+services:
+  api:
+    image: quay.io/resource-hub-dev/rhub-api
+    build: .
+  curl:
+    image: curlimages/curl
+    command: ["true"]
