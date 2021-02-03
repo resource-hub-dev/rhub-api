@@ -3,9 +3,10 @@ default:
 build:
 	docker build -t quay.io/resource-hub-dev/rhub-api --no-cache --force-rm .
 	docker rm -f rhub-api || :
-	docker run --rm -d --name rhub-api quay.io/resource-hub-dev/rhub-api
-	sleep 5
-	docker run --rm --link rhub-api curlimages/curl -sf rhub-api/cowsay
+	docker run -d --name rhub-api quay.io/resource-hub-dev/rhub-api
+	sleep 10
+	docker logs rhub-api
+	docker run --rm --network container:rhub-api curlimages/curl -f http://localhost/cowsay
 	docker rm -f rhub-api
 
 install:
