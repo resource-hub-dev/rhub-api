@@ -10,6 +10,7 @@ build:
 	docker rm -f rhub-api
 
 install:
+	docker-compose build --no-cache --force-rm
 	docker-compose run --rm api pip3 install --upgrade -r ./requirements.txt -t ./packages
 
 start:

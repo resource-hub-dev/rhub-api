@@ -4,13 +4,13 @@ networks:
     name: rhub-development
 services:
   api:
-    image: registry.access.redhat.com/ubi8/python-38
+    build:
+      context: .
+      target: base
     volumes:
-      - .:/rhub-api
+      - .:/opt/rhub-api
     environment:
-      - PYTHONPATH=/rhub-api/packages:/rhub-api/src
       - PYTHONDONTWRITEBYTECODE=yeah
     ports:
       - 8081:5000
-    working_dir: /rhub-api
     command: ["./bin/flask"]
