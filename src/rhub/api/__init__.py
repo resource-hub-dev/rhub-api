@@ -1,10 +1,10 @@
 from flask import Flask, abort
 
-import rhub_api.cowsay
+from rhub.api import cowsay
 
 app = Flask(__name__)
 
-app.register_blueprint(rhub_api.cowsay.blueprint, url_prefix='/cowsay')
+app.register_blueprint(cowsay.blueprint, url_prefix='/cowsay')
 
 @app.route('/')
 def index():
