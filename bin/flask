@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
 set -ex
-FLASK_APP=./src/rhub_api \
+FLASK_APP=rhub.api:app \
 FLASK_ENV=development \
 ./packages/bin/flask run --host=0.0.0.0
