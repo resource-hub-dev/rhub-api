@@ -1,11 +1,12 @@
-from flask import Flask, abort
+import os
 
-from rhub.api import cowsay
+import connexion
 
-app = Flask(__name__)
+import rhub
 
-app.register_blueprint(cowsay.blueprint, url_prefix='/cowsay')
 
-@app.route('/')
-def index():
-    abort(501)
+# Note: this works only when 'rhub' is namespace
+ROOT = os.path.dirname(rhub.__path__[0])
+
+app = connexion.FlaskApp(__name__, specification_dir=os.path.join(ROOT, 'openapi'))
+app.add_api('openapi.yml')

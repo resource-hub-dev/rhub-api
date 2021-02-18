@@ -1,1 +1,4 @@
-/packages
+*
+!bin/
+!src/
+!requirements.txt

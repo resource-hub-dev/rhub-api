@@ -1,0 +1,30 @@
+openapi: '3.0.2'
+info:
+  title: Resource Hub
+  version: '0.1'
+servers:
+  - url: /v0
+paths:
+  /cowsay:
+    get:
+      summary: Most important endpoint!
+      operationId: rhub.api.health.cowsay
+      responses:
+        200:
+          description: Success
+          content:
+            text/plain:
+              schema:
+                type: string
+  /ping:
+    get:
+      summary: Basic availablity endpoint
+      operationId: rhub.api.health.ping
+      responses:
+        200:
+          description: Success
+          content:
+            text/plain:
+              schema:
+                type: string
+                enum: [pong]

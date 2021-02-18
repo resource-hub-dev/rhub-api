@@ -1,0 +1,3 @@
+#!/bin/sh
+set -ex
+./packages/bin/connexion run --debug src/openapi/openapi.yml

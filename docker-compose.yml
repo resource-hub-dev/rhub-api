@@ -13,4 +13,4 @@ services:
       - PYTHONDONTWRITEBYTECODE=yeah
     ports:
       - 8081:5000
-    command: ["./bin/flask"]
+    command: ["./bin/connexion"]
