@@ -1,1 +1,3 @@
 /packages
+/.tox
+__pycache__
