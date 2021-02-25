@@ -1,2 +1,3 @@
 gunicorn
 connexion[swagger-ui]
+flask-cors
