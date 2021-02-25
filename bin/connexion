@@ -1,3 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 set -ex
-./packages/bin/connexion run --debug src/openapi/openapi.yml
+FLASK_ENV=development \
+python3 -m rhub.api
