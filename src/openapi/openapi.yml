@@ -2,12 +2,399 @@ openapi: '3.0.2'
 info:
   title: Resource Hub
   version: '0.1'
+
 servers:
   - url: /v0
+
+components:
+  schemas:
+    ID:
+      type: integer
+      minimum: 1
+    Name:
+      type: string
+      pattern: '^\w+$'
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+
+    Quota:
+      type: object
+      properties:
+        num_vcpus:
+          type: integer
+          minimum: 1
+          nullable: true
+        ram_mb:
+          type: integer
+          minimum: 1
+          nullable: true
+        num_volumes:
+          type: integer
+          minimum: 1
+          nullable: true
+        volumes_gb:
+          type: integer
+          minimum: 1
+          nullable: true
+
+    Tower:
+      type: object
+      properties:
+        id:
+          allOf:
+            - $ref: '#/components/schemas/ID'
+            - readOnly: true
+        name:
+          $ref: '#/components/schemas/Name'
+        description:
+          type: string
+        enabled:
+          type: boolean
+        hostname:
+          type: string
+          format: hostname
+    Region:
+      type: object
+      properties:
+        id:
+          allOf:
+            - $ref: '#/components/schemas/ID'
+            - readOnly: true
+        name:
+          $ref: '#/components/schemas/Name'
+        description:
+          type: string
+        enabled:
+          type: boolean
+        reservations_enabled:
+          type: boolean
+        lifespans_enabled:
+          type: boolean
+        lifespans_length:
+          type: integer
+          minimum: 1
+        shared:
+          type: boolean
+        quota_enabled:
+          type: boolean
+        quota:
+          $ref: '#/components/schemas/Quota'
+    Cluster:
+      type: object
+      properties:
+        id:
+          allOf:
+            - $ref: '#/components/schemas/ID'
+            - readOnly: true
+        name:
+          $ref: '#/components/schemas/Name'
+        description:
+          type: string
+        extra_vars:
+          type: object
+        user_id:
+          $ref: '#/components/schemas/ID'
+        region_id:
+          $ref: '#/components/schemas/ID'
+        template_id:
+          $ref: '#/components/schemas/ID'
+        reservation_expiration:
+          type: number
+          description: UNIX timestamp
+        lifespan_expiration:
+          type: number
+          description: UNIX timestamp
+    Template:
+      type: object
+      properties:
+        id:
+          allOf:
+            - $ref: '#/components/schemas/ID'
+            - readOnly: true
+        name:
+          $ref: '#/components/schemas/Name'
+        description:
+          type: string
+        enabled:
+          type: boolean
+    Bundle:
+      type: object
+      properties:
+        id:
+          allOf:
+            - $ref: '#/components/schemas/ID'
+            - readOnly: true
+        name:
+          $ref: '#/components/schemas/Name'
+        description:
+          type: string
+        enabled:
+          type: boolean
+
+  parameters:
+    tower_id:
+      name: id
+      in: path
+      description: ID of the tower
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
+    region_id:
+      name: id
+      in: path
+      description: ID of the region
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
+    cluster_id:
+      name: id
+      in: path
+      description: ID of the cluster
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
+    template_id:
+      name: id
+      in: path
+      description: ID of the template
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
+    bundle_id:
+      name: id
+      in: path
+      description: ID of the bundle
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
+
+  requestBodies:
+
+    tower_post:
+      description: Tower
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/Tower'
+              - required:
+                  - name
+                  - hostname
+    tower_patch:
+      description: Tower properties to update
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Tower'
+
+    region_post:
+      description: Region
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/Region'
+              - required:
+                  - name
+    region_patch:
+      description: Region properties to update
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Region'
+
+    cluster_post:
+      description: Cluster
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/Cluster'
+              - required:
+                  - name
+                  - user_id
+                  - region_id
+                  - template_id
+    cluster_patch:
+      description: Cluster properties to update
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Cluster'
+
+    template_post:
+      description: Template
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/Template'
+              - required:
+                  - name
+    template_patch:
+      description: Template properties to update
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Template'
+    template_id:
+      description: Template ID
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                $ref: '#/components/schemas/ID'
+
+    bundle_post:
+      description: Bundle
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/Bundle'
+              - required:
+                  - name
+    bundle_patch:
+      description: Bundle properties to update
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Bundle'
+    bundle_id:
+      description: Bundle ID
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                $ref: '#/components/schemas/ID'
+
+  responses:
+
+    error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+        '*/*': {}
+    invalid_request:
+      description: Invalid request error (eg. missing required fields, integrity constraint violation).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    tower_get:
+      description: Tower
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Tower'
+    tower_list:
+      description: List of Tower
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Tower'
+
+    region_get:
+      description: Region
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Region'
+    region_list:
+      description: List of Region
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Region'
+
+    cluster_get:
+      description: Cluster
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Cluster'
+    cluster_list:
+      description: List of Cluster
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Cluster'
+
+    template_get:
+      description: Template
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Template'
+    template_list:
+      description: List of Template
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Template'
+
+    bundle_get:
+      description: Bundle
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Bundle'
+    bundle_list:
+      description: List of Bundle
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Bundle'
+
 paths:
   /cowsay:
     get:
       summary: Most important endpoint!
+      tags: [health]
       operationId: rhub.api.health.cowsay
       responses:
         200:
@@ -19,6 +406,7 @@ paths:
   /ping:
     get:
       summary: Basic availablity endpoint
+      tags: [health]
       operationId: rhub.api.health.ping
       responses:
         200:
@@ -28,3 +416,372 @@ paths:
               schema:
                 type: string
                 enum: [pong]
+
+  /tower:
+    get:
+      summary: Get tower list
+      tags: [tower]
+      responses:
+        200:
+          $ref: '#/components/responses/tower_list'
+        default:
+          $ref: '#/components/responses/error'
+    post:
+      summary: Create tower
+      tags: [tower]
+      requestBody:
+        $ref: '#/components/requestBodies/tower_post'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+  /tower/{id}:
+    get:
+      summary: Get tower
+      tags: [tower]
+      parameters:
+        - $ref: '#/components/parameters/tower_id'
+      responses:
+        200:
+          $ref: '#/components/responses/tower_get'
+        404:
+          description: Not found
+        default:
+          $ref: '#/components/responses/error'
+    patch:
+      summary: Update tower
+      tags: [tower]
+      parameters:
+        - $ref: '#/components/parameters/tower_id'
+      requestBody:
+        $ref: '#/components/requestBodies/tower_patch'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+    delete:
+      summary: Delete tower
+      tags: [tower]
+      parameters:
+        - $ref: '#/components/parameters/tower_id'
+      responses:
+        200:
+          description: Success
+        default:
+          $ref: '#/components/responses/error'
+
+  /region:
+    get:
+      summary: Get region list
+      tags: [region]
+      responses:
+        200:
+          $ref: '#/components/responses/region_list'
+        default:
+          $ref: '#/components/responses/error'
+    post:
+      summary: Create region
+      tags: [region]
+      requestBody:
+        $ref: '#/components/requestBodies/region_post'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+  /region/{id}:
+    get:
+      summary: Get region
+      tags: [region]
+      parameters:
+        - $ref: '#/components/parameters/region_id'
+      responses:
+        200:
+          $ref: '#/components/responses/region_get'
+        404:
+          description: Not found
+        default:
+          $ref: '#/components/responses/error'
+    patch:
+      summary: Update region
+      tags: [region]
+      parameters:
+        - $ref: '#/components/parameters/region_id'
+      requestBody:
+        $ref: '#/components/requestBodies/region_patch'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+    delete:
+      summary: Delete region
+      tags: [region]
+      parameters:
+        - $ref: '#/components/parameters/region_id'
+      responses:
+        200:
+          description: Success
+        default:
+          $ref: '#/components/responses/error'
+  /region/{id}/templates:
+    get:
+      summary: Get templates available on region
+      tags: [region]
+      parameters:
+        - $ref: '#/components/parameters/region_id'
+      responses:
+        200:
+          $ref: '#/components/responses/template_list'
+        default:
+          $ref: '#/components/responses/error'
+    post:
+      summary: Add template to region
+      tags: [region]
+      parameters:
+        - $ref: '#/components/parameters/region_id'
+      requestBody:
+        $ref: '#/components/requestBodies/template_id'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+    delete:
+      summary: Remove template from region
+      tags: [region]
+      parameters:
+        - $ref: '#/components/parameters/region_id'
+      requestBody:
+        $ref: '#/components/requestBodies/template_id'
+      responses:
+        200:
+          description: Success
+        default:
+          $ref: '#/components/responses/error'
+
+  /template:
+    get:
+      summary: Get template list
+      tags: [template]
+      responses:
+        200:
+          $ref: '#/components/responses/template_list'
+        default:
+          $ref: '#/components/responses/error'
+    post:
+      summary: Create template
+      tags: [template]
+      requestBody:
+        $ref: '#/components/requestBodies/template_post'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+  /template/{id}:
+    get:
+      summary: Get template
+      tags: [template]
+      parameters:
+        - $ref: '#/components/parameters/template_id'
+      responses:
+        200:
+          $ref: '#/components/responses/template_get'
+        404:
+          description: Not found
+        default:
+          $ref: '#/components/responses/error'
+    patch:
+      summary: Update template
+      tags: [template]
+      parameters:
+        - $ref: '#/components/parameters/template_id'
+      requestBody:
+        $ref: '#/components/requestBodies/template_patch'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+    delete:
+      summary: Delete template
+      tags: [template]
+      parameters:
+        - $ref: '#/components/parameters/template_id'
+      responses:
+        200:
+          description: Success
+        default:
+          $ref: '#/components/responses/error'
+  /template/{id}/bundles:
+    get:
+      summary: Get bundles available for template
+      tags: [template]
+      parameters:
+        - $ref: '#/components/parameters/template_id'
+      responses:
+        200:
+          $ref: '#/components/responses/bundle_list'
+        default:
+          $ref: '#/components/responses/error'
+    post:
+      summary: Add bundle to template
+      tags: [template]
+      parameters:
+        - $ref: '#/components/parameters/template_id'
+      requestBody:
+        $ref: '#/components/requestBodies/bundle_id'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+    delete:
+      summary: Remove bundle from template
+      tags: [template]
+      parameters:
+        - $ref: '#/components/parameters/template_id'
+      requestBody:
+        $ref: '#/components/requestBodies/bundle_id'
+      responses:
+        200:
+          description: Success
+        default:
+          $ref: '#/components/responses/error'
+
+  /bundle:
+    get:
+      summary: Get bundle list
+      tags: [bundle]
+      responses:
+        200:
+          $ref: '#/components/responses/bundle_list'
+        default:
+          $ref: '#/components/responses/error'
+    post:
+      summary: Create bundle
+      tags: [bundle]
+      requestBody:
+        $ref: '#/components/requestBodies/bundle_post'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+  /bundle/{id}:
+    get:
+      summary: Get bundle
+      tags: [bundle]
+      parameters:
+        - $ref: '#/components/parameters/bundle_id'
+      responses:
+        200:
+          $ref: '#/components/responses/bundle_get'
+        404:
+          description: Not found
+        default:
+          $ref: '#/components/responses/error'
+    patch:
+      summary: Update bundle
+      tags: [bundle]
+      parameters:
+        - $ref: '#/components/parameters/bundle_id'
+      requestBody:
+        $ref: '#/components/requestBodies/bundle_patch'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+    delete:
+      summary: Delete bundle
+      tags: [bundle]
+      parameters:
+        - $ref: '#/components/parameters/bundle_id'
+      responses:
+        200:
+          description: Success
+        default:
+          $ref: '#/components/responses/error'
+
+  /cluster:
+    get:
+      summary: Get cluster list
+      tags: [cluster]
+      responses:
+        200:
+          $ref: '#/components/responses/cluster_list'
+        default:
+          $ref: '#/components/responses/error'
+    post:
+      summary: Create cluster
+      tags: [cluster]
+      requestBody:
+        $ref: '#/components/requestBodies/cluster_post'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+  /cluster/{id}:
+    get:
+      summary: Get cluster
+      tags: [cluster]
+      parameters:
+        - $ref: '#/components/parameters/cluster_id'
+      responses:
+        200:
+          $ref: '#/components/responses/cluster_get'
+        404:
+          description: Not found
+        default:
+          $ref: '#/components/responses/error'
+    patch:
+      summary: Update cluster
+      tags: [cluster]
+      parameters:
+        - $ref: '#/components/parameters/cluster_id'
+      requestBody:
+        $ref: '#/components/requestBodies/cluster_patch'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+    delete:
+      summary: Delete cluster
+      tags: [cluster]
+      parameters:
+        - $ref: '#/components/parameters/cluster_id'
+      responses:
+        200:
+          description: Success
+        default:
+          $ref: '#/components/responses/error'
