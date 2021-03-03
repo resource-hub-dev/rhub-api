@@ -421,6 +421,7 @@ paths:
     get:
       summary: Get tower list
       tags: [tower]
+      operationId: rhub.api.tower.list_towers
       responses:
         200:
           $ref: '#/components/responses/tower_list'
@@ -429,6 +430,7 @@ paths:
     post:
       summary: Create tower
       tags: [tower]
+      operationId: rhub.api.tower.create_tower
       requestBody:
         $ref: '#/components/requestBodies/tower_post'
       responses:
@@ -442,6 +444,7 @@ paths:
     get:
       summary: Get tower
       tags: [tower]
+      operationId: rhub.api.tower.get_tower
       parameters:
         - $ref: '#/components/parameters/tower_id'
       responses:
@@ -454,6 +457,7 @@ paths:
     patch:
       summary: Update tower
       tags: [tower]
+      operationId: rhub.api.tower.update_tower
       parameters:
         - $ref: '#/components/parameters/tower_id'
       requestBody:
@@ -468,6 +472,7 @@ paths:
     delete:
       summary: Delete tower
       tags: [tower]
+      operationId: rhub.api.tower.delete_tower
       parameters:
         - $ref: '#/components/parameters/tower_id'
       responses:
@@ -480,6 +485,7 @@ paths:
     get:
       summary: Get region list
       tags: [region]
+      operationId: rhub.api.region.list_regions
       responses:
         200:
           $ref: '#/components/responses/region_list'
@@ -488,6 +494,7 @@ paths:
     post:
       summary: Create region
       tags: [region]
+      operationId: rhub.api.region.create_region
       requestBody:
         $ref: '#/components/requestBodies/region_post'
       responses:
@@ -501,6 +508,7 @@ paths:
     get:
       summary: Get region
       tags: [region]
+      operationId: rhub.api.region.get_region
       parameters:
         - $ref: '#/components/parameters/region_id'
       responses:
@@ -513,6 +521,7 @@ paths:
     patch:
       summary: Update region
       tags: [region]
+      operationId: rhub.api.region.update_region
       parameters:
         - $ref: '#/components/parameters/region_id'
       requestBody:
@@ -527,6 +536,7 @@ paths:
     delete:
       summary: Delete region
       tags: [region]
+      operationId: rhub.api.region.delete_region
       parameters:
         - $ref: '#/components/parameters/region_id'
       responses:
@@ -538,6 +548,7 @@ paths:
     get:
       summary: Get templates available on region
       tags: [region]
+      operationId: rhub.api.region.list_region_templates
       parameters:
         - $ref: '#/components/parameters/region_id'
       responses:
@@ -548,6 +559,7 @@ paths:
     post:
       summary: Add template to region
       tags: [region]
+      operationId: rhub.api.region.add_region_template
       parameters:
         - $ref: '#/components/parameters/region_id'
       requestBody:
@@ -562,6 +574,7 @@ paths:
     delete:
       summary: Remove template from region
       tags: [region]
+      operationId: rhub.api.region.delete_region_template
       parameters:
         - $ref: '#/components/parameters/region_id'
       requestBody:
@@ -576,6 +589,7 @@ paths:
     get:
       summary: Get template list
       tags: [template]
+      operationId: rhub.api.template.list_templates
       responses:
         200:
           $ref: '#/components/responses/template_list'
@@ -584,6 +598,7 @@ paths:
     post:
       summary: Create template
       tags: [template]
+      operationId: rhub.api.template.create_template
       requestBody:
         $ref: '#/components/requestBodies/template_post'
       responses:
@@ -597,6 +612,7 @@ paths:
     get:
       summary: Get template
       tags: [template]
+      operationId: rhub.api.template.get_template
       parameters:
         - $ref: '#/components/parameters/template_id'
       responses:
@@ -609,6 +625,7 @@ paths:
     patch:
       summary: Update template
       tags: [template]
+      operationId: rhub.api.template.update_template
       parameters:
         - $ref: '#/components/parameters/template_id'
       requestBody:
@@ -623,6 +640,7 @@ paths:
     delete:
       summary: Delete template
       tags: [template]
+      operationId: rhub.api.template.delete_template
       parameters:
         - $ref: '#/components/parameters/template_id'
       responses:
@@ -634,6 +652,7 @@ paths:
     get:
       summary: Get bundles available for template
       tags: [template]
+      operationId: rhub.api.template.list_template_bundles
       parameters:
         - $ref: '#/components/parameters/template_id'
       responses:
@@ -644,6 +663,7 @@ paths:
     post:
       summary: Add bundle to template
       tags: [template]
+      operationId: rhub.api.template.add_template_bundle
       parameters:
         - $ref: '#/components/parameters/template_id'
       requestBody:
@@ -658,6 +678,7 @@ paths:
     delete:
       summary: Remove bundle from template
       tags: [template]
+      operationId: rhub.api.template.delete_template_bundle
       parameters:
         - $ref: '#/components/parameters/template_id'
       requestBody:
@@ -672,6 +693,7 @@ paths:
     get:
       summary: Get bundle list
       tags: [bundle]
+      operationId: rhub.api.bundle.list_bundles
       responses:
         200:
           $ref: '#/components/responses/bundle_list'
@@ -680,6 +702,7 @@ paths:
     post:
       summary: Create bundle
       tags: [bundle]
+      operationId: rhub.api.bundle.create_bundle
       requestBody:
         $ref: '#/components/requestBodies/bundle_post'
       responses:
@@ -693,6 +716,7 @@ paths:
     get:
       summary: Get bundle
       tags: [bundle]
+      operationId: rhub.api.bundle.get_bundle
       parameters:
         - $ref: '#/components/parameters/bundle_id'
       responses:
@@ -705,6 +729,7 @@ paths:
     patch:
       summary: Update bundle
       tags: [bundle]
+      operationId: rhub.api.bundle.update_bundle
       parameters:
         - $ref: '#/components/parameters/bundle_id'
       requestBody:
@@ -719,6 +744,7 @@ paths:
     delete:
       summary: Delete bundle
       tags: [bundle]
+      operationId: rhub.api.bundle.delete_bundle
       parameters:
         - $ref: '#/components/parameters/bundle_id'
       responses:
@@ -731,6 +757,7 @@ paths:
     get:
       summary: Get cluster list
       tags: [cluster]
+      operationId: rhub.api.cluster.list_clusters
       responses:
         200:
           $ref: '#/components/responses/cluster_list'
@@ -739,6 +766,7 @@ paths:
     post:
       summary: Create cluster
       tags: [cluster]
+      operationId: rhub.api.cluster.create_cluster
       requestBody:
         $ref: '#/components/requestBodies/cluster_post'
       responses:
@@ -752,6 +780,7 @@ paths:
     get:
       summary: Get cluster
       tags: [cluster]
+      operationId: rhub.api.cluster.get_cluster
       parameters:
         - $ref: '#/components/parameters/cluster_id'
       responses:
@@ -764,6 +793,7 @@ paths:
     patch:
       summary: Update cluster
       tags: [cluster]
+      operationId: rhub.api.cluster.update_cluster
       parameters:
         - $ref: '#/components/parameters/cluster_id'
       requestBody:
@@ -778,6 +808,7 @@ paths:
     delete:
       summary: Delete cluster
       tags: [cluster]
+      operationId: rhub.api.cluster.delete_cluster
       parameters:
         - $ref: '#/components/parameters/cluster_id'
       responses:
