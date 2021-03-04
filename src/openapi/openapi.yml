@@ -43,7 +43,7 @@ components:
           minimum: 1
           nullable: true
 
-    Tower:
+    LabTower:
       type: object
       properties:
         id:
@@ -59,7 +59,7 @@ components:
         hostname:
           type: string
           format: hostname
-    Region:
+    LabRegion:
       type: object
       properties:
         id:
@@ -85,7 +85,7 @@ components:
           type: boolean
         quota:
           $ref: '#/components/schemas/Quota'
-    Cluster:
+    LabCluster:
       type: object
       properties:
         id:
@@ -110,7 +110,7 @@ components:
         lifespan_expiration:
           type: number
           description: UNIX timestamp
-    Template:
+    LabTemplate:
       type: object
       properties:
         id:
@@ -123,7 +123,7 @@ components:
           type: string
         enabled:
           type: boolean
-    Bundle:
+    LabBundle:
       type: object
       properties:
         id:
@@ -138,35 +138,35 @@ components:
           type: boolean
 
   parameters:
-    tower_id:
+    lab_tower_id:
       name: id
       in: path
       description: ID of the tower
       required: true
       schema:
         $ref: '#/components/schemas/ID'
-    region_id:
+    lab_region_id:
       name: id
       in: path
       description: ID of the region
       required: true
       schema:
         $ref: '#/components/schemas/ID'
-    cluster_id:
+    lab_cluster_id:
       name: id
       in: path
       description: ID of the cluster
       required: true
       schema:
         $ref: '#/components/schemas/ID'
-    template_id:
+    lab_template_id:
       name: id
       in: path
       description: ID of the template
       required: true
       schema:
         $ref: '#/components/schemas/ID'
-    bundle_id:
+    lab_bundle_id:
       name: id
       in: path
       description: ID of the bundle
@@ -176,7 +176,7 @@ components:
 
   requestBodies:
 
-    tower_post:
+    lab_tower_post:
       description: Tower
       required: true
       content:
@@ -184,19 +184,18 @@ components:
           schema:
             type: object
             allOf:
-              - $ref: '#/components/schemas/Tower'
+              - $ref: '#/components/schemas/LabTower'
               - required:
                   - name
                   - hostname
-    tower_patch:
+    lab_tower_patch:
       description: Tower properties to update
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Tower'
-
-    region_post:
+            $ref: '#/components/schemas/LabTower'
+    lab_region_post:
       description: Region
       required: true
       content:
@@ -204,18 +203,17 @@ components:
           schema:
             type: object
             allOf:
-              - $ref: '#/components/schemas/Region'
+              - $ref: '#/components/schemas/LabRegion'
               - required:
                   - name
-    region_patch:
+    lab_region_patch:
       description: Region properties to update
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Region'
-
-    cluster_post:
+            $ref: '#/components/schemas/LabRegion'
+    lab_cluster_post:
       description: Cluster
       required: true
       content:
@@ -223,21 +221,20 @@ components:
           schema:
             type: object
             allOf:
-              - $ref: '#/components/schemas/Cluster'
+              - $ref: '#/components/schemas/LabCluster'
               - required:
                   - name
                   - user_id
                   - region_id
                   - template_id
-    cluster_patch:
+    lab_cluster_patch:
       description: Cluster properties to update
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Cluster'
-
-    template_post:
+            $ref: '#/components/schemas/LabCluster'
+    lab_template_post:
       description: Template
       required: true
       content:
@@ -245,17 +242,17 @@ components:
           schema:
             type: object
             allOf:
-              - $ref: '#/components/schemas/Template'
+              - $ref: '#/components/schemas/LabTemplate'
               - required:
                   - name
-    template_patch:
+    lab_template_patch:
       description: Template properties to update
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Template'
-    template_id:
+            $ref: '#/components/schemas/LabTemplate'
+    lab_template_id:
       description: Template ID
       required: true
       content:
@@ -267,8 +264,7 @@ components:
             properties:
               id:
                 $ref: '#/components/schemas/ID'
-
-    bundle_post:
+    lab_bundle_post:
       description: Bundle
       required: true
       content:
@@ -276,17 +272,17 @@ components:
           schema:
             type: object
             allOf:
-              - $ref: '#/components/schemas/Bundle'
+              - $ref: '#/components/schemas/LabBundle'
               - required:
                   - name
-    bundle_patch:
+    lab_bundle_patch:
       description: Bundle properties to update
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Bundle'
-    bundle_id:
+            $ref: '#/components/schemas/LabBundle'
+    lab_bundle_id:
       description: Bundle ID
       required: true
       content:
@@ -315,80 +311,80 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
 
-    tower_get:
+    lab_tower_get:
       description: Tower
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Tower'
-    tower_list:
+            $ref: '#/components/schemas/LabTower'
+    lab_tower_list:
       description: List of Tower
       content:
         application/json:
           schema:
             type: array
             items:
-              $ref: '#/components/schemas/Tower'
-
-    region_get:
+              $ref: '#/components/schemas/LabTower'
+    lab_region_get:
       description: Region
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Region'
-    region_list:
+            $ref: '#/components/schemas/LabRegion'
+    lab_region_list:
       description: List of Region
       content:
         application/json:
           schema:
             type: array
             items:
-              $ref: '#/components/schemas/Region'
-
-    cluster_get:
+              $ref: '#/components/schemas/LabRegion'
+    lab_cluster_get:
       description: Cluster
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Cluster'
-    cluster_list:
+            $ref: '#/components/schemas/LabCluster'
+    lab_cluster_list:
       description: List of Cluster
       content:
         application/json:
           schema:
             type: array
             items:
-              $ref: '#/components/schemas/Cluster'
-
-    template_get:
+              $ref: '#/components/schemas/LabCluster'
+    lab_template_get:
       description: Template
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Template'
-    template_list:
+            $ref: '#/components/schemas/LabTemplate'
+    lab_template_list:
       description: List of Template
       content:
         application/json:
           schema:
             type: array
             items:
-              $ref: '#/components/schemas/Template'
-
-    bundle_get:
+              $ref: '#/components/schemas/LabTemplate'
+    lab_bundle_get:
       description: Bundle
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Bundle'
-    bundle_list:
+            $ref: '#/components/schemas/LabBundle'
+    lab_bundle_list:
       description: List of Bundle
       content:
         application/json:
           schema:
             type: array
             items:
-              $ref: '#/components/schemas/Bundle'
+              $ref: '#/components/schemas/LabBundle'
+
+tags:
+  - name: lab
+    description: Clusters for testing purposes.
 
 paths:
   /cowsay:
@@ -417,22 +413,22 @@ paths:
                 type: string
                 enum: [pong]
 
-  /tower:
+  /lab/tower:
     get:
       summary: Get tower list
-      tags: [tower]
-      operationId: rhub.api.tower.list_towers
+      tags: [lab]
+      operationId: rhub.api.lab.tower.list_towers
       responses:
         200:
-          $ref: '#/components/responses/tower_list'
+          $ref: '#/components/responses/lab_tower_list'
         default:
           $ref: '#/components/responses/error'
     post:
       summary: Create tower
-      tags: [tower]
-      operationId: rhub.api.tower.create_tower
+      tags: [lab]
+      operationId: rhub.api.lab.tower.create_tower
       requestBody:
-        $ref: '#/components/requestBodies/tower_post'
+        $ref: '#/components/requestBodies/lab_tower_post'
       responses:
         200:
           description: Success
@@ -440,28 +436,28 @@ paths:
           $ref: '#/components/responses/invalid_request'
         default:
           $ref: '#/components/responses/error'
-  /tower/{id}:
+  /lab/tower/{id}:
     get:
       summary: Get tower
-      tags: [tower]
-      operationId: rhub.api.tower.get_tower
+      tags: [lab]
+      operationId: rhub.api.lab.tower.get_tower
       parameters:
-        - $ref: '#/components/parameters/tower_id'
+        - $ref: '#/components/parameters/lab_tower_id'
       responses:
         200:
-          $ref: '#/components/responses/tower_get'
+          $ref: '#/components/responses/lab_tower_get'
         404:
           description: Not found
         default:
           $ref: '#/components/responses/error'
     patch:
       summary: Update tower
-      tags: [tower]
-      operationId: rhub.api.tower.update_tower
+      tags: [lab]
+      operationId: rhub.api.lab.tower.update_tower
       parameters:
-        - $ref: '#/components/parameters/tower_id'
+        - $ref: '#/components/parameters/lab_tower_id'
       requestBody:
-        $ref: '#/components/requestBodies/tower_patch'
+        $ref: '#/components/requestBodies/lab_tower_patch'
       responses:
         200:
           description: Success
@@ -471,32 +467,31 @@ paths:
           $ref: '#/components/responses/error'
     delete:
       summary: Delete tower
-      tags: [tower]
-      operationId: rhub.api.tower.delete_tower
+      tags: [lab]
+      operationId: rhub.api.lab.tower.delete_tower
       parameters:
-        - $ref: '#/components/parameters/tower_id'
+        - $ref: '#/components/parameters/lab_tower_id'
       responses:
         200:
           description: Success
         default:
           $ref: '#/components/responses/error'
-
-  /region:
+  /lab/region:
     get:
       summary: Get region list
-      tags: [region]
-      operationId: rhub.api.region.list_regions
+      tags: [lab]
+      operationId: rhub.api.lab.region.list_regions
       responses:
         200:
-          $ref: '#/components/responses/region_list'
+          $ref: '#/components/responses/lab_region_list'
         default:
           $ref: '#/components/responses/error'
     post:
       summary: Create region
-      tags: [region]
-      operationId: rhub.api.region.create_region
+      tags: [lab]
+      operationId: rhub.api.lab.region.create_region
       requestBody:
-        $ref: '#/components/requestBodies/region_post'
+        $ref: '#/components/requestBodies/lab_region_post'
       responses:
         200:
           description: Success
@@ -504,28 +499,28 @@ paths:
           $ref: '#/components/responses/invalid_request'
         default:
           $ref: '#/components/responses/error'
-  /region/{id}:
+  /lab/region/{id}:
     get:
       summary: Get region
-      tags: [region]
-      operationId: rhub.api.region.get_region
+      tags: [lab]
+      operationId: rhub.api.lab.region.get_region
       parameters:
-        - $ref: '#/components/parameters/region_id'
+        - $ref: '#/components/parameters/lab_region_id'
       responses:
         200:
-          $ref: '#/components/responses/region_get'
+          $ref: '#/components/responses/lab_region_get'
         404:
           description: Not found
         default:
           $ref: '#/components/responses/error'
     patch:
       summary: Update region
-      tags: [region]
-      operationId: rhub.api.region.update_region
+      tags: [lab]
+      operationId: rhub.api.lab.region.update_region
       parameters:
-        - $ref: '#/components/parameters/region_id'
+        - $ref: '#/components/parameters/lab_region_id'
       requestBody:
-        $ref: '#/components/requestBodies/region_patch'
+        $ref: '#/components/requestBodies/lab_region_patch'
       responses:
         200:
           description: Success
@@ -535,35 +530,35 @@ paths:
           $ref: '#/components/responses/error'
     delete:
       summary: Delete region
-      tags: [region]
-      operationId: rhub.api.region.delete_region
+      tags: [lab]
+      operationId: rhub.api.lab.region.delete_region
       parameters:
-        - $ref: '#/components/parameters/region_id'
+        - $ref: '#/components/parameters/lab_region_id'
       responses:
         200:
           description: Success
         default:
           $ref: '#/components/responses/error'
-  /region/{id}/templates:
+  /lab/region/{id}/templates:
     get:
       summary: Get templates available on region
-      tags: [region]
-      operationId: rhub.api.region.list_region_templates
+      tags: [lab]
+      operationId: rhub.api.lab.region.list_region_templates
       parameters:
-        - $ref: '#/components/parameters/region_id'
+        - $ref: '#/components/parameters/lab_region_id'
       responses:
         200:
-          $ref: '#/components/responses/template_list'
+          $ref: '#/components/responses/lab_template_list'
         default:
           $ref: '#/components/responses/error'
     post:
       summary: Add template to region
-      tags: [region]
-      operationId: rhub.api.region.add_region_template
+      tags: [lab]
+      operationId: rhub.api.lab.region.add_region_template
       parameters:
-        - $ref: '#/components/parameters/region_id'
+        - $ref: '#/components/parameters/lab_region_id'
       requestBody:
-        $ref: '#/components/requestBodies/template_id'
+        $ref: '#/components/requestBodies/lab_template_id'
       responses:
         200:
           description: Success
@@ -573,34 +568,33 @@ paths:
           $ref: '#/components/responses/error'
     delete:
       summary: Remove template from region
-      tags: [region]
-      operationId: rhub.api.region.delete_region_template
+      tags: [lab]
+      operationId: rhub.api.lab.region.delete_region_template
       parameters:
-        - $ref: '#/components/parameters/region_id'
+        - $ref: '#/components/parameters/lab_region_id'
       requestBody:
-        $ref: '#/components/requestBodies/template_id'
+        $ref: '#/components/requestBodies/lab_template_id'
       responses:
         200:
           description: Success
         default:
           $ref: '#/components/responses/error'
-
-  /template:
+  /lab/template:
     get:
       summary: Get template list
-      tags: [template]
-      operationId: rhub.api.template.list_templates
+      tags: [lab]
+      operationId: rhub.api.lab.template.list_templates
       responses:
         200:
-          $ref: '#/components/responses/template_list'
+          $ref: '#/components/responses/lab_template_list'
         default:
           $ref: '#/components/responses/error'
     post:
       summary: Create template
-      tags: [template]
-      operationId: rhub.api.template.create_template
+      tags: [lab]
+      operationId: rhub.api.lab.template.create_template
       requestBody:
-        $ref: '#/components/requestBodies/template_post'
+        $ref: '#/components/requestBodies/lab_template_post'
       responses:
         200:
           description: Success
@@ -608,28 +602,28 @@ paths:
           $ref: '#/components/responses/invalid_request'
         default:
           $ref: '#/components/responses/error'
-  /template/{id}:
+  /lab/template/{id}:
     get:
       summary: Get template
-      tags: [template]
-      operationId: rhub.api.template.get_template
+      tags: [lab]
+      operationId: rhub.api.lab.template.get_template
       parameters:
-        - $ref: '#/components/parameters/template_id'
+        - $ref: '#/components/parameters/lab_template_id'
       responses:
         200:
-          $ref: '#/components/responses/template_get'
+          $ref: '#/components/responses/lab_template_get'
         404:
           description: Not found
         default:
           $ref: '#/components/responses/error'
     patch:
       summary: Update template
-      tags: [template]
-      operationId: rhub.api.template.update_template
+      tags: [lab]
+      operationId: rhub.api.lab.template.update_template
       parameters:
-        - $ref: '#/components/parameters/template_id'
+        - $ref: '#/components/parameters/lab_template_id'
       requestBody:
-        $ref: '#/components/requestBodies/template_patch'
+        $ref: '#/components/requestBodies/lab_template_patch'
       responses:
         200:
           description: Success
@@ -639,35 +633,35 @@ paths:
           $ref: '#/components/responses/error'
     delete:
       summary: Delete template
-      tags: [template]
-      operationId: rhub.api.template.delete_template
+      tags: [lab]
+      operationId: rhub.api.lab.template.delete_template
       parameters:
-        - $ref: '#/components/parameters/template_id'
+        - $ref: '#/components/parameters/lab_template_id'
       responses:
         200:
           description: Success
         default:
           $ref: '#/components/responses/error'
-  /template/{id}/bundles:
+  /lab/template/{id}/bundles:
     get:
       summary: Get bundles available for template
-      tags: [template]
-      operationId: rhub.api.template.list_template_bundles
+      tags: [lab]
+      operationId: rhub.api.lab.template.list_template_bundles
       parameters:
-        - $ref: '#/components/parameters/template_id'
+        - $ref: '#/components/parameters/lab_template_id'
       responses:
         200:
-          $ref: '#/components/responses/bundle_list'
+          $ref: '#/components/responses/lab_bundle_list'
         default:
           $ref: '#/components/responses/error'
     post:
       summary: Add bundle to template
-      tags: [template]
-      operationId: rhub.api.template.add_template_bundle
+      tags: [lab]
+      operationId: rhub.api.lab.template.add_template_bundle
       parameters:
-        - $ref: '#/components/parameters/template_id'
+        - $ref: '#/components/parameters/lab_template_id'
       requestBody:
-        $ref: '#/components/requestBodies/bundle_id'
+        $ref: '#/components/requestBodies/lab_bundle_id'
       responses:
         200:
           description: Success
@@ -677,34 +671,33 @@ paths:
           $ref: '#/components/responses/error'
     delete:
       summary: Remove bundle from template
-      tags: [template]
-      operationId: rhub.api.template.delete_template_bundle
+      tags: [lab]
+      operationId: rhub.api.lab.template.delete_template_bundle
       parameters:
-        - $ref: '#/components/parameters/template_id'
+        - $ref: '#/components/parameters/lab_template_id'
       requestBody:
-        $ref: '#/components/requestBodies/bundle_id'
+        $ref: '#/components/requestBodies/lab_bundle_id'
       responses:
         200:
           description: Success
         default:
           $ref: '#/components/responses/error'
-
-  /bundle:
+  /lab/bundle:
     get:
       summary: Get bundle list
-      tags: [bundle]
-      operationId: rhub.api.bundle.list_bundles
+      tags: [lab]
+      operationId: rhub.api.lab.bundle.list_bundles
       responses:
         200:
-          $ref: '#/components/responses/bundle_list'
+          $ref: '#/components/responses/lab_bundle_list'
         default:
           $ref: '#/components/responses/error'
     post:
       summary: Create bundle
-      tags: [bundle]
-      operationId: rhub.api.bundle.create_bundle
+      tags: [lab]
+      operationId: rhub.api.lab.bundle.create_bundle
       requestBody:
-        $ref: '#/components/requestBodies/bundle_post'
+        $ref: '#/components/requestBodies/lab_bundle_post'
       responses:
         200:
           description: Success
@@ -712,28 +705,28 @@ paths:
           $ref: '#/components/responses/invalid_request'
         default:
           $ref: '#/components/responses/error'
-  /bundle/{id}:
+  /lab/bundle/{id}:
     get:
       summary: Get bundle
-      tags: [bundle]
-      operationId: rhub.api.bundle.get_bundle
+      tags: [lab]
+      operationId: rhub.api.lab.bundle.get_bundle
       parameters:
-        - $ref: '#/components/parameters/bundle_id'
+        - $ref: '#/components/parameters/lab_bundle_id'
       responses:
         200:
-          $ref: '#/components/responses/bundle_get'
+          $ref: '#/components/responses/lab_bundle_get'
         404:
           description: Not found
         default:
           $ref: '#/components/responses/error'
     patch:
       summary: Update bundle
-      tags: [bundle]
-      operationId: rhub.api.bundle.update_bundle
+      tags: [lab]
+      operationId: rhub.api.lab.bundle.update_bundle
       parameters:
-        - $ref: '#/components/parameters/bundle_id'
+        - $ref: '#/components/parameters/lab_bundle_id'
       requestBody:
-        $ref: '#/components/requestBodies/bundle_patch'
+        $ref: '#/components/requestBodies/lab_bundle_patch'
       responses:
         200:
           description: Success
@@ -743,32 +736,31 @@ paths:
           $ref: '#/components/responses/error'
     delete:
       summary: Delete bundle
-      tags: [bundle]
-      operationId: rhub.api.bundle.delete_bundle
+      tags: [lab]
+      operationId: rhub.api.lab.bundle.delete_bundle
       parameters:
-        - $ref: '#/components/parameters/bundle_id'
+        - $ref: '#/components/parameters/lab_bundle_id'
       responses:
         200:
           description: Success
         default:
           $ref: '#/components/responses/error'
-
-  /cluster:
+  /lab/cluster:
     get:
       summary: Get cluster list
-      tags: [cluster]
-      operationId: rhub.api.cluster.list_clusters
+      tags: [lab]
+      operationId: rhub.api.lab.cluster.list_clusters
       responses:
         200:
-          $ref: '#/components/responses/cluster_list'
+          $ref: '#/components/responses/lab_cluster_list'
         default:
           $ref: '#/components/responses/error'
     post:
       summary: Create cluster
-      tags: [cluster]
-      operationId: rhub.api.cluster.create_cluster
+      tags: [lab]
+      operationId: rhub.api.lab.cluster.create_cluster
       requestBody:
-        $ref: '#/components/requestBodies/cluster_post'
+        $ref: '#/components/requestBodies/lab_cluster_post'
       responses:
         200:
           description: Success
@@ -776,28 +768,28 @@ paths:
           $ref: '#/components/responses/invalid_request'
         default:
           $ref: '#/components/responses/error'
-  /cluster/{id}:
+  /lab/cluster/{id}:
     get:
       summary: Get cluster
-      tags: [cluster]
-      operationId: rhub.api.cluster.get_cluster
+      tags: [lab]
+      operationId: rhub.api.lab.cluster.get_cluster
       parameters:
-        - $ref: '#/components/parameters/cluster_id'
+        - $ref: '#/components/parameters/lab_cluster_id'
       responses:
         200:
-          $ref: '#/components/responses/cluster_get'
+          $ref: '#/components/responses/lab_cluster_get'
         404:
           description: Not found
         default:
           $ref: '#/components/responses/error'
     patch:
       summary: Update cluster
-      tags: [cluster]
-      operationId: rhub.api.cluster.update_cluster
+      tags: [lab]
+      operationId: rhub.api.lab.cluster.update_cluster
       parameters:
-        - $ref: '#/components/parameters/cluster_id'
+        - $ref: '#/components/parameters/lab_cluster_id'
       requestBody:
-        $ref: '#/components/requestBodies/cluster_patch'
+        $ref: '#/components/requestBodies/lab_cluster_patch'
       responses:
         200:
           description: Success
@@ -807,10 +799,10 @@ paths:
           $ref: '#/components/responses/error'
     delete:
       summary: Delete cluster
-      tags: [cluster]
-      operationId: rhub.api.cluster.delete_cluster
+      tags: [lab]
+      operationId: rhub.api.lab.cluster.delete_cluster
       parameters:
-        - $ref: '#/components/parameters/cluster_id'
+        - $ref: '#/components/parameters/lab_cluster_id'
       responses:
         200:
           description: Success
