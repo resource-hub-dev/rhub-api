@@ -1,11 +1,6 @@
-# https://catalog.redhat.com/software/containers/ubi8/ubi/5c359854d70cc534b3a3784e
-FROM registry.access.redhat.com/ubi8/ubi as base
-RUN dnf module install -y python38
-WORKDIR /opt/rhub-api
-ENV PYTHONPATH=/opt/rhub-api/src:/opt/rhub-api/packages:$PYTHONPATH
-
-FROM base
-COPY . /opt/rhub-api
+# https://catalog.redhat.com/software/containers/ubi8/python-38/5dde9cacbed8bd164a0af24a
+FROM registry.access.redhat.com/ubi8/python-38
+ENV PYTHONPATH=/opt/app-root/src/src:/opt/app-root/src/packages
+COPY . .
 RUN pip3 install --upgrade -r ./requirements.txt -t ./packages
-EXPOSE 80
 CMD ["./bin/gunicorn"]
