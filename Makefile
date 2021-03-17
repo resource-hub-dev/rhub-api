@@ -6,11 +6,10 @@ build:
 	docker run -d --name rhub-api quay.io/resource-hub-dev/rhub-api
 	sleep 10
 	docker logs rhub-api
-	docker run --rm --network container:rhub-api curlimages/curl -f http://localhost/v0/cowsay
+	docker run --rm --network container:rhub-api curlimages/curl -f http://localhost:8080/v0/cowsay
 	docker rm -f rhub-api
 
 install:
-	docker-compose build --no-cache --force-rm
 	docker-compose run --rm api pip3 install --upgrade -r ./requirements.txt -t ./packages
 
 start:

@@ -4,13 +4,14 @@ networks:
     name: rhub-development
 services:
   api:
-    build:
-      context: .
-      target: base
+    image: registry.access.redhat.com/ubi8/python-38
     volumes:
-      - .:/opt/rhub-api:delegated
+      - .:/opt/app-root/src:delegated
     environment:
-      - PYTHONDONTWRITEBYTECODE=yeah
+      PYTHONPATH: /opt/app-root/src/src:/opt/app-root/src/packages
+      PYTHONDONTWRITEBYTECODE: please
+      # don't pollute /opt/app-root/src with home crap
+      HOME: /opt/app-root/home
     ports:
       - 8081:5000
     command: ["./bin/connexion"]
