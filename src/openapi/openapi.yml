@@ -136,6 +136,48 @@ components:
           type: string
         enabled:
           type: boolean
+    User:
+      type: object
+      properties:
+        id:
+          allOf:
+            - $ref: '#/components/schemas/ID'
+            - readOnly: true
+        login:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+    Group:
+      type: object
+      properties:
+        id:
+          allOf:
+            - $ref: '#/components/schemas/ID'
+            - readOnly: true
+        name:
+          type: string
+        email:
+          type: string
+          description: Group mailing list
+    AuthRole:
+      type: object
+      properties:
+        id:
+          allOf:
+            - $ref: '#/components/schemas/ID'
+            - readOnly: true
+        name:
+          type: string
+    AuthToken:
+      type: object
+      properties:
+        scope:
+          type: array
+          items:
+            type: string
+          readOnly: true
 
   parameters:
     lab_tower_id:
@@ -170,6 +212,27 @@ components:
       name: id
       in: path
       description: ID of the bundle
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
+    user_id:
+      name: id
+      in: path
+      description: ID of the user
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
+    group_id:
+      name: id
+      in: path
+      description: ID of the user
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
+    auth_role_id:
+      name: id
+      in: path
+      description: ID of the auth role
       required: true
       schema:
         $ref: '#/components/schemas/ID'
@@ -294,6 +357,85 @@ components:
             properties:
               id:
                 $ref: '#/components/schemas/ID'
+    user_post:
+      description: User
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/User'
+              - required:
+                  - login
+                  - email
+    user_patch:
+      description: User properties to update
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/User'
+    group_post:
+      description: Group
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/Group'
+              - required:
+                  - name
+    group_patch:
+      description: Group properties to update
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Group'
+    group_id:
+      description: Group ID
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                $ref: '#/components/schemas/ID'
+    auth_role_post:
+      description: Auth role
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/AuthRole'
+              - required:
+                  - name
+    auth_role_patch:
+      description: Auth role properties to update
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthRole'
+    auth_role_id:
+      description: Auth role ID
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                $ref: '#/components/schemas/ID'
 
   responses:
 
@@ -381,10 +523,60 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/LabBundle'
+    user_get:
+      description: User
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/User'
+    user_list:
+      description: List of User
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/User'
+    group_get:
+      description: Group
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Group'
+    group_list:
+      description: List of Group
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Group'
+    auth_role_get:
+      description: Auth role
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthRole'
+    auth_role_list:
+      description: List of Auth role
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/AuthRole'
+    auth_token_get:
+      description: Auth token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthToken'
 
 tags:
   - name: lab
     description: Clusters for testing purposes.
+  - name: auth
+    description: Authentication related functions.
 
 paths:
   /cowsay:
@@ -806,5 +998,346 @@ paths:
       responses:
         200:
           description: Success
+        default:
+          $ref: '#/components/responses/error'
+  /auth/user:
+    get:
+      summary: Get user list
+      tags: [auth]
+      operationId: rhub.api.auth.user.list_users
+      responses:
+        200:
+          $ref: '#/components/responses/user_list'
+        default:
+          $ref: '#/components/responses/error'
+    post:
+      summary: Create user
+      tags: [auth]
+      operationId: rhub.api.auth.user.create_user
+      requestBody:
+        $ref: '#/components/requestBodies/user_post'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+  /auth/user/{id}:
+    get:
+      summary: Get user
+      tags: [auth]
+      operationId: rhub.api.auth.user.get_user
+      parameters:
+        - $ref: '#/components/parameters/user_id'
+      responses:
+        200:
+          $ref: '#/components/responses/user_get'
+        404:
+          description: Not found
+        default:
+          $ref: '#/components/responses/error'
+    patch:
+      summary: Update user
+      tags: [auth]
+      operationId: rhub.api.auth.user.update_user
+      parameters:
+        - $ref: '#/components/parameters/user_id'
+      requestBody:
+        $ref: '#/components/requestBodies/user_patch'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+    delete:
+      summary: Delete user
+      tags: [auth]
+      operationId: rhub.api.auth.user.delete_user
+      parameters:
+        - $ref: '#/components/parameters/user_id'
+      responses:
+        200:
+          description: Success
+        default:
+          $ref: '#/components/responses/error'
+  /auth/user/{id}/groups:
+    get:
+      summary: Get user groups
+      tags: [auth]
+      operationId: rhub.api.auth.user.list_user_groups
+      parameters:
+        - $ref: '#/components/parameters/user_id'
+      responses:
+        200:
+          $ref: '#/components/responses/group_list'
+        default:
+          $ref: '#/components/responses/error'
+    post:
+      summary: Add user to group
+      tags: [auth]
+      operationId: rhub.api.auth.user.add_user_group
+      parameters:
+        - $ref: '#/components/parameters/user_id'
+      requestBody:
+        $ref: '#/components/requestBodies/group_id'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+    delete:
+      summary: Remove user from group
+      tags: [auth]
+      operationId: rhub.api.auth.user.delete_user_group
+      parameters:
+        - $ref: '#/components/parameters/user_id'
+      requestBody:
+        $ref: '#/components/requestBodies/group_id'
+      responses:
+        200:
+          description: Success
+        default:
+          $ref: '#/components/responses/error'
+  /auth/user/{id}/roles:
+    get:
+      summary: Get user roles
+      tags: [auth]
+      operationId: rhub.api.auth.user.list_user_roles
+      parameters:
+        - $ref: '#/components/parameters/user_id'
+      responses:
+        200:
+          $ref: '#/components/responses/auth_role_list'
+        default:
+          $ref: '#/components/responses/error'
+    post:
+      summary: Add user to role
+      tags: [auth]
+      operationId: rhub.api.auth.user.add_user_role
+      parameters:
+        - $ref: '#/components/parameters/user_id'
+      requestBody:
+        $ref: '#/components/requestBodies/auth_role_id'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+    delete:
+      summary: Remove user from role
+      tags: [auth]
+      operationId: rhub.api.auth.user.delete_user_role
+      parameters:
+        - $ref: '#/components/parameters/user_id'
+      requestBody:
+        $ref: '#/components/requestBodies/auth_role_id'
+      responses:
+        200:
+          description: Success
+        default:
+          $ref: '#/components/responses/error'
+  /auth/group:
+    get:
+      summary: Get group list
+      tags: [auth]
+      operationId: rhub.api.auth.group.list_groups
+      responses:
+        200:
+          $ref: '#/components/responses/group_list'
+        default:
+          $ref: '#/components/responses/error'
+    post:
+      summary: Create group
+      tags: [auth]
+      operationId: rhub.api.auth.group.create_group
+      requestBody:
+        $ref: '#/components/requestBodies/group_post'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+  /auth/group/{id}:
+    get:
+      summary: Get group
+      tags: [auth]
+      operationId: rhub.api.auth.group.get_group
+      parameters:
+        - $ref: '#/components/parameters/group_id'
+      responses:
+        200:
+          $ref: '#/components/responses/group_get'
+        404:
+          description: Not found
+        default:
+          $ref: '#/components/responses/error'
+    patch:
+      summary: Update group
+      tags: [auth]
+      operationId: rhub.api.auth.group.update_group
+      parameters:
+        - $ref: '#/components/parameters/group_id'
+      requestBody:
+        $ref: '#/components/requestBodies/group_patch'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+    delete:
+      summary: Delete group
+      tags: [auth]
+      operationId: rhub.api.auth.group.delete_group
+      parameters:
+        - $ref: '#/components/parameters/group_id'
+      responses:
+        200:
+          description: Success
+        default:
+          $ref: '#/components/responses/error'
+  /auth/group/{id}/users:
+    get:
+      summary: Get users in group
+      tags: [auth]
+      operationId: rhub.api.auth.group.list_group_users
+      parameters:
+        - $ref: '#/components/parameters/group_id'
+      responses:
+        200:
+          $ref: '#/components/responses/group_list'
+        default:
+          $ref: '#/components/responses/error'
+  /auth/group/{id}/roles:
+    get:
+      summary: Get group roles
+      tags: [auth]
+      operationId: rhub.api.auth.group.list_group_roles
+      parameters:
+        - $ref: '#/components/parameters/group_id'
+      responses:
+        200:
+          $ref: '#/components/responses/auth_role_list'
+        default:
+          $ref: '#/components/responses/error'
+    post:
+      summary: Add group to role
+      tags: [auth]
+      operationId: rhub.api.auth.group.add_group_role
+      parameters:
+        - $ref: '#/components/parameters/group_id'
+      requestBody:
+        $ref: '#/components/requestBodies/auth_role_id'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+    delete:
+      summary: Remove group from role
+      tags: [auth]
+      operationId: rhub.api.auth.group.delete_group_role
+      parameters:
+        - $ref: '#/components/parameters/group_id'
+      requestBody:
+        $ref: '#/components/requestBodies/auth_role_id'
+      responses:
+        200:
+          description: Success
+        default:
+          $ref: '#/components/responses/error'
+  /auth/role:
+    get:
+      summary: Get auth role list
+      tags: [auth]
+      operationId: rhub.api.auth.role.list_roles
+      responses:
+        200:
+          $ref: '#/components/responses/auth_role_list'
+        default:
+          $ref: '#/components/responses/error'
+    post:
+      summary: Create auth role
+      tags: [auth]
+      operationId: rhub.api.auth.role.create_role
+      requestBody:
+        $ref: '#/components/requestBodies/auth_role_post'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+  /auth/role/{id}:
+    get:
+      summary: Get auth role
+      tags: [auth]
+      operationId: rhub.api.auth.role.get_role
+      parameters:
+        - $ref: '#/components/parameters/auth_role_id'
+      responses:
+        200:
+          $ref: '#/components/responses/auth_role_get'
+        404:
+          description: Not found
+        default:
+          $ref: '#/components/responses/error'
+    patch:
+      summary: Update auth role
+      tags: [auth]
+      operationId: rhub.api.auth.role.update_role
+      parameters:
+        - $ref: '#/components/parameters/auth_role_id'
+      requestBody:
+        $ref: '#/components/requestBodies/auth_role_patch'
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/invalid_request'
+        default:
+          $ref: '#/components/responses/error'
+    delete:
+      summary: Delete auth role
+      tags: [auth]
+      operationId: rhub.api.auth.role.delete_role
+      parameters:
+        - $ref: '#/components/parameters/auth_role_id'
+      responses:
+        200:
+          description: Success
+        default:
+          $ref: '#/components/responses/error'
+  /auth/token:
+    get:
+      summary: Get auth token info
+      tags: [auth]
+      operationId: rhub.api.auth.token.get_token_info
+      responses:
+        200:
+          $ref: '#/components/responses/auth_token_get'
+        default:
+          $ref: '#/components/responses/error'
+  /me:
+    get:
+      summary: Get info about logged in user
+      tags: [auth]
+      operationId: rhub.api.auth.user.get_current_user
+      responses:
+        200:
+          $ref: '#/components/responses/user_get'
         default:
           $ref: '#/components/responses/error'
