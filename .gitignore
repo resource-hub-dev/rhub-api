@@ -1,3 +1,4 @@
 /packages
 /.tox
 __pycache__
+/.env
