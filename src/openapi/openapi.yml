@@ -11,6 +11,9 @@ components:
     ID:
       type: integer
       minimum: 1
+    UUID:
+      type: string
+      format: uuid
     Name:
       type: string
       pattern: '^\w+$'
@@ -141,14 +144,25 @@ components:
       properties:
         id:
           allOf:
-            - $ref: '#/components/schemas/ID'
+            - $ref: '#/components/schemas/UUID'
             - readOnly: true
-        login:
+        username:
           type: string
         email:
           type: string
-        name:
+        firstName:
           type: string
+        lastName:
+          type: string
+        enabled:
+          type: boolean
+      example:
+        id: 743a5375-3513-4749-acb9-1cde1e159e3b
+        username: user
+        email: user@example.com
+        enabled: true
+        firstName: Test
+        lastName: User
     Group:
       type: object
       properties:
@@ -172,12 +186,52 @@ components:
           type: string
     AuthToken:
       type: object
-      properties:
-        scope:
-          type: array
-          items:
-            type: string
-          readOnly: true
+      example:
+        access_token: eyJhbGciOiJSUzI1...oJhA
+        expires_in: 300
+        not-before-policy: 0
+        refresh_expires_in: 1800
+        refresh_token: eyJhbGciOiJIUzI1...fc8A
+        scope: profile email
+        session_state: 82b7637e-69a2-41e1-ab0b-e3d6b6e1fb0a
+        token_type: Bearer
+    AuthTokenInfo:
+      type: object
+      description: |
+        See: RFC 7662, Section 2.2 for schema.
+      example:
+        acr: '1'
+        active: true
+        allowed-origins:
+          - http://localhost:8080
+        aud: account
+        azp: rhub-app
+        client_id: rhub-app
+        email: testuser1@example.com
+        email_verified: false
+        exp: 1617791654
+        family_name: user1
+        given_name: test
+        iat: 1617791354
+        iss: http://localhost:8082/auth/realms/rhub
+        jti: 640eb3a2-a193-4998-aa5b-5f0ba5beb154
+        name: test user1
+        preferred_username: testuser1
+        realm_access:
+          roles:
+            - offline_access
+            - uma_authorization
+        resource_access:
+          account:
+            roles:
+              - manage-account
+              - manage-account-links
+              - view-profile
+        scope: profile email
+        session_state: 82b7637e-69a2-41e1-ab0b-e3d6b6e1fb0a
+        sub: 743a5375-3513-4749-acb9-1cde1e159e3b
+        typ: Bearer
+        username: testuser1
 
   parameters:
     lab_tower_id:
@@ -565,12 +619,30 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/AuthRole'
-    auth_token_get:
+    auth_token:
       description: Auth token
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/AuthToken'
+    auth_token_info:
+      description: Auth token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthTokenInfo'
+
+  securitySchemes:
+    basic:
+      type: http
+      scheme: basic
+      x-basicInfoFunc: rhub.api.auth.token.basic_auth
+    oauth2:
+      type: http
+      scheme: bearer
+      bearerFormat: Bearer
+      x-bearerInfoFunc: rhub.api.auth.token.decode_token
+      x-tokenInfoFunc: rhub.api.auth.token.get_token_info
 
 tags:
   - name: lab
@@ -1328,7 +1400,53 @@ paths:
       operationId: rhub.api.auth.token.get_token_info
       responses:
         200:
-          $ref: '#/components/responses/auth_token_get'
+          $ref: '#/components/responses/auth_token_info'
+        default:
+          $ref: '#/components/responses/error'
+      security:
+        - oauth2: []
+  /auth/token/create:
+    post:
+      summary: Login and get access token
+      description: >
+        This endpoint requires HTTP basic authentication. If credentials are
+        correct then it returns oauth2 token info - access token, refresh token
+        and some other informations about generated token.
+      tags: [auth]
+      operationId: rhub.api.auth.token.create_token
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+            example: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
+          required: true
+      responses:
+        200:
+          $ref: '#/components/responses/auth_token'
+        default:
+          $ref: '#/components/responses/error'
+  /auth/token/refresh:
+    post:
+      summary: Refresh token
+      description: >
+        This endpoint requires HTTP bearer authentication. The bearer token in
+        'Authorization' header is not access token but refresh token. If refresh
+        was successful return new oauth2 token info. Response is the same as
+        from token create endpoint.
+      tags: [auth]
+      operationId: rhub.api.auth.token.refresh_token
+      parameters:
+        - in: header
+          name: Authorization
+          description: Bearer token is refresh token, not access token!
+          schema:
+            type: string
+            example: Bearer eyJhbGciOiJIUzI1...VLzc
+          required: true
+      responses:
+        200:
+          $ref: '#/components/responses/auth_token'
         default:
           $ref: '#/components/responses/error'
   /me:
@@ -1341,3 +1459,5 @@ paths:
           $ref: '#/components/responses/user_get'
         default:
           $ref: '#/components/responses/error'
+      security:
+        - oauth2: []
