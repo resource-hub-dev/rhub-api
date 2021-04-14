@@ -21,7 +21,7 @@ class KeycloakClient:
             password=admin_pass,
         )
 
-    def login(self, username, password, totp=None):
+    def login(self, username, password):
         return self.openid.token(username, password, totp=None)
 
     def token_refresh(self, refresh_token):
@@ -30,5 +30,70 @@ class KeycloakClient:
     def token_info(self, token):
         return self.openid.introspect(token)
 
-    def user_info(self, user_id):
+    def user_list(self, query=None):
+        return self.admin.get_users(query)
+
+    def user_get(self, user_id):
         return self.admin.get_user(user_id)
+
+    def user_create(self, data):
+        data = data.copy()
+        data.setdefault('enabled', True)
+
+        if 'password' in data:
+            data['credentials'] = [
+                {'type': 'password', 'value': data['password']},
+            ]
+            del data['password']
+
+        return self.admin.create_user(data)
+
+    def user_update(self, user_id, data):
+        data = data.copy()
+
+        if 'password' in data:
+            data['credentials'] = [
+                {'type': 'password', 'value': data['password']},
+            ]
+            del data['password']
+
+        self.admin.update_user(user_id, data)
+
+    def user_delete(self, user_id):
+        self.admin.delete_user(user_id)
+
+    def user_group_list(self, user_id):
+        """Get list of groups user belongs to."""
+        return self.admin.get_user_groups(user_id)
+
+    def group_list(self):
+        return self.admin.get_groups()
+
+    def group_get(self, group_id):
+        return self.admin.get_group(group_id)
+
+    def group_create(self, data):
+        # `create_group` always returns b''
+        self.admin.create_group(data)
+
+        for group in self.group_list():
+            if group['name'] == data['name']:
+                return group['id']
+
+    def group_update(self, group_id, data):
+        self.admin.update_group(group_id, data)
+
+    def group_delete(self, group_id):
+        self.admin.delete_group(group_id)
+
+    def group_user_list(self, group_id):
+        """Get list of users in group."""
+        return self.admin.get_group_members(group_id)
+
+    def group_user_add(self, user_id, group_id):
+        """Add user to group."""
+        self.admin.group_user_add(user_id, group_id)
+
+    def group_user_remove(self, user_id, group_id):
+        """Remove user from group."""
+        self.admin.group_user_remove(user_id, group_id)

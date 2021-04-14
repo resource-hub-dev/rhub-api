@@ -156,25 +156,61 @@ components:
           type: string
         enabled:
           type: boolean
+      description: |
+        See [Keycloak API: UserRepresentation](
+          https://www.keycloak.org/docs-api/11.0/rest-api/#_userrepresentation)
       example:
-        id: 743a5375-3513-4749-acb9-1cde1e159e3b
-        username: user
-        email: user@example.com
+        access:
+          impersonate: true
+          manage: true
+          manageGroupMembership: true
+          mapRoles: true
+          view: true
+        createdTimestamp: 1614717256570
+        disableableCredentialTypes: []
+        email: testuser1@example.com
+        emailVerified: false
         enabled: true
-        firstName: Test
-        lastName: User
+        firstName: test
+        id: 743a5375-3513-4749-acb9-1cde1e159e3b
+        lastName: user1
+        notBefore: 0
+        requiredActions: []
+        totp: false
+        username: testuser1
     Group:
       type: object
       properties:
         id:
           allOf:
-            - $ref: '#/components/schemas/ID'
+            - $ref: '#/components/schemas/UUID'
             - readOnly: true
         name:
           type: string
-        email:
-          type: string
-          description: Group mailing list
+        attributes:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Group attributes
+      description: |
+        See [Keycloak API: GroupRepresentation](
+         https://www.keycloak.org/docs-api/11.0/rest-api/#_grouprepresentation)
+      example:
+        access:
+          manage: true
+          manageMembership: true
+          view: true
+        attributes:
+          mailing-list:
+            - admin-list@example.com
+        clientRoles: {}
+        id: fa831aa3-7a5a-4667-9c3f-bf20465058f6
+        name: admin
+        path: /admin
+        realmRoles: []
+        subGroups: []
     AuthRole:
       type: object
       properties:
@@ -198,7 +234,8 @@ components:
     AuthTokenInfo:
       type: object
       description: |
-        See: RFC 7662, Section 2.2 for schema.
+        See [RFC 7662, Section 2.2](https://tools.ietf.org/html/rfc7662#section-2.2)
+        and [Keycloak API: AccessToken](https://www.keycloak.org/docs-api/11.0/rest-api/#_accesstoken)
       example:
         acr: '1'
         active: true
@@ -275,21 +312,21 @@ components:
       description: ID of the user
       required: true
       schema:
-        $ref: '#/components/schemas/ID'
+        $ref: '#/components/schemas/UUID'
     group_id:
       name: id
       in: path
       description: ID of the user
       required: true
       schema:
-        $ref: '#/components/schemas/ID'
+        $ref: '#/components/schemas/UUID'
     auth_role_id:
       name: id
       in: path
       description: ID of the auth role
       required: true
       schema:
-        $ref: '#/components/schemas/ID'
+        $ref: '#/components/schemas/UUID'
 
   requestBodies:
 
@@ -421,8 +458,14 @@ components:
             allOf:
               - $ref: '#/components/schemas/User'
               - required:
-                  - login
+                  - username
                   - email
+          example:
+            username: alice
+            email: alice@example.com
+            firstName: Alice
+            lastName: Example
+            password: p4ssw0rd
     user_patch:
       description: User properties to update
       required: true
@@ -430,6 +473,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/User'
+          example:
+            email: alice-new@example.com
+            lastName: New
     group_post:
       description: Group
       required: true
@@ -441,6 +487,11 @@ components:
               - $ref: '#/components/schemas/Group'
               - required:
                   - name
+          example:
+            name: admin
+            attributes:
+              mailing-list:
+                - admin-list@example.com
     group_patch:
       description: Group properties to update
       required: true
@@ -448,6 +499,10 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Group'
+          example:
+            attributes:
+              mailing-list:
+                - admin-list@example.com
     group_id:
       description: Group ID
       required: true
@@ -605,6 +660,11 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/Group'
+          example:
+            - id: fa831aa3-7a5a-4667-9c3f-bf20465058f6
+              name: admin
+              path: /admin
+              subGroups: []
     auth_role_get:
       description: Auth role
       content:
@@ -1075,6 +1135,9 @@ paths:
   /auth/user:
     get:
       summary: Get user list
+      description: |
+        See also [Keycloak API: UserRepresentation](
+          https://www.keycloak.org/docs-api/11.0/rest-api/#_userrepresentation)
       tags: [auth]
       operationId: rhub.api.auth.user.list_users
       responses:
@@ -1082,22 +1145,40 @@ paths:
           $ref: '#/components/responses/user_list'
         default:
           $ref: '#/components/responses/error'
+      security:
+        - oauth2: []
     post:
       summary: Create user
+      description: |
+        Create a user in the database. Returns created user data with extra
+        fields added by auth database (UUID and other fields).
+
+        See also [Keycloak API: UserRepresentation](
+          https://www.keycloak.org/docs-api/11.0/rest-api/#_userrepresentation)
       tags: [auth]
       operationId: rhub.api.auth.user.create_user
       requestBody:
         $ref: '#/components/requestBodies/user_post'
       responses:
         200:
-          description: Success
+          description: User successfully created
+          $ref: '#/components/responses/user_get'
         400:
           $ref: '#/components/responses/invalid_request'
         default:
           $ref: '#/components/responses/error'
+      security:
+        - oauth2: []
   /auth/user/{id}:
     get:
       summary: Get user
+      description: |
+        Returns user data including extra fields added by auth database. Data
+        object contains at least properties that are in the schema but also
+        database internal data like `createdTimestamp` and others.
+
+        See also [Keycloak API: UserRepresentation](
+          https://www.keycloak.org/docs-api/11.0/rest-api/#_userrepresentation)
       tags: [auth]
       operationId: rhub.api.auth.user.get_user
       parameters:
@@ -1106,11 +1187,19 @@ paths:
         200:
           $ref: '#/components/responses/user_get'
         404:
-          description: Not found
+          description: User not found
         default:
           $ref: '#/components/responses/error'
+      security:
+        - oauth2: []
     patch:
       summary: Update user
+      description: |
+        Update user in the database. Returns updated user data including extra
+        fields added by auth database.
+
+        See also [Keycloak API: UserRepresentation](
+          https://www.keycloak.org/docs-api/11.0/rest-api/#_userrepresentation)
       tags: [auth]
       operationId: rhub.api.auth.user.update_user
       parameters:
@@ -1119,11 +1208,14 @@ paths:
         $ref: '#/components/requestBodies/user_patch'
       responses:
         200:
-          description: Success
+          description: User successfully updated
+          $ref: '#/components/responses/user_get'
         400:
           $ref: '#/components/responses/invalid_request'
         default:
           $ref: '#/components/responses/error'
+      security:
+        - oauth2: []
     delete:
       summary: Delete user
       tags: [auth]
@@ -1132,12 +1224,17 @@ paths:
         - $ref: '#/components/parameters/user_id'
       responses:
         200:
-          description: Success
+          description: User successfully deleted
         default:
           $ref: '#/components/responses/error'
+      security:
+        - oauth2: []
   /auth/user/{id}/groups:
     get:
       summary: Get user groups
+      description: |
+        See also [Keycloak API: GroupRepresentation](
+         https://www.keycloak.org/docs-api/11.0/rest-api/#_grouprepresentation)
       tags: [auth]
       operationId: rhub.api.auth.user.list_user_groups
       parameters:
@@ -1147,6 +1244,8 @@ paths:
           $ref: '#/components/responses/group_list'
         default:
           $ref: '#/components/responses/error'
+      security:
+        - oauth2: []
     post:
       summary: Add user to group
       tags: [auth]
@@ -1162,6 +1261,8 @@ paths:
           $ref: '#/components/responses/invalid_request'
         default:
           $ref: '#/components/responses/error'
+      security:
+        - oauth2: []
     delete:
       summary: Remove user from group
       tags: [auth]
@@ -1175,6 +1276,8 @@ paths:
           description: Success
         default:
           $ref: '#/components/responses/error'
+      security:
+        - oauth2: []
   /auth/user/{id}/roles:
     get:
       summary: Get user roles
@@ -1187,6 +1290,8 @@ paths:
           $ref: '#/components/responses/auth_role_list'
         default:
           $ref: '#/components/responses/error'
+      security:
+        - oauth2: []
     post:
       summary: Add user to role
       tags: [auth]
@@ -1202,6 +1307,8 @@ paths:
           $ref: '#/components/responses/invalid_request'
         default:
           $ref: '#/components/responses/error'
+      security:
+        - oauth2: []
     delete:
       summary: Remove user from role
       tags: [auth]
@@ -1215,9 +1322,14 @@ paths:
           description: Success
         default:
           $ref: '#/components/responses/error'
+      security:
+        - oauth2: []
   /auth/group:
     get:
       summary: Get group list
+      description: |
+        See also [Keycloak API: GroupRepresentation](
+         https://www.keycloak.org/docs-api/11.0/rest-api/#_grouprepresentation)
       tags: [auth]
       operationId: rhub.api.auth.group.list_groups
       responses:
@@ -1227,6 +1339,12 @@ paths:
           $ref: '#/components/responses/error'
     post:
       summary: Create group
+      description: |
+        Create a group in the database. Returns created group data with extra
+        fields added by auth database (UUID and other fields).
+
+        See also [Keycloak API: GroupRepresentation](
+         https://www.keycloak.org/docs-api/11.0/rest-api/#_grouprepresentation)
       tags: [auth]
       operationId: rhub.api.auth.group.create_group
       requestBody:
@@ -1234,6 +1352,7 @@ paths:
       responses:
         200:
           description: Success
+          $ref: '#/components/responses/group_get'
         400:
           $ref: '#/components/responses/invalid_request'
         default:
@@ -1241,6 +1360,13 @@ paths:
   /auth/group/{id}:
     get:
       summary: Get group
+      description: |
+        Returns group data including extra fields added by auth database. Data
+        object contains at least properties that are in the schema but also
+        database internal data like `subGroups` and others.
+
+        See also [Keycloak API: GroupRepresentation](
+         https://www.keycloak.org/docs-api/11.0/rest-api/#_grouprepresentation)
       tags: [auth]
       operationId: rhub.api.auth.group.get_group
       parameters:
@@ -1254,6 +1380,12 @@ paths:
           $ref: '#/components/responses/error'
     patch:
       summary: Update group
+      description: |
+        Update group in the database. Returns updated group data including extra
+        fields added by auth database.
+
+        See also [Keycloak API: GroupRepresentation](
+         https://www.keycloak.org/docs-api/11.0/rest-api/#_grouprepresentation)
       tags: [auth]
       operationId: rhub.api.auth.group.update_group
       parameters:
@@ -1263,6 +1395,7 @@ paths:
       responses:
         200:
           description: Success
+          $ref: '#/components/responses/group_get'
         400:
           $ref: '#/components/responses/invalid_request'
         default:
@@ -1281,13 +1414,16 @@ paths:
   /auth/group/{id}/users:
     get:
       summary: Get users in group
+      description: |
+        See also [Keycloak API: UserRepresentation](
+          https://www.keycloak.org/docs-api/11.0/rest-api/#_userrepresentation)
       tags: [auth]
       operationId: rhub.api.auth.group.list_group_users
       parameters:
         - $ref: '#/components/parameters/group_id'
       responses:
         200:
-          $ref: '#/components/responses/group_list'
+          $ref: '#/components/responses/user_list'
         default:
           $ref: '#/components/responses/error'
   /auth/group/{id}/roles:
@@ -1408,7 +1544,7 @@ paths:
   /auth/token/create:
     post:
       summary: Login and get access token
-      description: >
+      description: |
         This endpoint requires HTTP basic authentication. If credentials are
         correct then it returns oauth2 token info - access token, refresh token
         and some other informations about generated token.
@@ -1429,7 +1565,7 @@ paths:
   /auth/token/refresh:
     post:
       summary: Refresh token
-      description: >
+      description: |
         This endpoint requires HTTP bearer authentication. The bearer token in
         'Authorization' header is not access token but refresh token. If refresh
         was successful return new oauth2 token info. Response is the same as
