@@ -12,6 +12,12 @@ from rhub.auth.keycloak import KeycloakClient
 
 logger = logging.getLogger(__name__)
 
+try:
+    import coloredlogs
+    coloredlogs.install(level=config.LOG_LEVEL)
+except ImportError:
+    logging.basicConfig(level=config.LOG_LEVEL)
+
 
 # Note: this works only when 'rhub' is namespace
 ROOT = os.path.dirname(rhub.__path__[0])

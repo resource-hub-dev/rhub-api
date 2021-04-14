@@ -1,5 +1,10 @@
+import logging
+
 from flask import g, request, Response
 from keycloak import KeycloakGetError
+
+
+logger = logging.getLogger(__name__)
 
 
 def decode_token(token):
@@ -17,8 +22,10 @@ def get_token_info():
     try:
         return g.keycloak.token_info(access_token), 200
     except KeycloakGetError as e:
+        logger.exception(e)
         return Response(e.response_body, e.response_code)
     except Exception as e:
+        logger.exception(e)
         return {'error': str(e)}, 400
 
 
@@ -32,8 +39,10 @@ def create_token():
     try:
         return g.keycloak.login(username, password), 200
     except KeycloakGetError as e:
+        logger.exception(e)
         return Response(e.response_body, e.response_code)
     except Exception as e:
+        logger.exception(e)
         return {'error': str(e)}, 400
 
 
@@ -49,6 +58,8 @@ def refresh_token():
     try:
         return g.keycloak.token_refresh(refresh_token), 200
     except KeycloakGetError as e:
+        logger.exception(e)
         return Response(e.response_body, e.response_code)
     except Exception as e:
+        logger.exception(e)
         return {'error': str(e)}, 400
