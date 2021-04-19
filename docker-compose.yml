@@ -12,6 +12,8 @@ services:
       PYTHONDONTWRITEBYTECODE: please
       # don't pollute /opt/app-root/src with home crap
       HOME: /opt/app-root/home
+    env_file:
+      - .env
     ports:
       - 8081:5000
     command: ["./bin/connexion"]
