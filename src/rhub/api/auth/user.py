@@ -1,7 +1,9 @@
 import logging
 
-from flask import g, Response
+from flask import Response
 from keycloak import KeycloakGetError
+
+from rhub.api import get_keycloak
 
 
 logger = logging.getLogger(__name__)
@@ -9,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def list_users():
     try:
-        return g.keycloak.user_list({}), 200
+        return get_keycloak().user_list({}), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return Response(e.response_body, e.response_code)
@@ -20,9 +22,9 @@ def list_users():
 
 def create_user(body):
     try:
-        user_id = g.keycloak.user_create(body)
+        user_id = get_keycloak().user_create(body)
         logger.info(f'Created user {user_id}')
-        return g.keycloak.user_get(user_id), 200
+        return get_keycloak().user_get(user_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return Response(e.response_body, e.response_code)
@@ -33,7 +35,7 @@ def create_user(body):
 
 def get_user(id):
     try:
-        return g.keycloak.user_get(id), 200
+        return get_keycloak().user_get(id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return Response(e.response_body, e.response_code)
@@ -44,9 +46,9 @@ def get_user(id):
 
 def update_user(id, body):
     try:
-        g.keycloak.user_update(id, body)
+        get_keycloak().user_update(id, body)
         logger.info(f'Updated user {id}')
-        return g.keycloak.user_get(id), 200
+        return get_keycloak().user_get(id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return Response(e.response_body, e.response_code)
@@ -57,7 +59,7 @@ def update_user(id, body):
 
 def delete_user(id):
     try:
-        g.keycloak.user_delete(id)
+        get_keycloak().user_delete(id)
         logger.info(f'Deleted user {id}')
         return {}, 200
     except KeycloakGetError as e:
@@ -70,7 +72,7 @@ def delete_user(id):
 
 def list_user_groups(id):
     try:
-        return g.keycloak.user_group_list(id), 200
+        return get_keycloak().user_group_list(id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return Response(e.response_body, e.response_code)
@@ -81,7 +83,7 @@ def list_user_groups(id):
 
 def add_user_group(id, body):
     try:
-        g.keycloak.group_user_add(id, body['id'])
+        get_keycloak().group_user_add(id, body['id'])
         return {}, 200
     except KeycloakGetError as e:
         logger.exception(e)
@@ -93,7 +95,7 @@ def add_user_group(id, body):
 
 def delete_user_group(id, body):
     try:
-        g.keycloak.group_user_remove(id, body['id'])
+        get_keycloak().group_user_remove(id, body['id'])
         return {}, 200
     except KeycloakGetError as e:
         logger.exception(e)
@@ -117,7 +119,7 @@ def delete_user_role(id, body):
 
 def get_current_user(user):
     try:
-        return g.keycloak.user_get(user), 200
+        return get_keycloak().user_get(user), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return Response(e.response_body, e.response_code)

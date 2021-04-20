@@ -1,4 +1,4 @@
-from . import app
+from . import create_app
 
 
-app.run()
+create_app().run()
