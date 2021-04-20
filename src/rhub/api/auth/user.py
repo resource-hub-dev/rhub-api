@@ -1,6 +1,6 @@
 import logging
 
-from flask import Response
+from flask import Response, request
 from keycloak import KeycloakGetError
 
 from rhub.api import get_keycloak
@@ -93,9 +93,9 @@ def add_user_group(id, body):
         return {'error': str(e)}, 400
 
 
-def delete_user_group(id, body):
+def delete_user_group(id):
     try:
-        get_keycloak().group_user_remove(id, body['id'])
+        get_keycloak().group_user_remove(id, request.json['id'])
         return {}, 200
     except KeycloakGetError as e:
         logger.exception(e)

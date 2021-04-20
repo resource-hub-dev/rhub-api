@@ -514,7 +514,7 @@ components:
               - id
             properties:
               id:
-                $ref: '#/components/schemas/ID'
+                $ref: '#/components/schemas/UUID'
     auth_role_post:
       description: Auth role
       required: true
@@ -544,7 +544,7 @@ components:
               - id
             properties:
               id:
-                $ref: '#/components/schemas/ID'
+                $ref: '#/components/schemas/UUID'
 
   responses:
 
