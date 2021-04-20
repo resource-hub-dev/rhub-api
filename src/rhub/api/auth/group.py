@@ -1,7 +1,9 @@
 import logging
 
-from flask import g, Response
+from flask import Response
 from keycloak import KeycloakGetError
+
+from rhub.api import get_keycloak
 
 
 logger = logging.getLogger(__name__)
@@ -9,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def list_groups():
     try:
-        return g.keycloak.group_list(), 200
+        return get_keycloak().group_list(), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return Response(e.response_body, e.response_code)
@@ -20,9 +22,9 @@ def list_groups():
 
 def create_group(body):
     try:
-        group_id = g.keycloak.group_create(body)
+        group_id = get_keycloak().group_create(body)
         logger.info(f'Created group {id}')
-        return g.keycloak.group_get(group_id), 200
+        return get_keycloak().group_get(group_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return Response(e.response_body, e.response_code)
@@ -33,7 +35,7 @@ def create_group(body):
 
 def get_group(id):
     try:
-        return g.keycloak.group_get(id), 200
+        return get_keycloak().group_get(id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return Response(e.response_body, e.response_code)
@@ -44,9 +46,9 @@ def get_group(id):
 
 def update_group(id, body):
     try:
-        g.keycloak.group_udate(id, body)
+        get_keycloak().group_update(id, body)
         logger.info(f'Updated group {id}')
-        return g.keycloak.group_get(id), 200
+        return get_keycloak().group_get(id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return Response(e.response_body, e.response_code)
@@ -57,7 +59,7 @@ def update_group(id, body):
 
 def delete_group(id):
     try:
-        g.keycloak.group_delete(id)
+        get_keycloak().group_delete(id)
         logger.info(f'Deleted group {id}')
         return {}, 200
     except KeycloakGetError as e:
@@ -70,7 +72,7 @@ def delete_group(id):
 
 def list_group_users(id):
     try:
-        return g.keycloak.group_user_list(id), 200
+        return get_keycloak().group_user_list(id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return Response(e.response_body, e.response_code)

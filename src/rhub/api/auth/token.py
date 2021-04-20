@@ -1,18 +1,20 @@
 import logging
 
-from flask import g, request, Response
+from flask import request, Response
 from keycloak import KeycloakGetError
+
+from rhub.api import get_keycloak
 
 
 logger = logging.getLogger(__name__)
 
 
 def decode_token(token):
-    return g.keycloak.token_info(token)
+    return get_keycloak().token_info(token)
 
 
 def basic_auth(username, password, required_scopes=None):
-    return g.keycloak.login(username, password)
+    return get_keycloak().login(username, password)
 
 
 def get_token_info():
@@ -20,7 +22,7 @@ def get_token_info():
     _, access_token = request.headers['Authorization'].split()
 
     try:
-        return g.keycloak.token_info(access_token), 200
+        return get_keycloak().token_info(access_token), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return Response(e.response_body, e.response_code)
@@ -37,7 +39,7 @@ def create_token():
     password = request.authorization['password']
 
     try:
-        return g.keycloak.login(username, password), 200
+        return get_keycloak().login(username, password), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return Response(e.response_body, e.response_code)
@@ -56,7 +58,7 @@ def refresh_token():
         return {'error': 'Invalid token'}, 400
 
     try:
-        return g.keycloak.token_refresh(refresh_token), 200
+        return get_keycloak().token_refresh(refresh_token), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return Response(e.response_body, e.response_code)
