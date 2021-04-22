@@ -22,7 +22,7 @@ def client():
 def keycloak_mock(mocker):
     keycloak_mock = mocker.Mock(spec=KeycloakClient)
 
-    for m in ['token', 'user', 'group']:
+    for m in ['token', 'user', 'group', 'role']:
         get_keycloak_mock = mocker.patch(f'rhub.api.auth.{m}.get_keycloak')
         get_keycloak_mock.return_value = keycloak_mock
 
@@ -295,3 +295,88 @@ def test_list_group_users(client, keycloak_mock):
 
     assert rv.status_code == 200
     assert rv.json == user_list
+
+
+def test_list_roles(client, keycloak_mock):
+    keycloak_mock.role_list.return_value = [{'name': 'admin'}]
+
+    rv = client.get(
+        f'{API_BASE}/auth/role',
+        headers={'Authorization': 'Bearer foobar'},
+    )
+
+    assert rv.status_code == 200
+    assert rv.json == [{'name': 'admin'}]
+
+
+def test_create_role(client, keycloak_mock):
+    role_id = 'uuid'
+    role_data = {'name': 'admin'}
+
+    keycloak_mock.role_create.return_value = role_id
+    keycloak_mock.role_get.return_value = role_data
+
+    rv = client.post(
+        f'{API_BASE}/auth/role',
+        headers={'Authorization': 'Bearer foobar'},
+        json=role_data,
+    )
+
+    keycloak_mock.role_create.assert_called_with(role_data)
+    keycloak_mock.role_get.assert_called_with(role_id)
+
+    assert rv.status_code == 200
+    assert rv.json == role_data
+
+
+def test_get_role(client, keycloak_mock):
+    role_id = 'uuid'
+    role_data = {'name': 'admin'}
+
+    keycloak_mock.role_get.return_value = role_data
+
+    rv = client.get(
+        f'{API_BASE}/auth/role/{role_id}',
+        headers={'Authorization': 'Bearer foobar'},
+    )
+
+    keycloak_mock.role_get.assert_called_with(role_id)
+
+    assert rv.status_code == 200
+    assert rv.json == role_data
+
+
+def test_update_role(client, keycloak_mock):
+    role_id = 'uuid'
+    role_data = {'name': 'new-admin'}
+
+    keycloak_mock.role_update.return_value = role_id
+    keycloak_mock.role_get.return_value = role_data
+
+    rv = client.patch(
+        f'{API_BASE}/auth/role/{role_id}',
+        headers={'Authorization': 'Bearer foobar'},
+        json=role_data,
+    )
+
+    keycloak_mock.role_update.assert_called_with(role_id, role_data)
+    keycloak_mock.role_get.assert_called_with(role_data['name'])
+
+    assert rv.status_code == 200
+    assert rv.json == role_data
+
+
+def test_delete_role(client, keycloak_mock):
+    role_id = 'uuid'
+
+    keycloak_mock.role_delete.return_value = role_id
+
+    rv = client.delete(
+        f'{API_BASE}/auth/role/{role_id}',
+        headers={'Authorization': 'Bearer foobar'},
+    )
+
+    keycloak_mock.role_delete.assert_called_with(role_id)
+
+    assert rv.status_code == 200
+    assert rv.json == {}
