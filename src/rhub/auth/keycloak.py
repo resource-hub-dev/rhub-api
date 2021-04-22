@@ -97,3 +97,23 @@ class KeycloakClient:
     def group_user_remove(self, user_id, group_id):
         """Remove user from group."""
         self.admin.group_user_remove(user_id, group_id)
+
+    def role_list(self):
+        return self.admin.get_realm_roles()
+
+    def role_get(self, role_id):
+        return self.admin.get_realm_role(role_id)
+
+    def role_create(self, data):
+        # `create_role` always returns b''
+        self.admin.create_realm_role(data)
+
+        for role in self.role_list():
+            if role['name'] == data['name']:
+                return role['name']
+
+    def role_update(self, role_id, data):
+        self.admin.update_realm_role(role_id, data)
+
+    def role_delete(self, role_id):
+        self.admin.delete_realm_role(role_id)

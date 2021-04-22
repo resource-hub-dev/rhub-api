@@ -211,15 +211,34 @@ components:
         path: /admin
         realmRoles: []
         subGroups: []
-    AuthRole:
+    Role:
       type: object
       properties:
         id:
           allOf:
-            - $ref: '#/components/schemas/ID'
+            - $ref: '#/components/schemas/UUID'
             - readOnly: true
         name:
           type: string
+        attributes:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Role attributes
+      description: |
+        See [Keycloak API: RoleRepresentation](
+         https://www.keycloak.org/docs-api/11.0/rest-api/#_rolerepresentation)
+      example:
+        attributes: {}
+        id: fa831aa3-7a5a-4667-9c3f-bf20465058f6
+        name: admin
+        clientRole: false
+        composite: false
+        composites: {}
+        containerId: admin
+        description: adminRole
     AuthToken:
       type: object
       example:
@@ -369,7 +388,7 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/UUID'
-    auth_role_id:
+    role_id:
       name: id
       in: path
       description: ID of the auth role
@@ -585,26 +604,30 @@ components:
             properties:
               id:
                 $ref: '#/components/schemas/UUID'
-    auth_role_post:
-      description: Auth role
+    role_post:
+      description: Role
       required: true
       content:
         application/json:
           schema:
             type: object
             allOf:
-              - $ref: '#/components/schemas/AuthRole'
+              - $ref: '#/components/schemas/Role'
               - required:
                   - name
-    auth_role_patch:
-      description: Auth role properties to update
+          example:
+            name: admin
+    role_patch:
+      description: Role properties to update
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/AuthRole'
-    auth_role_id:
-      description: Auth role ID
+            $ref: '#/components/schemas/Role'
+          example:
+            composite: true
+    role_id:
+      description: Role ID
       required: true
       content:
         application/json:
@@ -826,20 +849,25 @@ components:
               name: admin
               path: /admin
               subGroups: []
-    auth_role_get:
-      description: Auth role
+    role_get:
+      description: Role
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/AuthRole'
-    auth_role_list:
-      description: List of Auth role
+            $ref: '#/components/schemas/Role'
+    role_list:
+      description: List of Role
       content:
         application/json:
           schema:
             type: array
             items:
-              $ref: '#/components/schemas/AuthRole'
+              $ref: '#/components/schemas/Role'
+          example:
+            - id: fa831aa3-7a5a-4667-9c3f-bf20465058f6
+              name: admin
+              description: adminRole
+
     auth_token:
       description: Auth token
       content:
@@ -1490,7 +1518,7 @@ paths:
         - $ref: '#/components/parameters/user_id'
       responses:
         200:
-          $ref: '#/components/responses/auth_role_list'
+          $ref: '#/components/responses/role_list'
         default:
           $ref: '#/components/responses/error'
       security:
@@ -1502,7 +1530,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/user_id'
       requestBody:
-        $ref: '#/components/requestBodies/auth_role_id'
+        $ref: '#/components/requestBodies/role_id'
       responses:
         200:
           description: Success
@@ -1519,7 +1547,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/user_id'
       requestBody:
-        $ref: '#/components/requestBodies/auth_role_id'
+        $ref: '#/components/requestBodies/role_id'
       responses:
         200:
           description: Success
@@ -1638,7 +1666,7 @@ paths:
         - $ref: '#/components/parameters/group_id'
       responses:
         200:
-          $ref: '#/components/responses/auth_role_list'
+          $ref: '#/components/responses/role_list'
         default:
           $ref: '#/components/responses/error'
     post:
@@ -1648,7 +1676,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/group_id'
       requestBody:
-        $ref: '#/components/requestBodies/auth_role_id'
+        $ref: '#/components/requestBodies/role_id'
       responses:
         200:
           description: Success
@@ -1663,7 +1691,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/group_id'
       requestBody:
-        $ref: '#/components/requestBodies/auth_role_id'
+        $ref: '#/components/requestBodies/role_id'
       responses:
         200:
           description: Success
@@ -1671,62 +1699,86 @@ paths:
           $ref: '#/components/responses/error'
   /auth/role:
     get:
-      summary: Get auth role list
+      summary: Get role list
+      description: |
+        See [Keycloak API: RoleRepresentation](
+         https://www.keycloak.org/docs-api/11.0/rest-api/#_rolerepresentation)
       tags: [auth]
       operationId: rhub.api.auth.role.list_roles
       responses:
         200:
-          $ref: '#/components/responses/auth_role_list'
+          $ref: '#/components/responses/role_list'
         default:
           $ref: '#/components/responses/error'
     post:
-      summary: Create auth role
+      summary: Create role
+      description: |
+        Create a role in the database. Returns created role data with extra
+        fields added by auth database (UUID and other fields).
+
+        See [Keycloak API: RoleRepresentation](
+         https://www.keycloak.org/docs-api/11.0/rest-api/#_rolerepresentation)
       tags: [auth]
       operationId: rhub.api.auth.role.create_role
       requestBody:
-        $ref: '#/components/requestBodies/auth_role_post'
+        $ref: '#/components/requestBodies/role_post'
       responses:
         200:
           description: Success
+          $ref: '#/components/responses/role_get'
         400:
           $ref: '#/components/responses/invalid_request'
         default:
           $ref: '#/components/responses/error'
   /auth/role/{id}:
     get:
-      summary: Get auth role
+      summary: Get role
+      description: |
+        Returns role data including extra fields added by auth database. Data
+        object contains at least properties that are in the schema but also
+        database internal data like `description` and others.
+
+        See [Keycloak API: RoleRepresentation](
+         https://www.keycloak.org/docs-api/11.0/rest-api/#_rolerepresentation)
       tags: [auth]
       operationId: rhub.api.auth.role.get_role
       parameters:
-        - $ref: '#/components/parameters/auth_role_id'
+        - $ref: '#/components/parameters/role_id'
       responses:
         200:
-          $ref: '#/components/responses/auth_role_get'
+          $ref: '#/components/responses/role_get'
         404:
           description: Not found
         default:
           $ref: '#/components/responses/error'
     patch:
-      summary: Update auth role
+      summary: Update role
+      description: |
+        Update role in the database. Returns updated role data including extra
+        fields added by auth database.
+
+        See [Keycloak API: RoleRepresentation](
+         https://www.keycloak.org/docs-api/11.0/rest-api/#_rolerepresentation)
       tags: [auth]
       operationId: rhub.api.auth.role.update_role
       parameters:
-        - $ref: '#/components/parameters/auth_role_id'
+        - $ref: '#/components/parameters/role_id'
       requestBody:
-        $ref: '#/components/requestBodies/auth_role_patch'
+        $ref: '#/components/requestBodies/role_patch'
       responses:
         200:
           description: Success
+          $ref: '#/components/responses/role_get'
         400:
           $ref: '#/components/responses/invalid_request'
         default:
           $ref: '#/components/responses/error'
     delete:
-      summary: Delete auth role
+      summary: Delete role
       tags: [auth]
       operationId: rhub.api.auth.role.delete_role
       parameters:
-        - $ref: '#/components/parameters/auth_role_id'
+        - $ref: '#/components/parameters/role_id'
       responses:
         200:
           description: Success
