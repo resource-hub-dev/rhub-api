@@ -269,6 +269,55 @@ components:
         sub: 743a5375-3513-4749-acb9-1cde1e159e3b
         typ: Bearer
         username: testuser1
+    TowerServer:
+      type: object
+      properties:
+        id:
+          allOf:
+            - $ref: '#/components/schemas/ID'
+            - readOnly: true
+        name:
+          $ref: '#/components/schemas/Name'
+        description:
+          type: string
+        enabled:
+          type: boolean
+        hostname:
+          type: string
+          format: hostname
+        credentials:
+          type: string
+          description: Tower credentials path (Vault mount/path)
+    TowerTemplate:
+      type: object
+      properties:
+        id:
+          description: Internal ID
+          allOf:
+            - $ref: '#/components/schemas/ID'
+            - readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        tower_id:
+          $ref: '#/components/schemas/ID'
+        tower_template_id:
+          description: ID of template in Tower
+          $ref: '#/components/schemas/ID'
+    TowerJob:
+      type: object
+      properties:
+        id:
+          description: Internal ID
+          allOf:
+            - $ref: '#/components/schemas/ID'
+            - readOnly: true
+        tower_id:
+          $ref: '#/components/schemas/ID'
+        tower_job_id:
+          description: ID of job in Tower
+          $ref: '#/components/schemas/ID'
 
   parameters:
     lab_tower_id:
@@ -327,6 +376,27 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/UUID'
+    tower_server_id:
+      name: server_id
+      in: path
+      description: ID of the Tower server
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
+    tower_template_id:
+      name: template_id
+      in: path
+      description: ID of the Tower template
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
+    tower_job_id:
+      name: job_id
+      in: path
+      description: ID of the Tower job
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
 
   requestBodies:
 
@@ -545,6 +615,97 @@ components:
             properties:
               id:
                 $ref: '#/components/schemas/UUID'
+    tower_server_post:
+      description: Tower Server
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/TowerServer'
+              - required:
+                  - name
+                  - hostname
+                  - credentials
+          example:
+            name: default
+            hostname: tower.example.com
+            credentials: kv/tower/prod/rhub
+    tower_server_patch:
+      description: Tower Server properties to update
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TowerServer'
+          example:
+            description: Default Tower server
+    tower_server_id:
+      description: Tower Server ID
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                $ref: '#/components/schemas/ID'
+    tower_template_post:
+      description: Tower Template
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/TowerTemplate'
+              - required:
+                  - name
+                  - tower_id
+                  - tower_template_id
+          example:
+            name: Create OpenStack project
+            tower_id: 1
+            tower_template_id: 123
+    tower_template_patch:
+      description: Tower Template properties to update
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TowerServer'
+          example:
+            description: Template to create a new project in OpenStack
+    tower_template_id:
+      description: Tower Template ID
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                $ref: '#/components/schemas/ID'
+    tower_template_launch:
+      description: Tower Template launch parameters
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              extra_vars:
+                type: object
+                description: Extra variable to pass to the template
+          example:
+            extra_vars:
+              project_name: example-project
+              project_owner: example-user
 
   responses:
 
@@ -691,6 +852,48 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/AuthTokenInfo'
+    tower_server_get:
+      description: Tower Server
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TowerServer'
+    tower_server_list:
+      description: List of Tower Server
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/TowerServer'
+    tower_template_get:
+      description: Tower Template
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TowerTemplate'
+    tower_template_list:
+      description: List of Tower Template
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/TowerTemplate'
+    tower_job_get:
+      description: Tower Job
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TowerJob'
+    tower_job_list:
+      description: List of Tower Jobs
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/TowerJob'
 
   securitySchemes:
     basic:
@@ -1597,3 +1800,180 @@ paths:
           $ref: '#/components/responses/error'
       security:
         - oauth2: []
+  /tower/server:
+    get:
+      summary: Get list of Tower servers
+      operationId: rhub.api.tower.list_servers
+      tags: [tower]
+      responses:
+        200:
+          $ref: '#/components/responses/tower_server_list'
+        default:
+          $ref: '#/components/responses/error'
+    post:
+      summary: Create Tower server
+      operationId: rhub.api.tower.create_server
+      tags: [tower]
+      requestBody:
+        $ref: '#/components/requestBodies/tower_server_post'
+      responses:
+        200:
+          $ref: '#/components/responses/tower_server_get'
+        default:
+          $ref: '#/components/responses/error'
+  /tower/server/{server_id}:
+    get:
+      summary: Get Tower server
+      operationId: rhub.api.tower.get_server
+      tags: [tower]
+      parameters:
+        - $ref: '#/components/parameters/tower_server_id'
+      responses:
+        200:
+          $ref: '#/components/responses/tower_server_get'
+        default:
+          $ref: '#/components/responses/error'
+    patch:
+      summary: Change Tower server
+      operationId: rhub.api.tower.update_server
+      tags: [tower]
+      parameters:
+        - $ref: '#/components/parameters/tower_server_id'
+      requestBody:
+        $ref: '#/components/requestBodies/tower_server_patch'
+      responses:
+        200:
+          $ref: '#/components/responses/tower_server_get'
+        default:
+          $ref: '#/components/responses/error'
+    delete:
+      operationId: rhub.api.tower.delete_server
+      tags: [tower]
+      parameters:
+        - $ref: '#/components/parameters/tower_server_id'
+      responses:
+        200:
+          description: Success
+        default:
+          $ref: '#/components/responses/error'
+  /tower/template:
+    get:
+      summary: Get list of Tower templates
+      operationId: rhub.api.tower.list_templates
+      tags: [tower]
+      responses:
+        200:
+          $ref: '#/components/responses/tower_template_list'
+        default:
+          $ref: '#/components/responses/error'
+    post:
+      summary: Create Tower template
+      operationId: rhub.api.tower.create_template
+      tags: [tower]
+      requestBody:
+        $ref: '#/components/requestBodies/tower_template_post'
+      responses:
+        200:
+          $ref: '#/components/responses/tower_template_get'
+        default:
+          $ref: '#/components/responses/error'
+  /tower/template/{template_id}:
+    get:
+      summary: Get Tower template
+      operationId: rhub.api.tower.get_template
+      tags: [tower]
+      parameters:
+        - $ref: '#/components/parameters/tower_template_id'
+      responses:
+        200:
+          $ref: '#/components/responses/tower_template_get'
+        default:
+          $ref: '#/components/responses/error'
+    patch:
+      summary: Change Tower template
+      operationId: rhub.api.tower.update_template
+      tags: [tower]
+      parameters:
+        - $ref: '#/components/parameters/tower_template_id'
+      requestBody:
+        $ref: '#/components/requestBodies/tower_template_patch'
+      responses:
+        200:
+          $ref: '#/components/responses/tower_template_get'
+        default:
+          $ref: '#/components/responses/error'
+    delete:
+      summary: Delete Tower template
+      operationId: rhub.api.tower.delete_template
+      tags: [tower]
+      parameters:
+        - $ref: '#/components/parameters/tower_template_id'
+      responses:
+        200:
+          description: success
+        default:
+          $ref: '#/components/responses/error'
+  /tower/template/{template_id}/launch:
+    post:
+      summary: Launch Tower template
+      operationId: rhub.api.tower.launch_template
+      tags: [tower]
+      parameters:
+        - $ref: '#/components/parameters/tower_template_id'
+      requestBody:
+        $ref: '#/components/requestBodies/tower_template_launch'
+      responses:
+        200:
+          $ref: '#/components/responses/tower_job_get'
+        default:
+          $ref: '#/components/responses/error'
+  /tower/job:
+    get:
+      summary: List Tower jobs
+      operationId: rhub.api.tower.list_jobs
+      tags: [tower]
+      responses:
+        200:
+          $ref: '#/components/responses/tower_job_list'
+        default:
+          $ref: '#/components/responses/error'
+  /tower/job/{job_id}:
+    get:
+      summary: Get Tower job
+      operationId: rhub.api.tower.get_job
+      tags: [tower]
+      parameters:
+        - $ref: '#/components/parameters/tower_job_id'
+      responses:
+        200:
+          $ref: '#/components/responses/tower_job_get'
+        default:
+          $ref: '#/components/responses/error'
+  /tower/job/{job_id}/relaunch:
+    post:
+      summary: Re-launch Tower job
+      operationId: rhub.api.tower.relaunch_job
+      tags: [tower]
+      parameters:
+        - $ref: '#/components/parameters/tower_job_id'
+      responses:
+        200:
+          $ref: '#/components/responses/tower_job_get'
+        default:
+          $ref: '#/components/responses/error'
+  /tower/job/{job_id}/stdout:
+    get:
+      summary: Get stdout of Tower job
+      operationId: rhub.api.tower.get_job_stdout
+      tags: [tower]
+      parameters:
+        - $ref: '#/components/parameters/tower_job_id'
+      responses:
+        200:
+          description: Ansible output
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/error'
