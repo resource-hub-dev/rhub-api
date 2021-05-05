@@ -2,6 +2,7 @@ default:
 
 init:
 	-cp -n .env.defaults .env
+	FLASK_APP='rhub.api:create_app()' flask init-db
 
 build:
 	docker build -t quay.io/resource-hub-dev/rhub-api --no-cache --force-rm .

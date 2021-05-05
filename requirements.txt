@@ -2,3 +2,9 @@ gunicorn
 connexion[swagger-ui]
 flask-cors
 python-keycloak
+flask-sqlalchemy
+psycopg2-binary
+pyyaml
+hvac
+requests
+attrs
