@@ -2,20 +2,10 @@ import base64
 
 import pytest
 
-from rhub.api import create_app
 from rhub.auth.keycloak import KeycloakClient
 
 
 API_BASE = '/v0'
-
-
-@pytest.fixture
-def client():
-    app = create_app()
-    flask_app = app.app
-
-    with flask_app.test_client() as client:
-        yield client
 
 
 @pytest.fixture
