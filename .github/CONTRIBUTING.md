@@ -20,6 +20,7 @@ To send a pull request:
 * Fork the project
 * Make sure a bug report / feature request / question was previously opened so it can be related and validated
 * Commit your changes. Please provide concise commits, with a reasonable and descriptive commit message.
+* For every significative change, provide a changelog / release note entry using [reno](https://docs.openstack.org/reno/latest/)<sup>[*](#renofootnote)</sup>.
 * Follow the pull request template, making sure to provide as much information as needed.
 
 Pull requests will be accepted when, and only when:
@@ -31,3 +32,7 @@ If the commit message(s) need to be adjusted or clarified, the team may `squash`
 ### Questions and contact
 
 If you have any further questions or comments, feel free to reach us at [resource-hub-dev@redhat.com](mailto:resource-hub-dev@redhat.com)
+
+---
+
+<a name="renofootnote">*</a>: For reference about creating release notes, refer to the [reno user guide](https://docs.openstack.org/reno/latest/user/usage.html#creating-new-release-notes)
