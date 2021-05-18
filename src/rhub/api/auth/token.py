@@ -1,9 +1,11 @@
 import logging
 
-from flask import request, Response
+from flask import request
+from connexion import problem
 from keycloak import KeycloakGetError
 
 from rhub.api import get_keycloak
+from rhub.auth.keycloak import problem_from_keycloak_error
 
 
 logger = logging.getLogger(__name__)
@@ -25,15 +27,15 @@ def get_token_info():
         return get_keycloak().token_info(access_token), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def create_token():
     if not request.authorization:
-        return {'error': 'Missing credentials'}, 400
+        return problem(401, 'Unauthorized', 'Missing basic auth credentials')
 
     username = request.authorization['username']
     password = request.authorization['password']
@@ -42,26 +44,26 @@ def create_token():
         return get_keycloak().login(username, password), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def refresh_token():
     if 'Authorization' not in request.headers:
-        return {'error': 'Missing token'}, 400
+        return problem(401, 'Unauthorized', 'Missing refresh token')
 
     try:
         _, refresh_token = request.headers['Authorization'].split()
     except Exception:
-        return {'error': 'Invalid token'}, 400
+        return problem(401, 'Unauthorized', 'Invalid token')
 
     try:
         return get_keycloak().token_refresh(refresh_token), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))

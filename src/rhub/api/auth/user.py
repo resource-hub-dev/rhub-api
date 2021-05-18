@@ -1,9 +1,11 @@
 import logging
 
-from flask import Response, request
+from flask import request
+from connexion import problem
 from keycloak import KeycloakGetError
 
 from rhub.api import get_keycloak
+from rhub.auth.keycloak import problem_from_keycloak_error
 
 
 logger = logging.getLogger(__name__)
@@ -14,10 +16,10 @@ def list_users():
         return get_keycloak().user_list({}), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def create_user(body):
@@ -27,10 +29,10 @@ def create_user(body):
         return get_keycloak().user_get(user_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def get_user(id):
@@ -38,10 +40,10 @@ def get_user(id):
         return get_keycloak().user_get(id), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def update_user(id, body):
@@ -51,10 +53,10 @@ def update_user(id, body):
         return get_keycloak().user_get(id), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def delete_user(id):
@@ -64,10 +66,10 @@ def delete_user(id):
         return {}, 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def list_user_groups(id):
@@ -75,10 +77,10 @@ def list_user_groups(id):
         return get_keycloak().user_group_list(id), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def add_user_group(id, body):
@@ -87,10 +89,10 @@ def add_user_group(id, body):
         return {}, 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def delete_user_group(id):
@@ -99,10 +101,10 @@ def delete_user_group(id):
         return {}, 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def list_user_roles(id):
@@ -122,7 +124,7 @@ def get_current_user(user):
         return get_keycloak().user_get(user), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))

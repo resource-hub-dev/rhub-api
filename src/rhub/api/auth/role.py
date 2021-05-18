@@ -1,9 +1,10 @@
 import logging
 
-from flask import Response
+from connexion import problem
 from keycloak import KeycloakGetError
 
 from rhub.api import get_keycloak
+from rhub.auth.keycloak import problem_from_keycloak_error
 
 
 logger = logging.getLogger(__name__)
@@ -17,10 +18,10 @@ def list_roles():
         return get_keycloak().role_list(), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def create_role(body):
@@ -30,10 +31,10 @@ def create_role(body):
         return get_keycloak().role_get(role_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def get_role(id):
@@ -41,10 +42,10 @@ def get_role(id):
         return get_keycloak().role_get(id), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def update_role(id, body):
@@ -55,10 +56,10 @@ def update_role(id, body):
         return get_keycloak().role_get(role_name), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def delete_role(id):
@@ -68,7 +69,7 @@ def delete_role(id):
         return {}, 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))

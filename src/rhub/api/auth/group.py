@@ -1,9 +1,10 @@
 import logging
 
-from flask import Response
+from connexion import problem
 from keycloak import KeycloakGetError
 
 from rhub.api import get_keycloak
+from rhub.auth.keycloak import problem_from_keycloak_error
 
 
 logger = logging.getLogger(__name__)
@@ -14,10 +15,10 @@ def list_groups():
         return get_keycloak().group_list(), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def create_group(body):
@@ -27,10 +28,10 @@ def create_group(body):
         return get_keycloak().group_get(group_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def get_group(id):
@@ -38,10 +39,10 @@ def get_group(id):
         return get_keycloak().group_get(id), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def update_group(id, body):
@@ -51,10 +52,10 @@ def update_group(id, body):
         return get_keycloak().group_get(id), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def delete_group(id):
@@ -64,10 +65,10 @@ def delete_group(id):
         return {}, 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def list_group_users(id):
@@ -75,10 +76,10 @@ def list_group_users(id):
         return get_keycloak().group_user_list(id), 200
     except KeycloakGetError as e:
         logger.exception(e)
-        return Response(e.response_body, e.response_code)
+        return problem_from_keycloak_error(e)
     except Exception as e:
         logger.exception(e)
-        return {'error': str(e)}, 400
+        return problem(500, 'Unknown Error', str(e))
 
 
 def list_group_roles(id):

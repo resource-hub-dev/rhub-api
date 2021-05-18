@@ -1,3 +1,6 @@
+import json
+
+from connexion import problem
 from keycloak import KeycloakOpenID, KeycloakAdmin
 
 
@@ -117,3 +120,18 @@ class KeycloakClient:
 
     def role_delete(self, role_id):
         self.admin.delete_realm_role(role_id)
+
+
+def problem_from_keycloak_error(e):
+    """Utility to create `connexion.problem` from `KeycloakError` exception."""
+    detail = e.response_body.decode()
+    ext = None
+    try:
+        ext = json.loads(detail)
+        if 'message' in ext:
+            detail = ext.pop('message')
+        elif 'error' in ext:
+            detail = ext.pop('error')
+    except json.JSONDecodeError:
+        pass
+    return problem(e.response_code, 'Keycloak Error', detail, ext=ext)
