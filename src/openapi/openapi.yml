@@ -18,14 +18,6 @@ components:
       type: string
       pattern: '^\w+$'
 
-    Error:
-      type: object
-      required:
-        - error
-      properties:
-        error:
-          type: string
-
     Quota:
       type: object
       properties:
@@ -788,20 +780,6 @@ components:
             "type": "about:blank"
           }
 
-    error:
-      description: Error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-        '*/*': {}
-    invalid_request:
-      description: Invalid request error (eg. missing required fields, integrity constraint violation).
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
     lab_tower_get:
       description: Tower
       content:
@@ -1039,7 +1017,7 @@ paths:
         200:
           $ref: '#/components/responses/lab_tower_list'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     post:
       summary: Create tower
       tags: [lab]
@@ -1049,10 +1027,8 @@ paths:
       responses:
         200:
           description: Success
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /lab/tower/{id}:
     get:
       summary: Get tower
@@ -1066,7 +1042,7 @@ paths:
         404:
           description: Not found
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     patch:
       summary: Update tower
       tags: [lab]
@@ -1078,10 +1054,8 @@ paths:
       responses:
         200:
           description: Success
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     delete:
       summary: Delete tower
       tags: [lab]
@@ -1092,7 +1066,7 @@ paths:
         200:
           description: Success
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /lab/region:
     get:
       summary: Get region list
@@ -1102,7 +1076,7 @@ paths:
         200:
           $ref: '#/components/responses/lab_region_list'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     post:
       summary: Create region
       tags: [lab]
@@ -1112,10 +1086,8 @@ paths:
       responses:
         200:
           description: Success
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /lab/region/{id}:
     get:
       summary: Get region
@@ -1129,7 +1101,7 @@ paths:
         404:
           description: Not found
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     patch:
       summary: Update region
       tags: [lab]
@@ -1141,10 +1113,8 @@ paths:
       responses:
         200:
           description: Success
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     delete:
       summary: Delete region
       tags: [lab]
@@ -1155,7 +1125,7 @@ paths:
         200:
           description: Success
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /lab/region/{id}/templates:
     get:
       summary: Get templates available on region
@@ -1167,7 +1137,7 @@ paths:
         200:
           $ref: '#/components/responses/lab_template_list'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     post:
       summary: Add template to region
       tags: [lab]
@@ -1179,10 +1149,8 @@ paths:
       responses:
         200:
           description: Success
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     delete:
       summary: Remove template from region
       tags: [lab]
@@ -1195,7 +1163,7 @@ paths:
         200:
           description: Success
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /lab/template:
     get:
       summary: Get template list
@@ -1205,7 +1173,7 @@ paths:
         200:
           $ref: '#/components/responses/lab_template_list'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     post:
       summary: Create template
       tags: [lab]
@@ -1215,10 +1183,8 @@ paths:
       responses:
         200:
           description: Success
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /lab/template/{id}:
     get:
       summary: Get template
@@ -1232,7 +1198,7 @@ paths:
         404:
           description: Not found
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     patch:
       summary: Update template
       tags: [lab]
@@ -1244,10 +1210,8 @@ paths:
       responses:
         200:
           description: Success
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     delete:
       summary: Delete template
       tags: [lab]
@@ -1258,7 +1222,7 @@ paths:
         200:
           description: Success
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /lab/template/{id}/bundles:
     get:
       summary: Get bundles available for template
@@ -1270,7 +1234,7 @@ paths:
         200:
           $ref: '#/components/responses/lab_bundle_list'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     post:
       summary: Add bundle to template
       tags: [lab]
@@ -1282,10 +1246,8 @@ paths:
       responses:
         200:
           description: Success
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     delete:
       summary: Remove bundle from template
       tags: [lab]
@@ -1298,7 +1260,7 @@ paths:
         200:
           description: Success
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /lab/bundle:
     get:
       summary: Get bundle list
@@ -1308,7 +1270,7 @@ paths:
         200:
           $ref: '#/components/responses/lab_bundle_list'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     post:
       summary: Create bundle
       tags: [lab]
@@ -1318,10 +1280,8 @@ paths:
       responses:
         200:
           description: Success
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /lab/bundle/{id}:
     get:
       summary: Get bundle
@@ -1335,7 +1295,7 @@ paths:
         404:
           description: Not found
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     patch:
       summary: Update bundle
       tags: [lab]
@@ -1347,10 +1307,8 @@ paths:
       responses:
         200:
           description: Success
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     delete:
       summary: Delete bundle
       tags: [lab]
@@ -1361,7 +1319,7 @@ paths:
         200:
           description: Success
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /lab/cluster:
     get:
       summary: Get cluster list
@@ -1371,7 +1329,7 @@ paths:
         200:
           $ref: '#/components/responses/lab_cluster_list'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     post:
       summary: Create cluster
       tags: [lab]
@@ -1381,10 +1339,8 @@ paths:
       responses:
         200:
           description: Success
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /lab/cluster/{id}:
     get:
       summary: Get cluster
@@ -1398,7 +1354,7 @@ paths:
         404:
           description: Not found
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     patch:
       summary: Update cluster
       tags: [lab]
@@ -1410,10 +1366,8 @@ paths:
       responses:
         200:
           description: Success
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     delete:
       summary: Delete cluster
       tags: [lab]
@@ -1424,7 +1378,7 @@ paths:
         200:
           description: Success
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /auth/user:
     get:
       summary: Get user list
@@ -1437,7 +1391,7 @@ paths:
         200:
           $ref: '#/components/responses/user_list'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
       security:
         - oauth2: []
     post:
@@ -1456,10 +1410,8 @@ paths:
         200:
           description: User successfully created
           $ref: '#/components/responses/user_get'
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
       security:
         - oauth2: []
   /auth/user/{id}:
@@ -1482,7 +1434,7 @@ paths:
         404:
           description: User not found
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
       security:
         - oauth2: []
     patch:
@@ -1503,10 +1455,8 @@ paths:
         200:
           description: User successfully updated
           $ref: '#/components/responses/user_get'
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
       security:
         - oauth2: []
     delete:
@@ -1519,7 +1469,7 @@ paths:
         200:
           description: User successfully deleted
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
       security:
         - oauth2: []
   /auth/user/{id}/groups:
@@ -1536,7 +1486,7 @@ paths:
         200:
           $ref: '#/components/responses/group_list'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
       security:
         - oauth2: []
     post:
@@ -1550,10 +1500,8 @@ paths:
       responses:
         200:
           description: Success
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
       security:
         - oauth2: []
     delete:
@@ -1568,7 +1516,7 @@ paths:
         200:
           description: Success
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
       security:
         - oauth2: []
   /auth/user/{id}/roles:
@@ -1582,7 +1530,7 @@ paths:
         200:
           $ref: '#/components/responses/role_list'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
       security:
         - oauth2: []
     post:
@@ -1596,10 +1544,8 @@ paths:
       responses:
         200:
           description: Success
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
       security:
         - oauth2: []
     delete:
@@ -1614,7 +1560,7 @@ paths:
         200:
           description: Success
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
       security:
         - oauth2: []
   /auth/group:
@@ -1629,7 +1575,7 @@ paths:
         200:
           $ref: '#/components/responses/group_list'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     post:
       summary: Create group
       description: |
@@ -1646,10 +1592,8 @@ paths:
         200:
           description: Success
           $ref: '#/components/responses/group_get'
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /auth/group/{id}:
     get:
       summary: Get group
@@ -1670,7 +1614,7 @@ paths:
         404:
           description: Not found
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     patch:
       summary: Update group
       description: |
@@ -1689,10 +1633,8 @@ paths:
         200:
           description: Success
           $ref: '#/components/responses/group_get'
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     delete:
       summary: Delete group
       tags: [auth]
@@ -1703,7 +1645,7 @@ paths:
         200:
           description: Success
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /auth/group/{id}/users:
     get:
       summary: Get users in group
@@ -1718,7 +1660,7 @@ paths:
         200:
           $ref: '#/components/responses/user_list'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /auth/group/{id}/roles:
     get:
       summary: Get group roles
@@ -1730,7 +1672,7 @@ paths:
         200:
           $ref: '#/components/responses/role_list'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     post:
       summary: Add group to role
       tags: [auth]
@@ -1742,10 +1684,8 @@ paths:
       responses:
         200:
           description: Success
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     delete:
       summary: Remove group from role
       tags: [auth]
@@ -1758,7 +1698,7 @@ paths:
         200:
           description: Success
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /auth/role:
     get:
       summary: Get role list
@@ -1771,7 +1711,7 @@ paths:
         200:
           $ref: '#/components/responses/role_list'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     post:
       summary: Create role
       description: |
@@ -1788,10 +1728,8 @@ paths:
         200:
           description: Success
           $ref: '#/components/responses/role_get'
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /auth/role/{id}:
     get:
       summary: Get role
@@ -1812,7 +1750,7 @@ paths:
         404:
           description: Not found
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     patch:
       summary: Update role
       description: |
@@ -1831,10 +1769,8 @@ paths:
         200:
           description: Success
           $ref: '#/components/responses/role_get'
-        400:
-          $ref: '#/components/responses/invalid_request'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
     delete:
       summary: Delete role
       tags: [auth]
@@ -1845,7 +1781,7 @@ paths:
         200:
           description: Success
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /auth/token:
     get:
       summary: Get auth token info
@@ -1855,7 +1791,7 @@ paths:
         200:
           $ref: '#/components/responses/auth_token_info'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
       security:
         - oauth2: []
   /auth/token/create:
@@ -1878,7 +1814,7 @@ paths:
         200:
           $ref: '#/components/responses/auth_token'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /auth/token/refresh:
     post:
       summary: Refresh token
@@ -1901,7 +1837,7 @@ paths:
         200:
           $ref: '#/components/responses/auth_token'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
   /me:
     get:
       summary: Get info about logged in user
@@ -1911,7 +1847,7 @@ paths:
         200:
           $ref: '#/components/responses/user_get'
         default:
-          $ref: '#/components/responses/error'
+          $ref: '#/components/responses/problem'
       security:
         - oauth2: []
   /tower/server:
