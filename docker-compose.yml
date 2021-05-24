@@ -12,8 +12,9 @@ services:
       PYTHONDONTWRITEBYTECODE: please
       # don't pollute /opt/app-root/src with home crap
       HOME: /opt/app-root/home
+      RHUB_SKIP_INIT:  # pass env var
     env_file:
       - .env
     ports:
-      - 8081:5000
-    command: ["./bin/connexion"]
+      - 8081:8081
+    command: [./bin/entrypoint.sh]
