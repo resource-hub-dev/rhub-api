@@ -1,4 +1,6 @@
-import logging
+from rhub.api import db
+from rhub.tower import model, client  # noqa: F401
 
 
-logger = logging.getLogger(__name__)
+def init():
+    db.create_all()

@@ -1,6 +1,7 @@
 import os
 import logging
 import urllib.parse
+import importlib
 
 import connexion
 import click
@@ -12,6 +13,9 @@ from flask.cli import with_appcontext
 import rhub
 from rhub.auth.keycloak import KeycloakClient
 from rhub.api.vault import Vault, HashicorpVault, FileVault
+
+
+MODULES = ['auth', 'tower', 'lab']
 
 
 logger = logging.getLogger(__name__)
@@ -53,17 +57,20 @@ def get_vault() -> Vault:
     return g.vault
 
 
-@click.command('init-db')
-@click.option('--recreate', is_flag=True)
-@with_appcontext
-def init_db_command(recreate):
-    # ALL models needs to be imported there to load/register them into the
-    # SQLAchemy.
-    from rhub.tower import model as tower_model  # noqa: F401
+def init_app():
+    logger.info('Starting inititialization...')
+    for name in MODULES:
+        module = importlib.import_module(f'rhub.{name}')
+        if hasattr(module, 'init'):
+            logger.info(f'Initializing "{name}" module...')
+            module.init()
+    logger.info('Initialization finished.')
 
-    if recreate:
-        db.drop_all()
-    db.create_all()
+
+@click.command('init')
+@with_appcontext
+def init_command():
+    init_app()
 
 
 def create_app():
@@ -81,7 +88,7 @@ def create_app():
     # https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
     CORS(flask_app)
 
-    flask_app.cli.add_command(init_db_command)
+    flask_app.cli.add_command(init_command)
 
     flask_app.config['LOG_LEVEL'] = os.getenv('LOG_LEVEL', 'info').upper()
 
