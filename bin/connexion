@@ -1,4 +1,0 @@
-#!/usr/bin/env sh
-set -ex
-FLASK_ENV=development \
-python3 -m rhub.api

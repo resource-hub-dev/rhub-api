@@ -1,3 +1,0 @@
-#!/usr/bin/env sh
-set -ex
-./packages/bin/gunicorn --bind 0.0.0.0:8080 'rhub.api:create_app()'
