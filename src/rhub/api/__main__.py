@@ -1,4 +1,9 @@
-from . import create_app
+from . import create_app, init_app
 
 
-create_app().run()
+app = create_app()
+
+with app.app_context():
+    init_app()
+
+app.run()
