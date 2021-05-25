@@ -101,11 +101,26 @@ class KeycloakClient:
         """Remove user from group."""
         self.admin.group_user_remove(user_id, group_id)
 
+    def group_role_list(self, group_id):
+        data = self.admin.get_group_realm_roles(group_id)
+        return data['realmMappings']
+
+    def group_role_add(self, role_name, group_id):
+        """Add role to group. !! Role NAME, not ID !!"""
+        role = self.role_get(role_name)
+        self.admin.assign_group_realm_roles(group_id, [role])
+
+    def group_role_remove(self, role_name, group_id):
+        """Remove role from group. !! Role NAME, not ID !!"""
+        role = self.role_get(role_name)
+        self.admin.delete_group_realm_roles(group_id, [role])
+
     def role_list(self):
         return self.admin.get_realm_roles()
 
-    def role_get(self, role_id):
-        return self.admin.get_realm_role(role_id)
+    def role_get(self, role_name):
+        """Get role by name. !! NAME, not ID !!"""
+        return self.admin.get_realm_role(role_name)
 
     def role_create(self, data):
         # `create_role` always returns b''
