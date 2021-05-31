@@ -5,7 +5,13 @@ export PATH="./packages/bin:$PATH"
 
 export RHUB_APP='rhub.api:create_app()'
 
-[[ $RHUB_SKIP_INIT = yes ]] \
-    || FLASK_APP="$RHUB_APP" python3 -m flask init
+if [[ $RHUB_SKIP_INIT != yes ]] ; then
+    FLASK_APP="$RHUB_APP" \
+        dockerize -wait tcp://$DB_HOST:$DB_PORT \
+        python3 -m flask init
+fi
 
-exec gunicorn --bind 0.0.0.0:8081 "$RHUB_APP"
+exec dockerize \
+    -wait tcp://$DB_HOST:$DB_PORT \
+    -wait ${KEYCLOAK_SERVER}realms/$KEYCLOAK_REALM \
+    gunicorn --bind 0.0.0.0:8081 "$RHUB_APP"
