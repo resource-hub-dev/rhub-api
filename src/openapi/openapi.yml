@@ -351,16 +351,102 @@ components:
         started_at:
           type: string
           format: date-time
-          x-nullabe: true
+          x-nullable: true
         finished:
           type: boolean
         finished_at:
           type: string
           format: date-time
-          x-nullabe: true
+          x-nullable: true
         failed:
           type: boolean
 
+    TowerWebhookNotification:
+      type: object
+      properties:
+        id:
+          description: jobId
+          type: integer
+        name:
+          description: jobName
+          type: string
+        url:
+          description: URL to Job on Tower
+          type: string
+        created_by:
+          $ref: '#/components/schemas/UUID'
+        started:
+          description: Date/Time job started
+          type: string
+          format: date-time
+          x-nullable: true
+        finished:
+          description: Date/Time job finished
+          type: string
+          format: date-time
+          x-nullable: true
+        status:
+          description: Job status
+          type: string
+        traceback:
+          description: Traceback if failed
+          type: string
+          x-nullable: true
+        inventory:
+          description: Inventory used by Job
+          type: string
+          x-nullable: true
+        project:
+          description: Project job belongs to
+          type: string
+          x-nullable: true
+        playbook:
+          description: Playbook executed in Job
+          type: string
+          x-nullable: true
+        credential:
+          description: Credential used by Job
+          type: string
+          x-nullable: true
+        limit:
+          description: Job limit
+          type: string
+          x-nullable: true
+        extra_vars:
+          type: string
+          description: Extra variables for playbook encoded as a dictionary within a string
+          x-nullable: true
+        hosts:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              localhost:
+                type: object
+                properties:
+                  failed:
+                    type: boolean
+                  changed:
+                    type: integer
+                  dark:
+                    type: integer
+                  failures:
+                    type: integer
+                  ok:
+                    type: integer
+                  processed:
+                    type: integer
+                  skipped:
+                    type: integer
+                  rescued:
+                    type: integer
+                  ignored:
+                    type: integer
+          x-nullable: true
+        body:
+          type: string
+          description: Enumerates all the nodes in the workflow job with a description of the job associated with each
+          x-nullable: true
   parameters:
     lab_tower_id:
       name: id
@@ -441,6 +527,14 @@ components:
         $ref: '#/components/schemas/ID'
 
   requestBodies:
+
+    tower_webhook_notification_post:
+      description: Webhook notification from Tower
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TowerWebhookNotification'
 
     lab_tower_post:
       description: Tower
@@ -974,6 +1068,10 @@ components:
       bearerFormat: Bearer
       x-bearerInfoFunc: rhub.api.auth.token.decode_token
       x-tokenInfoFunc: rhub.api.auth.token.get_token_info
+    tower_webhook_notification_auth:
+      type: http
+      scheme: basic
+      x-basicInfoFunc: rhub.api.tower.webhook_auth
 
 tags:
   - name: lab
@@ -2071,3 +2169,17 @@ paths:
           $ref: '#/components/responses/problem'
       security:
         - oauth2: []
+  /tower/webhook_notification:
+    post:
+      summary: Incoming webhook notification from Tower
+      tags: [tower]
+      operationId: rhub.api.tower.webhook_notification
+      requestBody:
+        $ref: '#/components/requestBodies/tower_webhook_notification_post'
+      responses:
+        200:
+          description: Success
+        default:
+          $ref: '#/components/responses/problem'
+      security:
+        - tower_webhook_notification_auth: []
