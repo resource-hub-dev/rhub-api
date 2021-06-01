@@ -2,6 +2,7 @@ default:
 
 init:
 	-cp -n .env.defaults .env
+	-cp -n data/vault.example.yml data/vault.yml
 
 build:
 	docker build -t quay.io/resource-hub-dev/rhub-api --no-cache --force-rm .
