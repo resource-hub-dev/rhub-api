@@ -1,7 +1,8 @@
 import logging
 
-from flask import Response
+from flask import Response, request, current_app
 from connexion import problem
+from werkzeug.exceptions import Unauthorized
 
 from rhub.tower import model
 from rhub.tower.client import TowerError
@@ -282,3 +283,58 @@ def get_job_stdout(job_id):
     except Exception as e:
         logger.exception(e)
         return problem(500, 'Server Error', 'Uknown server error, {e}')
+
+
+def webhook_auth(username, password, required_scopes=None):
+    # Tower offers sending 'basic' auth credentials to protect access
+    # to the webhook_notification() endpoint.  The credentials are
+    # defined/stored in Vault.
+
+    try:
+        if (username == current_app.config['WEBHOOK_USER']
+                and password == current_app.config['WEBHOOK_PASS']):
+            return {'sub': 'webhook'}    # successful authentication
+
+    except KeyError as e:
+        logger.exception('Missing tower webhook notification credential(s)'
+                         f' {e}; notification ignored')
+
+    logger.warning('Incorrect tower webhook notification credentials supplied;'
+                   ' notification ignored')
+
+    raise Unauthorized('Incorrect tower webhook notification credentials'
+                       ' supplied')
+
+
+def webhook_notification():
+    # See Tower notification documentation for additional information:
+    #   https://docs.ansible.com/ansible-tower/latest/html/userguide/
+    #       notifications.html#webhook
+
+    # 1) This function should receive the notification payload from Tower [done]
+    # 2) Process the payload data: [tbd]
+    #     Possibly match on the jobId returned in the payload with a jobId
+    #     linked to a cluster stored in the DB?
+    #      - get_cluster_info(id) [if more information on the cluster is needed]
+    # 3) Notify the user of an event: [tbd]
+    #      - app.io.emit(popup_message,data)
+    #      - update_cluster_status(id)  [database operation]
+    #      - send_email(user.email, message) or submit the notification to Hydra?
+
+    # inspect json payload to ensure certain fields are present
+    try:
+        jobId = request.json['id']
+        jobStatus = request.json['status']
+    except Exception as e:
+        logger.exception(f'Unexpected tower webhook notification json; missing {e}')
+        return problem(400, 'Unexpected tower webhook notification json',
+                            'JSON payload missing required field(s)',
+                            ext={'missing': str(e)})
+
+    logger.info(f'Received a notification from tower {jobId, jobStatus}')
+
+    # Notify the user that something has occurred...
+    # Do something here...TBD...
+    pass
+
+    return Response(status=200)

@@ -73,6 +73,13 @@ file.
 * `VAULT_TYPE=file`
 * `VAULT_PATH` - path to YAML file with secrets, see example in `data/vault.yml`
 
+Credentials are required to allow Tower Webhook Notifications to be
+received by the API.  The path to the credentials in vault must be
+specified using the variable below.  Don't forget to add the credentials to
+vault, see example in `data/vault.yml`
+
+* `WEBHOOK_VAULT_PATH`
+
 ## Contributing
 
 If you want to contribute to our project, you are more then welcome - just check our [contributing guide](.github/CONTRIBUTING.md).

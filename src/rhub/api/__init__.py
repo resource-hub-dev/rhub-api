@@ -99,6 +99,8 @@ def create_app():
     flask_app.config['KEYCLOAK_ADMIN_USER'] = os.getenv('KEYCLOAK_ADMIN_USER')
     flask_app.config['KEYCLOAK_ADMIN_PASS'] = os.getenv('KEYCLOAK_ADMIN_PASS')
 
+    flask_app.config['WEBHOOK_VAULT_PATH'] = os.getenv('WEBHOOK_VAULT_PATH')
+
     # DB_TYPE can be 'postgresq', 'postgresql+psycopg', ... any postgres
     # implementation.
     if 'postgresql' not in os.environ.get('DB_TYPE', ''):
@@ -145,10 +147,27 @@ def create_app():
     # Try to create vault client and report errors.
     try:
         with flask_app.app_context():
-            get_vault()
+            vault = get_vault()
     except Exception as e:
         logger.warning(
             f'Failed to create {flask_app.config["VAULT_TYPE"]} vault instance {e!s}.'
+        )
+
+    # Try to retrieve Tower notification webhook creds from vault
+    try:
+        with flask_app.app_context():
+            webhookCreds = vault.read(current_app.config['WEBHOOK_VAULT_PATH'])
+            if (webhookCreds):
+                flask_app.config['WEBHOOK_USER'] = webhookCreds['username']
+                flask_app.config['WEBHOOK_PASS'] = webhookCreds['password']
+            else:
+                logger.error('Missing tower webhook notification credentials')
+                raise Exception('Missing tower webhook notification credentials')
+
+    except Exception as e:
+        logger.warning(
+            'Failed to load {flask_app.config["WEBHOOK_VAULT_PATH"]} tower'
+            f' webhook notification credentials {e!s}.'
         )
 
     return flask_app
