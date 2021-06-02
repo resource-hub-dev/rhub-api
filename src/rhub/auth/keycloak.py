@@ -103,6 +103,8 @@ class KeycloakClient:
 
     def group_role_list(self, group_id):
         data = self.admin.get_group_realm_roles(group_id)
+        if not data:
+            return []
         return data['realmMappings']
 
     def group_role_add(self, role_name, group_id):
