@@ -17,6 +17,8 @@ from rhub.api.vault import Vault, HashicorpVault, FileVault
 
 MODULES = ['auth', 'tower', 'lab']
 
+ADMIN_ROLE = 'rhub-admin'
+
 
 logger = logging.getLogger(__name__)
 

@@ -69,6 +69,35 @@ class KeycloakClient:
         """Get list of groups user belongs to."""
         return self.admin.get_user_groups(user_id)
 
+    def user_role_list(self, user_id):
+        """
+        Get set of all user roles !! ROLE NAMES !!, directly assigned and also
+        inherited from a group.
+        """
+        roles = set()
+
+        # directly assigned roles
+        roles = {i['name'] for i in self.admin.get_realm_roles_of_user(user_id)}
+
+        # iherited roles from group
+        for group in self.user_group_list(user_id):
+            roles |= {i['name'] for i in self.admin.get_group_realm_roles(group['id'])}
+
+        return roles
+
+    def user_check_group(self, user_id, group_id):
+        """Check if user belongs to the given group."""
+        return self.user_check_group_any(user_id, [group_id])
+
+    def user_check_group_any(self, user_id, group_id_list):
+        """Check if user belongs to any of the given groups."""
+        return any(group['id'] in group_id_list
+                   for group in self.user_group_list(user_id))
+
+    def user_check_role(self, user_id, role_name):
+        """Check if user has role."""
+        return role_name in self.user_role_list(user_id)
+
     def group_list(self):
         return self.admin.get_groups()
 
