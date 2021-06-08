@@ -65,24 +65,56 @@ components:
             - $ref: '#/components/schemas/ID'
             - readOnly: true
         name:
-          $ref: '#/components/schemas/Name'
+          type: string
+          maxLength: 32
+        location:
+          description: Geographical location of region.
+          type: string
+          maxLength: 32
+          nullable: true
         description:
+          type: string
+        banner:
           type: string
         enabled:
           type: boolean
         reservations_enabled:
           type: boolean
-        lifespans_enabled:
-          type: boolean
-        lifespans_length:
+        lifespan_length:
           type: integer
           minimum: 1
-        shared:
-          type: boolean
-        quota_enabled:
-          type: boolean
+          nullable: true
         quota:
-          $ref: '#/components/schemas/Quota'
+          anyOf:
+            - $ref: '#/components/schemas/Quota'
+            - nullable: true
+        owner_group:
+          type: string
+          format: uuid
+          readOnly: true
+        users_group:
+          type: string
+          format: uuid
+          nullable: true
+        tower_id:
+          $ref: '#/components/schemas/ID'
+      example:
+        id: 1
+        name: rdu2-a
+        location: RDU
+        description: ''
+        banner: ''
+        enabled: true
+        reservation_enabled: true
+        lifespan_length: 60
+        quota:
+          num_vcpus: 40
+          ram_mb: 200000
+          num_volumes: 40
+          volumes_gb: 540
+        owner_group: 7670ac07-cb21-448d-af8a-6e3882216be3
+        users_group: null
+        tower_id: 1
     LabCluster:
       type: object
       properties:
@@ -103,11 +135,14 @@ components:
         template_id:
           $ref: '#/components/schemas/ID'
         reservation_expiration:
-          type: number
-          description: UNIX timestamp
+          type: string
+          format: date-time
+          description: Soft-limit expiration.
         lifespan_expiration:
-          type: number
-          description: UNIX timestamp
+          type: string
+          format: date-time
+          readOnly: true
+          description: Hard-limit expiration.
     LabTemplate:
       type: object
       properties:
@@ -613,7 +648,12 @@ components:
           schema:
             $ref: '#/components/schemas/LabTower'
     lab_region_post:
-      description: Region
+      description: |
+        `quota` and `lifespan` can be set to `null` to provide unlimited access
+        to the region.
+
+        `users_group` limits region to a selected group of users, if the value
+        is `null` any user can use region.
       required: true
       content:
         application/json:
@@ -623,13 +663,34 @@ components:
               - $ref: '#/components/schemas/LabRegion'
               - required:
                   - name
+                  - tower_id
+          example:
+            name: rdu2-a
+            location: RDU
+            enabled: true
+            reservation_enabled: true
+            lifespan_length: 60
+            quota:
+              num_vcpus: 40
+              ram_mb: 200000
+              num_volumes: 40
+              volumes_gb: 540
+            tower_id: 1
     lab_region_patch:
-      description: Region properties to update
+      description: |
+        Region properties to update.
       required: true
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/LabRegion'
+          example:
+            lifespan_length: 60
+            quota:
+              num_vcpus: 40
+              ram_mb: 200000
+              num_volumes: 40
+              volumes_gb: 500
     lab_cluster_post:
       description: Cluster
       required: true
@@ -1287,8 +1348,13 @@ paths:
           $ref: '#/components/responses/lab_region_list'
         default:
           $ref: '#/components/responses/problem'
+      security:
+        - oauth2: []
     post:
       summary: Create region
+      description: |
+        See [create cluster endpoint](#/lab/rhub.api.lab.cluster.create_cluster)
+        for more info how reservation, lifespan, and other properties affects clusters.
       tags: [lab]
       operationId: rhub.api.lab.region.create_region
       requestBody:
@@ -1298,6 +1364,8 @@ paths:
           description: Success
         default:
           $ref: '#/components/responses/problem'
+      security:
+        - oauth2: []
   /lab/region/{id}:
     get:
       summary: Get region
@@ -1312,6 +1380,8 @@ paths:
           description: Not found
         default:
           $ref: '#/components/responses/problem'
+      security:
+        - oauth2: []
     patch:
       summary: Update region
       tags: [lab]
@@ -1325,6 +1395,8 @@ paths:
           description: Success
         default:
           $ref: '#/components/responses/problem'
+      security:
+        - oauth2: []
     delete:
       summary: Delete region
       tags: [lab]
@@ -1336,6 +1408,8 @@ paths:
           description: Success
         default:
           $ref: '#/components/responses/problem'
+      security:
+        - oauth2: []
   /lab/region/{id}/templates:
     get:
       summary: Get templates available on region
@@ -1542,6 +1616,18 @@ paths:
           $ref: '#/components/responses/problem'
     post:
       summary: Create cluster
+      description: |
+        When the Reservation System is enabled in a region, a new cluster in
+        that region will be required to select the length of the reservation in
+        `reservation_expiration` field. Reservation sets soft-limit on cluster,
+        when reservation expires cluster will be scheduled for deletion.
+
+        When the Lifespan System is enabled in a region, `lifespan_expiration`
+        date will automatically be applied to the cluster by backend at time of
+        creation. The date is configured on region. Unlike the reservation
+        expiration, lifespan is hard-limit and this date can not be set nor
+        modified once cluster is created. When livespan expires cluster will be
+        unconditionally scheduled for deletion
       tags: [lab]
       operationId: rhub.api.lab.cluster.create_cluster
       requestBody:
@@ -1567,6 +1653,8 @@ paths:
           $ref: '#/components/responses/problem'
     patch:
       summary: Update cluster
+      description: |
+        See [create cluster endpoint](#/lab/rhub.api.lab.cluster.create_cluster) for more info.
       tags: [lab]
       operationId: rhub.api.lab.cluster.update_cluster
       parameters:

@@ -2,7 +2,8 @@ import logging
 
 import retrying
 
-from rhub.api import get_keycloak
+from rhub.api import db, get_keycloak
+from rhub.lab import model  # noqa: F401
 
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,8 @@ logger = logging.getLogger(__name__)
 # start.
 @retrying.retry(stop_max_attempt_number=3, wait_fixed=5000)
 def init():
+    db.create_all()
+
     keycloak = get_keycloak()
 
     groups = {group['name']: group for group in keycloak.group_list()}
