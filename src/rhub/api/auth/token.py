@@ -2,6 +2,7 @@ import logging
 
 from flask import request
 from connexion import problem
+from werkzeug.exceptions import Unauthorized
 from keycloak import KeycloakGetError
 
 from rhub.api import get_keycloak
@@ -12,7 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 def decode_token(token):
-    return get_keycloak().token_info(token)
+    token = get_keycloak().token_info(token)
+    if not token['active']:
+        raise Unauthorized('Token is not valid')
+    return token
 
 
 def basic_auth(username, password, required_scopes=None):
