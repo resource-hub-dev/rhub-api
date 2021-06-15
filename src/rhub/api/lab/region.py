@@ -75,10 +75,10 @@ def create_region(body, user):
     return row2dict(region)
 
 
-def get_region(id, user):
-    region = model.Region.query.get(id)
+def get_region(region_id, user):
+    region = model.Region.query.get(region_id)
     if not region:
-        return problem(404, 'Not Found', f'Region {id} does not exist')
+        return problem(404, 'Not Found', f'Region {region_id} does not exist')
 
     if region.users_group is not None:
         if not get_keycloak().user_check_role(user, ADMIN_ROLE):
@@ -89,10 +89,10 @@ def get_region(id, user):
     return row2dict(region)
 
 
-def update_region(id, body, user):
-    region = model.Region.query.get(id)
+def update_region(region_id, body, user):
+    region = model.Region.query.get(region_id)
     if not region:
-        return problem(404, 'Not Found', f'Region {id} does not exist')
+        return problem(404, 'Not Found', f'Region {region_id} does not exist')
 
     if not get_keycloak().user_check_role(user, ADMIN_ROLE):
         if not get_keycloak().user_check_group(user, region.owner_group):
@@ -127,10 +127,10 @@ def update_region(id, body, user):
     return row2dict(region)
 
 
-def delete_region(id, user):
-    region = model.Region.query.get(id)
+def delete_region(region_id, user):
+    region = model.Region.query.get(region_id)
     if not region:
-        return problem(404, 'Not Found', f'Region {id} does not exist')
+        return problem(404, 'Not Found', f'Region {region_id} does not exist')
 
     if not get_keycloak().user_check_role(user, ADMIN_ROLE):
         if not get_keycloak().user_check_group(user, region.owner_group):
@@ -155,13 +155,13 @@ def delete_region(id, user):
     logger.info(f'Region {region.name} (id {region.id}) deleted by user {user}')
 
 
-def list_region_templates(id):
+def list_region_templates(region_id):
     raise NotImplementedError
 
 
-def add_region_template(id, body):
+def add_region_template(region_id, body):
     raise NotImplementedError
 
 
-def delete_region_template(id, body):
+def delete_region_template(region_id, body):
     raise NotImplementedError

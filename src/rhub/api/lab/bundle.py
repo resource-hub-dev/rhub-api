@@ -6,13 +6,13 @@ def create_bundle(body):
     raise NotImplementedError
 
 
-def get_bundle(id):
+def get_bundle(bundle_id):
     raise NotImplementedError
 
 
-def update_bundle(id, body):
+def update_bundle(bundle_id, body):
     raise NotImplementedError
 
 
-def delete_bundle(id):
+def delete_bundle(bundle_id):
     raise NotImplementedError
