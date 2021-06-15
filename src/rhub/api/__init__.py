@@ -5,6 +5,7 @@ import importlib
 
 import connexion
 import click
+import prance
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask import g, current_app
@@ -79,11 +80,10 @@ def create_app():
     """Create Connexion/Flask application."""
     root = os.path.dirname(rhub.__path__[0])
 
-    connexion_app = connexion.App(
-        __name__,
-        specification_dir=os.path.join(root, 'openapi'),
-    )
-    connexion_app.add_api('openapi.yml')
+    connexion_app = connexion.App(__name__)
+
+    parser = prance.ResolvingParser(os.path.join(root, 'openapi', 'openapi.yml'))
+    connexion_app.add_api(parser.specification)
 
     flask_app = connexion_app.app
     # Enable CORS (Cross-Origin Resource Sharing)
