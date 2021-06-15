@@ -1,0 +1,30 @@
+model:
+
+  ID:
+    type: integer
+    minimum: 1
+
+responses:
+
+  problem:
+    description: Problem details ([RFC 7807](https://tools.ietf.org/html/rfc7807))
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            type:
+              type: string
+            title:
+              type: string
+            detail:
+              type: string
+            status:
+              type: integer
+          additionalProperties: true
+        example: {
+          "detail": "Invalid token",
+          "status": 401,
+          "title": "Unauthorized",
+          "type": "about:blank"
+        }

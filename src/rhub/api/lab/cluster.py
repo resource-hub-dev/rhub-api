@@ -6,13 +6,13 @@ def create_cluster(body):
     raise NotImplementedError
 
 
-def get_cluster(id):
+def get_cluster(cluster_id):
     raise NotImplementedError
 
 
-def update_cluster(id, body):
+def update_cluster(cluster_id, body):
     raise NotImplementedError
 
 
-def delete_cluster(id):
+def delete_cluster(cluster_id):
     raise NotImplementedError

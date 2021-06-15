@@ -11,164 +11,12 @@ components:
     ID:
       type: integer
       minimum: 1
-    UUID:
-      type: string
-      format: uuid
     Name:
       type: string
       pattern: '^\w+$'
-
-    Quota:
-      type: object
-      properties:
-        num_vcpus:
-          type: integer
-          minimum: 1
-          nullable: true
-        ram_mb:
-          type: integer
-          minimum: 1
-          nullable: true
-        num_volumes:
-          type: integer
-          minimum: 1
-          nullable: true
-        volumes_gb:
-          type: integer
-          minimum: 1
-          nullable: true
-
-    LabTower:
-      type: object
-      properties:
-        id:
-          allOf:
-            - $ref: '#/components/schemas/ID'
-            - readOnly: true
-        name:
-          $ref: '#/components/schemas/Name'
-        description:
-          type: string
-        enabled:
-          type: boolean
-        url:
-          type: string
-          format: url
-        credentials:
-          type: string
-          description: Tower credentials path (Vault mount/path)
-    LabRegion:
-      type: object
-      properties:
-        id:
-          allOf:
-            - $ref: '#/components/schemas/ID'
-            - readOnly: true
-        name:
-          type: string
-          maxLength: 32
-        location:
-          description: Geographical location of region.
-          type: string
-          maxLength: 32
-          nullable: true
-        description:
-          type: string
-        banner:
-          type: string
-        enabled:
-          type: boolean
-        reservations_enabled:
-          type: boolean
-        lifespan_length:
-          type: integer
-          minimum: 1
-          nullable: true
-        quota:
-          anyOf:
-            - $ref: '#/components/schemas/Quota'
-            - nullable: true
-        owner_group:
-          type: string
-          format: uuid
-          readOnly: true
-        users_group:
-          type: string
-          format: uuid
-          nullable: true
-        tower_id:
-          $ref: '#/components/schemas/ID'
-      example:
-        id: 1
-        name: rdu2-a
-        location: RDU
-        description: ''
-        banner: ''
-        enabled: true
-        reservation_enabled: true
-        lifespan_length: 60
-        quota:
-          num_vcpus: 40
-          ram_mb: 200000
-          num_volumes: 40
-          volumes_gb: 540
-        owner_group: 7670ac07-cb21-448d-af8a-6e3882216be3
-        users_group: null
-        tower_id: 1
-    LabCluster:
-      type: object
-      properties:
-        id:
-          allOf:
-            - $ref: '#/components/schemas/ID'
-            - readOnly: true
-        name:
-          $ref: '#/components/schemas/Name'
-        description:
-          type: string
-        extra_vars:
-          type: object
-        user_id:
-          $ref: '#/components/schemas/ID'
-        region_id:
-          $ref: '#/components/schemas/ID'
-        template_id:
-          $ref: '#/components/schemas/ID'
-        reservation_expiration:
-          type: string
-          format: date-time
-          description: Soft-limit expiration.
-        lifespan_expiration:
-          type: string
-          format: date-time
-          readOnly: true
-          description: Hard-limit expiration.
-    LabTemplate:
-      type: object
-      properties:
-        id:
-          allOf:
-            - $ref: '#/components/schemas/ID'
-            - readOnly: true
-        name:
-          $ref: '#/components/schemas/Name'
-        description:
-          type: string
-        enabled:
-          type: boolean
-    LabBundle:
-      type: object
-      properties:
-        id:
-          allOf:
-            - $ref: '#/components/schemas/ID'
-            - readOnly: true
-        name:
-          $ref: '#/components/schemas/Name'
-        description:
-          type: string
-        enabled:
-          type: boolean
+    UUID:
+      type: string
+      format: uuid
     User:
       type: object
       properties:
@@ -533,41 +381,6 @@ components:
           x-nullable: true
 
   parameters:
-    lab_tower_id:
-      name: id
-      in: path
-      description: ID of the tower
-      required: true
-      schema:
-        $ref: '#/components/schemas/ID'
-    lab_region_id:
-      name: id
-      in: path
-      description: ID of the region
-      required: true
-      schema:
-        $ref: '#/components/schemas/ID'
-    lab_cluster_id:
-      name: id
-      in: path
-      description: ID of the cluster
-      required: true
-      schema:
-        $ref: '#/components/schemas/ID'
-    lab_template_id:
-      name: id
-      in: path
-      description: ID of the template
-      required: true
-      schema:
-        $ref: '#/components/schemas/ID'
-    lab_bundle_id:
-      name: id
-      in: path
-      description: ID of the bundle
-      required: true
-      schema:
-        $ref: '#/components/schemas/ID'
     user_id:
       name: id
       in: path
@@ -628,150 +441,6 @@ components:
           schema:
             $ref: '#/components/schemas/TowerWebhookNotification'
 
-    lab_tower_post:
-      description: Tower
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            allOf:
-              - $ref: '#/components/schemas/LabTower'
-              - required:
-                  - name
-                  - url
-    lab_tower_patch:
-      description: Tower properties to update
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/LabTower'
-    lab_region_post:
-      description: |
-        `quota` and `lifespan` can be set to `null` to provide unlimited access
-        to the region.
-
-        `users_group` limits region to a selected group of users, if the value
-        is `null` any user can use region.
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            allOf:
-              - $ref: '#/components/schemas/LabRegion'
-              - required:
-                  - name
-                  - tower_id
-          example:
-            name: rdu2-a
-            location: RDU
-            enabled: true
-            reservation_enabled: true
-            lifespan_length: 60
-            quota:
-              num_vcpus: 40
-              ram_mb: 200000
-              num_volumes: 40
-              volumes_gb: 540
-            tower_id: 1
-    lab_region_patch:
-      description: |
-        Region properties to update.
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/LabRegion'
-          example:
-            lifespan_length: 60
-            quota:
-              num_vcpus: 40
-              ram_mb: 200000
-              num_volumes: 40
-              volumes_gb: 500
-    lab_cluster_post:
-      description: Cluster
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            allOf:
-              - $ref: '#/components/schemas/LabCluster'
-              - required:
-                  - name
-                  - user_id
-                  - region_id
-                  - template_id
-    lab_cluster_patch:
-      description: Cluster properties to update
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/LabCluster'
-    lab_template_post:
-      description: Template
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            allOf:
-              - $ref: '#/components/schemas/LabTemplate'
-              - required:
-                  - name
-    lab_template_patch:
-      description: Template properties to update
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/LabTemplate'
-    lab_template_id:
-      description: Template ID
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - id
-            properties:
-              id:
-                $ref: '#/components/schemas/ID'
-    lab_bundle_post:
-      description: Bundle
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            allOf:
-              - $ref: '#/components/schemas/LabBundle'
-              - required:
-                  - name
-    lab_bundle_patch:
-      description: Bundle properties to update
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/LabBundle'
-    lab_bundle_id:
-      description: Bundle ID
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - id
-            properties:
-              id:
-                $ref: '#/components/schemas/ID'
     user_post:
       description: User
       required: true
@@ -1008,100 +677,8 @@ components:
 
 
   responses:
+    problem: {$ref: 'common.yml#/responses/problem'}  # TODO remove
 
-    problem:
-      description: Problem details ([RFC 7807](https://tools.ietf.org/html/rfc7807))
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              type:
-                type: string
-              title:
-                type: string
-              detail:
-                type: string
-              status:
-                type: integer
-            additionalProperties: true
-          example: {
-            "detail": "Invalid token",
-            "status": 401,
-            "title": "Unauthorized",
-            "type": "about:blank"
-          }
-
-    lab_tower_get:
-      description: Tower
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/LabTower'
-    lab_tower_list:
-      description: List of Tower
-      content:
-        application/json:
-          schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/LabTower'
-    lab_region_get:
-      description: Region
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/LabRegion'
-    lab_region_list:
-      description: List of Region
-      content:
-        application/json:
-          schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/LabRegion'
-    lab_cluster_get:
-      description: Cluster
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/LabCluster'
-    lab_cluster_list:
-      description: List of Cluster
-      content:
-        application/json:
-          schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/LabCluster'
-    lab_template_get:
-      description: Template
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/LabTemplate'
-    lab_template_list:
-      description: List of Template
-      content:
-        application/json:
-          schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/LabTemplate'
-    lab_bundle_get:
-      description: Bundle
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/LabBundle'
-    lab_bundle_list:
-      description: List of Bundle
-      content:
-        application/json:
-          schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/LabBundle'
     user_get:
       description: User
       content:
@@ -1281,402 +858,79 @@ paths:
 
   /lab/tower:
     get:
-      summary: Get tower list
-      tags: [lab]
-      operationId: rhub.api.lab.tower.list_towers
-      responses:
-        200:
-          $ref: '#/components/responses/lab_tower_list'
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/tower_list'
     post:
-      summary: Create tower
-      tags: [lab]
-      operationId: rhub.api.lab.tower.create_tower
-      requestBody:
-        $ref: '#/components/requestBodies/lab_tower_post'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
-  /lab/tower/{id}:
+      $ref: 'lab.yml#/endpoints/tower_create'
+  /lab/tower/{tower_id}:
     get:
-      summary: Get tower
-      tags: [lab]
-      operationId: rhub.api.lab.tower.get_tower
-      parameters:
-        - $ref: '#/components/parameters/lab_tower_id'
-      responses:
-        200:
-          $ref: '#/components/responses/lab_tower_get'
-        404:
-          description: Not found
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/tower_get'
     patch:
-      summary: Update tower
-      tags: [lab]
-      operationId: rhub.api.lab.tower.update_tower
-      parameters:
-        - $ref: '#/components/parameters/lab_tower_id'
-      requestBody:
-        $ref: '#/components/requestBodies/lab_tower_patch'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/tower_update'
     delete:
-      summary: Delete tower
-      tags: [lab]
-      operationId: rhub.api.lab.tower.delete_tower
-      parameters:
-        - $ref: '#/components/parameters/lab_tower_id'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/tower_delete'
   /lab/region:
     get:
-      summary: Get region list
-      tags: [lab]
-      operationId: rhub.api.lab.region.list_regions
-      responses:
-        200:
-          $ref: '#/components/responses/lab_region_list'
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'lab.yml#/endpoints/region_list'
     post:
-      summary: Create region
-      description: |
-        See [create cluster endpoint](#/lab/rhub.api.lab.cluster.create_cluster)
-        for more info how reservation, lifespan, and other properties affects clusters.
-      tags: [lab]
-      operationId: rhub.api.lab.region.create_region
-      requestBody:
-        $ref: '#/components/requestBodies/lab_region_post'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
-  /lab/region/{id}:
+      $ref: 'lab.yml#/endpoints/region_create'
+  /lab/region/{region_id}:
     get:
-      summary: Get region
-      tags: [lab]
-      operationId: rhub.api.lab.region.get_region
-      parameters:
-        - $ref: '#/components/parameters/lab_region_id'
-      responses:
-        200:
-          $ref: '#/components/responses/lab_region_get'
-        404:
-          description: Not found
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'lab.yml#/endpoints/region_get'
     patch:
-      summary: Update region
-      tags: [lab]
-      operationId: rhub.api.lab.region.update_region
-      parameters:
-        - $ref: '#/components/parameters/lab_region_id'
-      requestBody:
-        $ref: '#/components/requestBodies/lab_region_patch'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'lab.yml#/endpoints/region_update'
     delete:
-      summary: Delete region
-      tags: [lab]
-      operationId: rhub.api.lab.region.delete_region
-      parameters:
-        - $ref: '#/components/parameters/lab_region_id'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
-  /lab/region/{id}/templates:
+      $ref: 'lab.yml#/endpoints/region_delete'
+  /lab/region/{region_id}/templates:
     get:
-      summary: Get templates available on region
-      tags: [lab]
-      operationId: rhub.api.lab.region.list_region_templates
-      parameters:
-        - $ref: '#/components/parameters/lab_region_id'
-      responses:
-        200:
-          $ref: '#/components/responses/lab_template_list'
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/region_list_templates'
     post:
-      summary: Add template to region
-      tags: [lab]
-      operationId: rhub.api.lab.region.add_region_template
-      parameters:
-        - $ref: '#/components/parameters/lab_region_id'
-      requestBody:
-        $ref: '#/components/requestBodies/lab_template_id'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/region_add_template'
     delete:
-      summary: Remove template from region
-      tags: [lab]
-      operationId: rhub.api.lab.region.delete_region_template
-      parameters:
-        - $ref: '#/components/parameters/lab_region_id'
-      requestBody:
-        $ref: '#/components/requestBodies/lab_template_id'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/region_remove_template'
   /lab/template:
     get:
-      summary: Get template list
-      tags: [lab]
-      operationId: rhub.api.lab.template.list_templates
-      responses:
-        200:
-          $ref: '#/components/responses/lab_template_list'
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/template_list'
     post:
-      summary: Create template
-      tags: [lab]
-      operationId: rhub.api.lab.template.create_template
-      requestBody:
-        $ref: '#/components/requestBodies/lab_template_post'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
-  /lab/template/{id}:
+      $ref: 'lab.yml#/endpoints/template_create'
+  /lab/template/{template_id}:
     get:
-      summary: Get template
-      tags: [lab]
-      operationId: rhub.api.lab.template.get_template
-      parameters:
-        - $ref: '#/components/parameters/lab_template_id'
-      responses:
-        200:
-          $ref: '#/components/responses/lab_template_get'
-        404:
-          description: Not found
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/template_get'
     patch:
-      summary: Update template
-      tags: [lab]
-      operationId: rhub.api.lab.template.update_template
-      parameters:
-        - $ref: '#/components/parameters/lab_template_id'
-      requestBody:
-        $ref: '#/components/requestBodies/lab_template_patch'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/template_update'
     delete:
-      summary: Delete template
-      tags: [lab]
-      operationId: rhub.api.lab.template.delete_template
-      parameters:
-        - $ref: '#/components/parameters/lab_template_id'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
-  /lab/template/{id}/bundles:
+      $ref: 'lab.yml#/endpoints/template_delete'
+  /lab/template/{template_id}/bundles:
     get:
-      summary: Get bundles available for template
-      tags: [lab]
-      operationId: rhub.api.lab.template.list_template_bundles
-      parameters:
-        - $ref: '#/components/parameters/lab_template_id'
-      responses:
-        200:
-          $ref: '#/components/responses/lab_bundle_list'
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/template_list_bundles'
     post:
-      summary: Add bundle to template
-      tags: [lab]
-      operationId: rhub.api.lab.template.add_template_bundle
-      parameters:
-        - $ref: '#/components/parameters/lab_template_id'
-      requestBody:
-        $ref: '#/components/requestBodies/lab_bundle_id'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/template_add_bundle'
     delete:
-      summary: Remove bundle from template
-      tags: [lab]
-      operationId: rhub.api.lab.template.delete_template_bundle
-      parameters:
-        - $ref: '#/components/parameters/lab_template_id'
-      requestBody:
-        $ref: '#/components/requestBodies/lab_bundle_id'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/template_remove_bundle'
   /lab/bundle:
     get:
-      summary: Get bundle list
-      tags: [lab]
-      operationId: rhub.api.lab.bundle.list_bundles
-      responses:
-        200:
-          $ref: '#/components/responses/lab_bundle_list'
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/bundle_list'
     post:
-      summary: Create bundle
-      tags: [lab]
-      operationId: rhub.api.lab.bundle.create_bundle
-      requestBody:
-        $ref: '#/components/requestBodies/lab_bundle_post'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
-  /lab/bundle/{id}:
+      $ref: 'lab.yml#/endpoints/bundle_create'
+  /lab/bundle/{bundle_id}:
     get:
-      summary: Get bundle
-      tags: [lab]
-      operationId: rhub.api.lab.bundle.get_bundle
-      parameters:
-        - $ref: '#/components/parameters/lab_bundle_id'
-      responses:
-        200:
-          $ref: '#/components/responses/lab_bundle_get'
-        404:
-          description: Not found
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/bundle_get'
     patch:
-      summary: Update bundle
-      tags: [lab]
-      operationId: rhub.api.lab.bundle.update_bundle
-      parameters:
-        - $ref: '#/components/parameters/lab_bundle_id'
-      requestBody:
-        $ref: '#/components/requestBodies/lab_bundle_patch'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/bundle_update'
     delete:
-      summary: Delete bundle
-      tags: [lab]
-      operationId: rhub.api.lab.bundle.delete_bundle
-      parameters:
-        - $ref: '#/components/parameters/lab_bundle_id'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/bundle_delete'
   /lab/cluster:
     get:
-      summary: Get cluster list
-      tags: [lab]
-      operationId: rhub.api.lab.cluster.list_clusters
-      responses:
-        200:
-          $ref: '#/components/responses/lab_cluster_list'
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/cluster_list'
     post:
-      summary: Create cluster
-      description: |
-        When the Reservation System is enabled in a region, a new cluster in
-        that region will be required to select the length of the reservation in
-        `reservation_expiration` field. Reservation sets soft-limit on cluster,
-        when reservation expires cluster will be scheduled for deletion.
-
-        When the Lifespan System is enabled in a region, `lifespan_expiration`
-        date will automatically be applied to the cluster by backend at time of
-        creation. The date is configured on region. Unlike the reservation
-        expiration, lifespan is hard-limit and this date can not be set nor
-        modified once cluster is created. When livespan expires cluster will be
-        unconditionally scheduled for deletion
-      tags: [lab]
-      operationId: rhub.api.lab.cluster.create_cluster
-      requestBody:
-        $ref: '#/components/requestBodies/lab_cluster_post'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
-  /lab/cluster/{id}:
+      $ref: 'lab.yml#/endpoints/cluster_create'
+  /lab/cluster/{cluster_id}:
     get:
-      summary: Get cluster
-      tags: [lab]
-      operationId: rhub.api.lab.cluster.get_cluster
-      parameters:
-        - $ref: '#/components/parameters/lab_cluster_id'
-      responses:
-        200:
-          $ref: '#/components/responses/lab_cluster_get'
-        404:
-          description: Not found
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/cluster_get'
     patch:
-      summary: Update cluster
-      description: |
-        See [create cluster endpoint](#/lab/rhub.api.lab.cluster.create_cluster) for more info.
-      tags: [lab]
-      operationId: rhub.api.lab.cluster.update_cluster
-      parameters:
-        - $ref: '#/components/parameters/lab_cluster_id'
-      requestBody:
-        $ref: '#/components/requestBodies/lab_cluster_patch'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/cluster_update'
     delete:
-      summary: Delete cluster
-      tags: [lab]
-      operationId: rhub.api.lab.cluster.delete_cluster
-      parameters:
-        - $ref: '#/components/parameters/lab_cluster_id'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
+      $ref: 'lab.yml#/endpoints/cluster_delete'
+
   /auth/user:
     get:
       summary: Get user list
