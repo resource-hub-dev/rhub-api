@@ -360,7 +360,56 @@ components:
           x-nullable: true
         failed:
           type: boolean
-
+    Policy:
+      type: object
+      properties:
+        id:
+          description: Internal ID
+          allOf:
+            - $ref: '#/components/schemas/ID'
+            - readOnly: true
+        name:
+          description: Name
+          type: string
+        department:
+          description: Department Name
+          type: string
+        constraint:
+          type: object
+          properties:
+            sched_avail:
+              type: array
+              items:
+                type: string
+                format: date-time
+              maxItems: 2
+            serv_avail:
+              type: number
+            consumption:
+              type: string
+            density:
+              type: string
+            attribute:
+              type: string
+            cost:
+              type: number
+            location:
+              type: string
+              maxLength: 4
+    BriefPolicy:
+      type: object
+      properties:
+        id:
+          description: Internal ID
+          allOf:
+            - $ref: '#/components/schemas/ID'
+            - readOnly: true
+        name:
+          description: Name
+          type: string
+        department:
+          description: Department Name
+          type: string
     TowerWebhookNotification:
       type: object
       properties:
@@ -447,6 +496,7 @@ components:
           type: string
           description: Enumerates all the nodes in the workflow job with a description of the job associated with each
           x-nullable: true
+
   parameters:
     lab_tower_id:
       name: id
@@ -522,6 +572,13 @@ components:
       name: job_id
       in: path
       description: ID of the Tower job
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
+    policy_id:
+      name: id
+      in: path
+      description: ID of the Policy
       required: true
       schema:
         $ref: '#/components/schemas/ID'
@@ -848,6 +905,46 @@ components:
             extra_vars:
               project_name: example-project
               project_owner: example-user
+    policy_post:
+      description: Policy
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/Policy'
+              - required:
+                  - name
+                  - department
+          example:
+            name: Test User
+            department: Test Department
+            constraint:
+              location: RDU2
+    policy_patch:
+      description: Policy properties to update
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Policy'
+          example:
+            constraint:
+              location: RDU2
+    policy_search:
+      description: Policy search
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/Policy'
+          example:
+            constraint:
+              location: RDU2
+
 
   responses:
 
@@ -1056,6 +1153,21 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/TowerJob'
+    policies_list:
+      description: List of Policies
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/BriefPolicy'
+    policies_get:
+      description: Policy
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Policy'
+
 
   securitySchemes:
     basic:
@@ -2183,3 +2295,86 @@ paths:
           $ref: '#/components/responses/problem'
       security:
         - tower_webhook_notification_auth: []
+  /policies:
+    get:
+      summary: Get policy list
+      tags: [policy]
+      operationId: rhub.api.policies.list_policies
+      responses:
+        200:
+          $ref: '#/components/responses/policies_list'
+        default:
+          $ref: '#/components/responses/problem'
+      security:
+        - oauth2: []
+    post:
+      summary: Create policy
+      tags: [policy]
+      operationId: rhub.api.policies.create_policy
+      requestBody:
+        $ref: '#/components/requestBodies/policy_post'
+      responses:
+        200:
+          $ref: '#/components/responses/policies_get'
+        default:
+          $ref: '#/components/responses/problem'
+      security:
+        - oauth2: []
+  /policies/{id}:
+    get:
+      summary: Get policy
+      tags: [policy]
+      operationId: rhub.api.policies.get_policy
+      parameters:
+        - $ref: '#/components/parameters/policy_id'
+      responses:
+        200:
+          $ref: '#/components/responses/policies_get'
+        404:
+          description: Not found
+        default:
+          $ref: '#/components/responses/problem'
+      security:
+        - oauth2: []
+    patch:
+      summary: Update policy
+      tags: [policy]
+      operationId: rhub.api.policies.update_policy
+      parameters:
+        - $ref: '#/components/parameters/policy_id'
+      requestBody:
+        $ref: '#/components/requestBodies/policy_patch'
+      responses:
+        200:
+          $ref: '#/components/responses/policies_get'
+        default:
+          $ref: '#/components/responses/problem'
+      security:
+        - oauth2: []
+    delete:
+      summary: Delete policy
+      tags: [policy]
+      operationId: rhub.api.policies.delete_policy
+      parameters:
+        - $ref: '#/components/parameters/policy_id'
+      responses:
+        200:
+          $ref: '#/components/responses/policies_get'
+        default:
+          $ref: '#/components/responses/problem'
+      security:
+        - oauth2: []
+  /policies/search:
+    post:
+      summary: Search Policies
+      tags: [policy]
+      operationId: rhub.api.policies.search_policies
+      requestBody:
+        $ref: '#/components/requestBodies/policy_search'
+      responses:
+        200:
+          $ref: '#/components/responses/policies_list'
+        default:
+          $ref: '#/components/responses/problem'
+      security:
+        - oauth2: []
