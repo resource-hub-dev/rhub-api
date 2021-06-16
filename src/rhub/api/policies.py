@@ -70,7 +70,7 @@ def check_access(func):
         keycloak = get_keycloak()
         if 'policy_id' in kwargs:
             current_user = kwargs['user']
-            group_name = 'policy-' + str(kwargs['policy_id']) + '-owners'
+            group_name = f'policy-{kwargs["policy_id"]}-owners'
             group_list = keycloak.user_group_list(current_user)
             groups = {group['name']: group for group in group_list}
             if group_name in groups.keys():
@@ -105,7 +105,7 @@ def create_policy(user, body):
     policy = model.Policy(**body)
     db.session.add(policy)
     db.session.commit()
-    group_name = 'policy-' + str(row2dict(policy)['id']) + '-owners'
+    group_name = f'policy-{policy.id}-owners'
     group = keycloak.group_create({'name': group_name})
     keycloak.group_user_add(current_user['id'], group)
     keycloak.group_role_add('policy-owner', group)
@@ -163,7 +163,7 @@ def delete_policy(user, policy_id, **kwargs):
         return problem(404, 'Not Found', 'Record Does Not Exist')
     keycloak = get_keycloak()
     groups = {group['name']: group for group in keycloak.group_list()}
-    group_name = 'policy-' + str(policy_id) + '-owners'
+    group_name = f'policy-{policy_id}-owners'
     group_id = groups[group_name]['id']
     keycloak.group_delete(group_id)
     return denormalize(row2dict(policy))
