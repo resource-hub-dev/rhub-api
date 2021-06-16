@@ -1,0 +1,212 @@
+model:
+
+  Policy:
+    type: object
+    properties:
+      id:
+        description: Internal ID
+        allOf:
+          - $ref: 'common.yml#/model/ID'
+          - readOnly: true
+      name:
+        description: Name
+        type: string
+      department:
+        description: Department Name
+        type: string
+      constraint:
+        type: object
+        properties:
+          sched_avail:
+            type: array
+            items:
+              type: string
+              format: date-time
+            maxItems: 2
+          serv_avail:
+            type: number
+          consumption:
+            type: string
+          density:
+            type: string
+          attribute:
+            type: string
+          cost:
+            type: number
+          location:
+            type: string
+            maxLength: 4
+
+  BriefPolicy:
+    type: object
+    properties:
+      id:
+        description: Internal ID
+        allOf:
+          - $ref: 'common.yml#/model/ID'
+          - readOnly: true
+      name:
+        description: Name
+        type: string
+      department:
+        description: Department Name
+        type: string
+
+parameters:
+
+  policy_id:
+    name: policy_id
+    in: path
+    description: ID of the Policy
+    required: true
+    schema:
+      $ref: 'common.yml#/model/ID'
+
+endpoints:
+
+  policy_list:
+    summary: Get policy list
+    tags: [policy]
+    operationId: rhub.api.policies.list_policies
+    responses:
+      '200':
+        description: List of Policies
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/model/BriefPolicy'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  policy_create:
+    summary: Create policy
+    tags: [policy]
+    operationId: rhub.api.policies.create_policy
+    requestBody:
+      description: Policy
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/model/Policy'
+              - required:
+                  - name
+                  - department
+          example:
+            name: Test User
+            department: Test Department
+            constraint:
+              location: RDU2
+    responses:
+      '200':
+        description: Policy
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Policy'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  policy_get:
+    summary: Get policy
+    tags: [policy]
+    operationId: rhub.api.policies.get_policy
+    parameters:
+      - $ref: '#/parameters/policy_id'
+    responses:
+      '200':
+        description: Policy
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Policy'
+      '404':
+        description: Not found
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  policy_update:
+    summary: Update policy
+    tags: [policy]
+    operationId: rhub.api.policies.update_policy
+    parameters:
+      - $ref: '#/parameters/policy_id'
+    requestBody:
+      description: Policy properties to update
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/model/Policy'
+          example:
+            constraint:
+              location: RDU2
+    responses:
+      '200':
+        description: Policy
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Policy'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  policy_delete:
+    summary: Delete policy
+    tags: [policy]
+    operationId: rhub.api.policies.delete_policy
+    parameters:
+      - $ref: '#/parameters/policy_id'
+    responses:
+      '200':
+        description: Policy
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Policy'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  policy_search:
+    summary: Search Policies
+    tags: [policy]
+    operationId: rhub.api.policies.search_policies
+    requestBody:
+      description: Policy search
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/model/Policy'
+          example:
+            constraint:
+              location: RDU2
+    responses:
+      '200':
+        description: List of Policies
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/model/BriefPolicy'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []

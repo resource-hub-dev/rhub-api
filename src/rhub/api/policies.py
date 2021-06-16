@@ -68,9 +68,9 @@ def check_access(func):
     """
     def inner(*args, **kwargs):
         keycloak = get_keycloak()
-        if 'id' in kwargs:
+        if 'policy_id' in kwargs:
             current_user = kwargs['user']
-            group_name = 'policy-' + str(kwargs['id']) + '-owners'
+            group_name = 'policy-' + str(kwargs['policy_id']) + '-owners'
             group_list = keycloak.user_group_list(current_user)
             groups = {group['name']: group for group in group_list}
             if group_name in groups.keys():
@@ -124,24 +124,24 @@ def search_policies(user, body):
     return [denormalize(row2dict(policy)) for policy in policies]
 
 
-def get_policy(user, id):
+def get_policy(user, policy_id):
     """
     API endpoint to get policy by id
     """
-    policy = model.Policy.query.get(id)
+    policy = model.Policy.query.get(policy_id)
     if not policy:
-        return problem(404, 'Not Found', f'Policy {id} does not exist')
+        return problem(404, 'Not Found', f'Policy {policy_id} does not exist')
     return denormalize(row2dict(policy))
 
 
 @check_access
-def update_policy(user, id, body, **kwargs):
+def update_policy(user, policy_id, body, **kwargs):
     """
     API endpoint to update policy attributes
     """
     body = normalize(body)
     try:
-        policy = model.Policy.query.get(id)
+        policy = model.Policy.query.get(policy_id)
         for k, v in body.items():
             setattr(policy, k, v)
         db.session.commit()
@@ -151,19 +151,19 @@ def update_policy(user, id, body, **kwargs):
 
 
 @check_access
-def delete_policy(user, id, **kwargs):
+def delete_policy(user, policy_id, **kwargs):
     """
     API endpoint to delete policy given policy id
     """
     try:
-        policy = model.Policy.query.get(id)
+        policy = model.Policy.query.get(policy_id)
         db.session.delete(policy)
         db.session.commit()
     except exc.NoResultFound:
         return problem(404, 'Not Found', 'Record Does Not Exist')
     keycloak = get_keycloak()
     groups = {group['name']: group for group in keycloak.group_list()}
-    group_name = 'policy-' + str(id) + '-owners'
+    group_name = 'policy-' + str(policy_id) + '-owners'
     group_id = groups[group_name]['id']
     keycloak.group_delete(group_id)
     return denormalize(row2dict(policy))
