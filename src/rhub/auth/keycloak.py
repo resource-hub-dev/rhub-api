@@ -102,10 +102,7 @@ class KeycloakClient:
         self.admin.group_user_remove(user_id, group_id)
 
     def group_role_list(self, group_id):
-        data = self.admin.get_group_realm_roles(group_id)
-        if not data:
-            return []
-        return data['realmMappings']
+        return self.admin.get_group_realm_roles(group_id)
 
     def group_role_add(self, role_name, group_id):
         """Add role to group. !! Role NAME, not ID !!"""
