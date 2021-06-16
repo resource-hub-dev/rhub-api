@@ -4,6 +4,10 @@ model:
     type: integer
     minimum: 1
 
+  UUID:
+    type: string
+    format: uuid
+
 responses:
 
   problem:
