@@ -157,29 +157,10 @@ tags:
 paths:
   /cowsay:
     get:
-      summary: Most important endpoint!
-      tags: [health]
-      operationId: rhub.api.health.cowsay
-      responses:
-        200:
-          description: Success
-          content:
-            text/plain:
-              schema:
-                type: string
+      $ref: 'health.yml#/endpoints/cowsay'
   /ping:
     get:
-      summary: Basic availablity endpoint
-      tags: [health]
-      operationId: rhub.api.health.ping
-      responses:
-        200:
-          description: Success
-          content:
-            text/plain:
-              schema:
-                type: string
-                enum: [pong]
+      $ref: 'health.yml#/endpoints/ping'
 
   /lab/tower:
     get:
