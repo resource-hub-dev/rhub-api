@@ -11,89 +11,6 @@ components:
     ID:
       type: integer
       minimum: 1
-    UUID:
-      type: string
-      format: uuid
-    Name:
-      type: string
-      pattern: '^\w+$'
-    TowerServer:
-      type: object
-      properties:
-        id:
-          allOf:
-            - $ref: '#/components/schemas/ID'
-            - readOnly: true
-        name:
-          $ref: '#/components/schemas/Name'
-        description:
-          type: string
-        enabled:
-          type: boolean
-        url:
-          type: string
-          format: url
-        credentials:
-          type: string
-          description: Tower credentials path (Vault mount/path)
-    TowerTemplate:
-      type: object
-      properties:
-        id:
-          description: Internal ID
-          allOf:
-            - $ref: '#/components/schemas/ID'
-            - readOnly: true
-        name:
-          type: string
-        description:
-          type: string
-        server_id:
-          description: Reference to TowerServer (TowerServer.id)
-          $ref: '#/components/schemas/ID'
-        tower_template_id:
-          description: ID of template in remote Tower
-          $ref: '#/components/schemas/ID'
-        tower_template_is_workflow:
-          description: Is template workflow?
-          type: boolean
-    TowerJob:
-      type: object
-      properties:
-        id:
-          description: Internal ID
-          allOf:
-            - $ref: '#/components/schemas/ID'
-            - readOnly: true
-        template_id:
-          description: Reference to TowerTemplate (TowerTemplate.id)
-          $ref: '#/components/schemas/ID'
-        tower_job_id:
-          description: ID of job in remote Tower
-          $ref: '#/components/schemas/ID'
-        launched_by:
-          description: UUID of user who launched job
-          $ref: '#/components/schemas/UUID'
-        status:
-          description: Job status
-          type: string
-        created_at:
-          type: string
-          format: date-time
-        started:
-          type: boolean
-        started_at:
-          type: string
-          format: date-time
-          x-nullable: true
-        finished:
-          type: boolean
-        finished_at:
-          type: string
-          format: date-time
-          x-nullable: true
-        failed:
-          type: boolean
     Policy:
       type: object
       properties:
@@ -144,115 +61,8 @@ components:
         department:
           description: Department Name
           type: string
-    TowerWebhookNotification:
-      type: object
-      properties:
-        id:
-          description: jobId
-          type: integer
-        name:
-          description: jobName
-          type: string
-        url:
-          description: URL to Job on Tower
-          type: string
-        created_by:
-          $ref: '#/components/schemas/UUID'
-        started:
-          description: Date/Time job started
-          type: string
-          format: date-time
-          x-nullable: true
-        finished:
-          description: Date/Time job finished
-          type: string
-          format: date-time
-          x-nullable: true
-        status:
-          description: Job status
-          type: string
-        traceback:
-          description: Traceback if failed
-          type: string
-          x-nullable: true
-        inventory:
-          description: Inventory used by Job
-          type: string
-          x-nullable: true
-        project:
-          description: Project job belongs to
-          type: string
-          x-nullable: true
-        playbook:
-          description: Playbook executed in Job
-          type: string
-          x-nullable: true
-        credential:
-          description: Credential used by Job
-          type: string
-          x-nullable: true
-        limit:
-          description: Job limit
-          type: string
-          x-nullable: true
-        extra_vars:
-          type: string
-          description: Extra variables for playbook encoded as a dictionary within a string
-          x-nullable: true
-        hosts:
-          type: object
-          additionalProperties:
-            type: object
-            properties:
-              localhost:
-                type: object
-                properties:
-                  failed:
-                    type: boolean
-                  changed:
-                    type: integer
-                  dark:
-                    type: integer
-                  failures:
-                    type: integer
-                  ok:
-                    type: integer
-                  processed:
-                    type: integer
-                  skipped:
-                    type: integer
-                  rescued:
-                    type: integer
-                  ignored:
-                    type: integer
-          x-nullable: true
-        body:
-          type: string
-          description: Enumerates all the nodes in the workflow job with a description of the job associated with each
-          x-nullable: true
 
   parameters:
-    tower_server_id:
-      name: server_id
-      in: path
-      description: ID of the Tower server
-      required: true
-      schema:
-        $ref: '#/components/schemas/ID'
-    tower_template_id:
-      name: template_id
-      in: path
-      description: ID of the Tower template
-      required: true
-      schema:
-        $ref: '#/components/schemas/ID'
-    tower_job_id:
-      name: job_id
-      in: path
-      description: ID of the Tower job
-      required: true
-      schema:
-        $ref: '#/components/schemas/ID'
     policy_id:
       name: id
       in: path
@@ -263,107 +73,6 @@ components:
 
   requestBodies:
 
-    tower_webhook_notification_post:
-      description: Webhook notification from Tower
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/TowerWebhookNotification'
-
-    tower_server_post:
-      description: Tower Server
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            allOf:
-              - $ref: '#/components/schemas/TowerServer'
-              - required:
-                  - name
-                  - url
-                  - credentials
-          example:
-            name: default
-            url: https://tower.example.com
-            credentials: kv/tower/prod/rhub
-    tower_server_patch:
-      description: Tower Server properties to update
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/TowerServer'
-          example:
-            description: Default Tower server
-    tower_server_id:
-      description: Tower Server ID
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - id
-            properties:
-              id:
-                $ref: '#/components/schemas/ID'
-    tower_template_post:
-      description: Tower Template
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            allOf:
-              - $ref: '#/components/schemas/TowerTemplate'
-              - required:
-                  - name
-                  - server_id
-                  - tower_template_id
-          example:
-            name: Create OpenStack project
-            tower_id: 1
-            tower_template_id: 123
-    tower_template_patch:
-      description: Tower Template properties to update
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/TowerServer'
-          example:
-            description: Template to create a new project in OpenStack
-    tower_template_id:
-      description: Tower Template ID
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - id
-            properties:
-              id:
-                $ref: '#/components/schemas/ID'
-    tower_template_launch:
-      description: Tower Template launch parameters
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              extra_vars:
-                type: object
-                description: Extra variable to pass to the template
-            required:
-              - extra_vars
-          example:
-            extra_vars:
-              project_name: example-project
-              project_owner: example-user
     policy_post:
       description: Policy
       required: true
@@ -408,54 +117,6 @@ components:
   responses:
     problem: {$ref: 'common.yml#/responses/problem'}  # TODO remove
 
-    tower_server_get:
-      description: Tower Server
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/TowerServer'
-    tower_server_list:
-      description: List of Tower Server
-      content:
-        application/json:
-          schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/TowerServer'
-    tower_template_get:
-      description: Tower Template
-      content:
-        application/json:
-          schema:
-            allOf:
-              - $ref: '#/components/schemas/TowerTemplate'
-              - type: object
-                properties:
-                  tower_survey:
-                    type: object
-                    description: Survey spec from Tower API
-    tower_template_list:
-      description: List of Tower Template
-      content:
-        application/json:
-          schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/TowerTemplate'
-    tower_job_get:
-      description: Tower Job
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/TowerJob'
-    tower_job_list:
-      description: List of Tower Jobs
-      content:
-        application/json:
-          schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/TowerJob'
     policies_list:
       description: List of Policies
       content:
@@ -470,7 +131,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Policy'
-
 
   securitySchemes:
     basic:
@@ -671,239 +331,49 @@ paths:
 
   /tower/server:
     get:
-      summary: Get list of Tower servers
-      operationId: rhub.api.tower.list_servers
-      tags: [tower]
-      responses:
-        200:
-          $ref: '#/components/responses/tower_server_list'
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/server_list'
     post:
-      summary: Create Tower server
-      operationId: rhub.api.tower.create_server
-      tags: [tower]
-      requestBody:
-        $ref: '#/components/requestBodies/tower_server_post'
-      responses:
-        200:
-          $ref: '#/components/responses/tower_server_get'
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/server_create'
   /tower/server/{server_id}:
     get:
-      summary: Get Tower server
-      operationId: rhub.api.tower.get_server
-      tags: [tower]
-      parameters:
-        - $ref: '#/components/parameters/tower_server_id'
-      responses:
-        200:
-          $ref: '#/components/responses/tower_server_get'
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/server_get'
     patch:
-      summary: Change Tower server
-      operationId: rhub.api.tower.update_server
-      tags: [tower]
-      parameters:
-        - $ref: '#/components/parameters/tower_server_id'
-      requestBody:
-        $ref: '#/components/requestBodies/tower_server_patch'
-      responses:
-        200:
-          $ref: '#/components/responses/tower_server_get'
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/server_update'
     delete:
-      operationId: rhub.api.tower.delete_server
-      tags: [tower]
-      parameters:
-        - $ref: '#/components/parameters/tower_server_id'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/server_delete'
   /tower/template:
     get:
-      summary: Get list of Tower templates
-      operationId: rhub.api.tower.list_templates
-      tags: [tower]
-      responses:
-        200:
-          $ref: '#/components/responses/tower_template_list'
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/template_list'
     post:
-      summary: Create Tower template
-      operationId: rhub.api.tower.create_template
-      tags: [tower]
-      requestBody:
-        $ref: '#/components/requestBodies/tower_template_post'
-      responses:
-        200:
-          $ref: '#/components/responses/tower_template_get'
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/template_create'
   /tower/template/{template_id}:
     get:
-      summary: Get Tower template
-      operationId: rhub.api.tower.get_template
-      tags: [tower]
-      parameters:
-        - $ref: '#/components/parameters/tower_template_id'
-      responses:
-        200:
-          $ref: '#/components/responses/tower_template_get'
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/template_get'
     patch:
-      summary: Change Tower template
-      operationId: rhub.api.tower.update_template
-      tags: [tower]
-      parameters:
-        - $ref: '#/components/parameters/tower_template_id'
-      requestBody:
-        $ref: '#/components/requestBodies/tower_template_patch'
-      responses:
-        200:
-          $ref: '#/components/responses/tower_template_get'
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/template_update'
     delete:
-      summary: Delete Tower template
-      operationId: rhub.api.tower.delete_template
-      tags: [tower]
-      parameters:
-        - $ref: '#/components/parameters/tower_template_id'
-      responses:
-        200:
-          description: success
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/template_delete'
   /tower/template/{template_id}/launch:
     post:
-      summary: Launch Tower template
-      operationId: rhub.api.tower.launch_template
-      tags: [tower]
-      parameters:
-        - $ref: '#/components/parameters/tower_template_id'
-      requestBody:
-        $ref: '#/components/requestBodies/tower_template_launch'
-      responses:
-        200:
-          $ref: '#/components/responses/tower_job_get'
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/template_launch'
   /tower/template/{template_id}/jobs:
     get:
-      summary: List Tower template jobs
-      operationId: rhub.api.tower.list_template_jobs
-      tags: [tower]
-      parameters:
-        - $ref: '#/components/parameters/tower_template_id'
-      responses:
-        200:
-          $ref: '#/components/responses/tower_job_list'
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/template_list_jobs'
   /tower/job:
     get:
-      summary: List Tower jobs
-      operationId: rhub.api.tower.list_jobs
-      tags: [tower]
-      responses:
-        200:
-          $ref: '#/components/responses/tower_job_list'
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/job_list'
   /tower/job/{job_id}:
     get:
-      summary: Get Tower job
-      operationId: rhub.api.tower.get_job
-      tags: [tower]
-      parameters:
-        - $ref: '#/components/parameters/tower_job_id'
-      responses:
-        200:
-          $ref: '#/components/responses/tower_job_get'
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/job_get'
   /tower/job/{job_id}/relaunch:
     post:
-      summary: Re-launch Tower job
-      operationId: rhub.api.tower.relaunch_job
-      tags: [tower]
-      parameters:
-        - $ref: '#/components/parameters/tower_job_id'
-      responses:
-        200:
-          $ref: '#/components/responses/tower_job_get'
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/job_relaunch'
   /tower/job/{job_id}/stdout:
     get:
-      summary: Get stdout of Tower job
-      operationId: rhub.api.tower.get_job_stdout
-      tags: [tower]
-      parameters:
-        - $ref: '#/components/parameters/tower_job_id'
-      responses:
-        200:
-          description: Ansible output
-          content:
-            text/plain:
-              schema:
-                type: string
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - oauth2: []
+      $ref: 'tower.yml#/endpoints/job_stdout'
   /tower/webhook_notification:
     post:
-      summary: Incoming webhook notification from Tower
-      tags: [tower]
-      operationId: rhub.api.tower.webhook_notification
-      requestBody:
-        $ref: '#/components/requestBodies/tower_webhook_notification_post'
-      responses:
-        200:
-          description: Success
-        default:
-          $ref: '#/components/responses/problem'
-      security:
-        - tower_webhook_notification_auth: []
+      $ref: 'tower.yml#/endpoints/webhook_notification'
   /policies:
     get:
       summary: Get policy list
