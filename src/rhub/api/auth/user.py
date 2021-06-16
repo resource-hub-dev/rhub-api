@@ -35,9 +35,9 @@ def create_user(body):
         return problem(500, 'Unknown Error', str(e))
 
 
-def get_user(id):
+def get_user(user_id):
     try:
-        return get_keycloak().user_get(id), 200
+        return get_keycloak().user_get(user_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -46,11 +46,11 @@ def get_user(id):
         return problem(500, 'Unknown Error', str(e))
 
 
-def update_user(id, body):
+def update_user(user_id, body):
     try:
-        get_keycloak().user_update(id, body)
-        logger.info(f'Updated user {id}')
-        return get_keycloak().user_get(id), 200
+        get_keycloak().user_update(user_id, body)
+        logger.info(f'Updated user {user_id}')
+        return get_keycloak().user_get(user_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -59,10 +59,10 @@ def update_user(id, body):
         return problem(500, 'Unknown Error', str(e))
 
 
-def delete_user(id):
+def delete_user(user_id):
     try:
-        get_keycloak().user_delete(id)
-        logger.info(f'Deleted user {id}')
+        get_keycloak().user_delete(user_id)
+        logger.info(f'Deleted user {user_id}')
         return {}, 200
     except KeycloakGetError as e:
         logger.exception(e)
@@ -72,9 +72,9 @@ def delete_user(id):
         return problem(500, 'Unknown Error', str(e))
 
 
-def list_user_groups(id):
+def list_user_groups(user_id):
     try:
-        return get_keycloak().user_group_list(id), 200
+        return get_keycloak().user_group_list(user_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -83,9 +83,9 @@ def list_user_groups(id):
         return problem(500, 'Unknown Error', str(e))
 
 
-def add_user_group(id, body):
+def add_user_group(user_id, body):
     try:
-        get_keycloak().group_user_add(id, body['id'])
+        get_keycloak().group_user_add(user_id, body['id'])
         return {}, 200
     except KeycloakGetError as e:
         logger.exception(e)
@@ -95,9 +95,9 @@ def add_user_group(id, body):
         return problem(500, 'Unknown Error', str(e))
 
 
-def delete_user_group(id):
+def delete_user_group(user_id):
     try:
-        get_keycloak().group_user_remove(id, request.json['id'])
+        get_keycloak().group_user_remove(user_id, request.json['id'])
         return {}, 200
     except KeycloakGetError as e:
         logger.exception(e)
@@ -107,15 +107,15 @@ def delete_user_group(id):
         return problem(500, 'Unknown Error', str(e))
 
 
-def list_user_roles(id):
+def list_user_roles(user_id):
     raise NotImplementedError
 
 
-def add_user_role(id, body):
+def add_user_role(user_id, body):
     raise NotImplementedError
 
 
-def delete_user_role(id, body):
+def delete_user_role(user_id, body):
     raise NotImplementedError
 
 

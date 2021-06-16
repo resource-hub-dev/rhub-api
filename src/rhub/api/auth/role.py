@@ -37,9 +37,9 @@ def create_role(body):
         return problem(500, 'Unknown Error', str(e))
 
 
-def get_role(id):
+def get_role(role_id):
     try:
-        return get_keycloak().role_get(id), 200
+        return get_keycloak().role_get(role_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -48,11 +48,11 @@ def get_role(id):
         return problem(500, 'Unknown Error', str(e))
 
 
-def update_role(id, body):
+def update_role(role_id, body):
     try:
-        get_keycloak().role_update(id, body)
+        get_keycloak().role_update(role_id, body)
         role_name = body['name']
-        logger.info(f'Updated role {id}')
+        logger.info(f'Updated role {role_id}')
         return get_keycloak().role_get(role_name), 200
     except KeycloakGetError as e:
         logger.exception(e)
@@ -62,10 +62,10 @@ def update_role(id, body):
         return problem(500, 'Unknown Error', str(e))
 
 
-def delete_role(id):
+def delete_role(role_id):
     try:
-        get_keycloak().role_delete(id)
-        logger.info(f'Deleted role {id}')
+        get_keycloak().role_delete(role_id)
+        logger.info(f'Deleted role {role_id}')
         return {}, 200
     except KeycloakGetError as e:
         logger.exception(e)

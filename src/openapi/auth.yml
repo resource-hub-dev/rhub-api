@@ -1,0 +1,896 @@
+model:
+
+  User:
+    type: object
+    properties:
+      id:
+        allOf:
+          - $ref: 'common.yml#/model/UUID'
+          - readOnly: true
+      username:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      lastName:
+        type: string
+      enabled:
+        type: boolean
+    description: |
+      See [Keycloak API: UserRepresentation](
+        https://www.keycloak.org/docs-api/11.0/rest-api/#_userrepresentation)
+    example:
+      access:
+        impersonate: true
+        manage: true
+        manageGroupMembership: true
+        mapRoles: true
+        view: true
+      createdTimestamp: 1614717256570
+      disableableCredentialTypes: []
+      email: testuser1@example.com
+      emailVerified: false
+      enabled: true
+      firstName: test
+      id: 743a5375-3513-4749-acb9-1cde1e159e3b
+      lastName: user1
+      notBefore: 0
+      requiredActions: []
+      totp: false
+      username: testuser1
+
+  Group:
+    type: object
+    properties:
+      id:
+        allOf:
+          - $ref: 'common.yml#/model/UUID'
+          - readOnly: true
+      name:
+        type: string
+      attributes:
+        type: object
+        additionalProperties:
+          type: array
+          items:
+            type: string
+        description: Group attributes
+    description: |
+      See [Keycloak API: GroupRepresentation](
+      https://www.keycloak.org/docs-api/11.0/rest-api/#_grouprepresentation)
+    example:
+      access:
+        manage: true
+        manageMembership: true
+        view: true
+      attributes:
+        mailing-list:
+          - admin-list@example.com
+      clientRoles: {}
+      id: fa831aa3-7a5a-4667-9c3f-bf20465058f6
+      name: admin
+      path: /admin
+      realmRoles: []
+      subGroups: []
+
+  Role:
+    type: object
+    properties:
+      id:
+        allOf:
+          - $ref: 'common.yml#/model/UUID'
+          - readOnly: true
+      name:
+        type: string
+      attributes:
+        type: object
+        additionalProperties:
+          type: array
+          items:
+            type: string
+        description: Role attributes
+    description: |
+      See [Keycloak API: RoleRepresentation](
+      https://www.keycloak.org/docs-api/11.0/rest-api/#_rolerepresentation)
+    example:
+      attributes: {}
+      id: fa831aa3-7a5a-4667-9c3f-bf20465058f6
+      name: admin
+      clientRole: false
+      composite: false
+      composites: {}
+      containerId: admin
+      description: adminRole
+
+  Token:
+    type: object
+    example:
+      access_token: eyJhbGciOiJSUzI1...oJhA
+      expires_in: 300
+      not-before-policy: 0
+      refresh_expires_in: 1800
+      refresh_token: eyJhbGciOiJIUzI1...fc8A
+      scope: profile email
+      session_state: 82b7637e-69a2-41e1-ab0b-e3d6b6e1fb0a
+      token_type: Bearer
+
+  TokenInfo:
+    type: object
+    description: |
+      See [RFC 7662, Section 2.2](https://tools.ietf.org/html/rfc7662#section-2.2)
+      and [Keycloak API: AccessToken](https://www.keycloak.org/docs-api/11.0/rest-api/#_accesstoken)
+    example:
+      acr: '1'
+      active: true
+      allowed-origins:
+        - http://localhost:8080
+      aud: account
+      azp: rhub-app
+      client_id: rhub-app
+      email: testuser1@example.com
+      email_verified: false
+      exp: 1617791654
+      family_name: user1
+      given_name: test
+      iat: 1617791354
+      iss: http://localhost:8082/auth/realms/rhub
+      jti: 640eb3a2-a193-4998-aa5b-5f0ba5beb154
+      name: test user1
+      preferred_username: testuser1
+      realm_access:
+        roles:
+          - offline_access
+          - uma_authorization
+      resource_access:
+        account:
+          roles:
+            - manage-account
+            - manage-account-links
+            - view-profile
+      scope: profile email
+      session_state: 82b7637e-69a2-41e1-ab0b-e3d6b6e1fb0a
+      sub: 743a5375-3513-4749-acb9-1cde1e159e3b
+      typ: Bearer
+      username: testuser1
+
+parameters:
+
+  user_id:
+    name: user_id
+    in: path
+    description: ID of the user
+    required: true
+    schema:
+      $ref: 'common.yml#/model/UUID'
+  group_id:
+    name: group_id
+    in: path
+    description: ID of the user
+    required: true
+    schema:
+      $ref: 'common.yml#/model/UUID'
+  role_id:
+    name: role_id
+    in: path
+    description: ID of the auth role
+    required: true
+    schema:
+      $ref: 'common.yml#/model/UUID'
+
+endpoints:
+
+  user_list:
+    summary: Get user list
+    description: |
+      See also [Keycloak API: UserRepresentation](
+        https://www.keycloak.org/docs-api/11.0/rest-api/#_userrepresentation)
+    tags: [auth]
+    operationId: rhub.api.auth.user.list_users
+    responses:
+      '200':
+        description: List of User
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/model/User'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  user_create:
+    summary: Create user
+    description: |
+      Create a user in the database. Returns created user data with extra
+      fields added by auth database (UUID and other fields).
+
+      See also [Keycloak API: UserRepresentation](
+        https://www.keycloak.org/docs-api/11.0/rest-api/#_userrepresentation)
+    tags: [auth]
+    operationId: rhub.api.auth.user.create_user
+    requestBody:
+      description: User
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/model/User'
+              - required:
+                  - username
+                  - email
+          example:
+            username: alice
+            email: alice@example.com
+            firstName: Alice
+            lastName: Example
+            password: p4ssw0rd
+    responses:
+      '200':
+        description: User successfully created
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/User'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  user_get:
+    summary: Get user
+    description: |
+      Returns user data including extra fields added by auth database. Data
+      object contains at least properties that are in the schema but also
+      database internal data like `createdTimestamp` and others.
+
+      See also [Keycloak API: UserRepresentation](
+        https://www.keycloak.org/docs-api/11.0/rest-api/#_userrepresentation)
+    tags: [auth]
+    operationId: rhub.api.auth.user.get_user
+    parameters:
+      - $ref: '#/parameters/user_id'
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/User'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  user_update:
+    summary: Update user
+    description: |
+      Update user in the database. Returns updated user data including extra
+      fields added by auth database.
+
+      See also [Keycloak API: UserRepresentation](
+        https://www.keycloak.org/docs-api/11.0/rest-api/#_userrepresentation)
+    tags: [auth]
+    operationId: rhub.api.auth.user.update_user
+    parameters:
+      - $ref: '#/parameters/user_id'
+    requestBody:
+      description: User properties to update
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/model/User'
+          example:
+            email: alice-new@example.com
+            lastName: New
+    responses:
+      '200':
+        description: User successfully updated
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/User'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  user_delete:
+    summary: Delete user
+    tags: [auth]
+    operationId: rhub.api.auth.user.delete_user
+    parameters:
+      - $ref: '#/parameters/user_id'
+    responses:
+      '200':
+        description: User successfully deleted
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  user_list_groups:
+    summary: Get user groups
+    description: |
+      See also [Keycloak API: GroupRepresentation](
+        https://www.keycloak.org/docs-api/11.0/rest-api/#_grouprepresentation)
+    tags: [auth]
+    operationId: rhub.api.auth.user.list_user_groups
+    parameters:
+      - $ref: '#/parameters/user_id'
+    responses:
+      '200':
+        description: List of Group
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/model/Group'
+            example:
+              - id: fa831aa3-7a5a-4667-9c3f-bf20465058f6
+                name: admin
+                path: /admin
+                subGroups: []
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  user_add_group:
+    summary: Add user to group
+    tags: [auth]
+    operationId: rhub.api.auth.user.add_user_group
+    parameters:
+      - $ref: '#/parameters/user_id'
+    requestBody:
+      description: Group ID
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                $ref: 'common.yml#/model/UUID'
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  user_remove_group:
+    summary: Remove user from group
+    tags: [auth]
+    operationId: rhub.api.auth.user.delete_user_group
+    parameters:
+      - $ref: '#/parameters/user_id'
+    requestBody:
+      description: Group ID
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                $ref: 'common.yml#/model/UUID'
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  user_list_roles:
+    summary: Get user roles
+    tags: [auth]
+    operationId: rhub.api.auth.user.list_user_roles
+    parameters:
+      - $ref: '#/parameters/user_id'
+    responses:
+      '200':
+        description: List of Role
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/model/Role'
+            example:
+              - id: fa831aa3-7a5a-4667-9c3f-bf20465058f6
+                name: admin
+                description: adminRole
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  user_add_role:
+    summary: Add user to role
+    tags: [auth]
+    operationId: rhub.api.auth.user.add_user_role
+    parameters:
+      - $ref: '#/parameters/user_id'
+    requestBody:
+      description: Role ID
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                $ref: 'common.yml#/model/UUID'
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  user_remove_role:
+    summary: Remove user from role
+    tags: [auth]
+    operationId: rhub.api.auth.user.delete_user_role
+    parameters:
+      - $ref: '#/parameters/user_id'
+    requestBody:
+      description: Role ID
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                $ref: 'common.yml#/model/UUID'
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  group_list:
+    summary: Get group list
+    description: |
+      See also [Keycloak API: GroupRepresentation](
+        https://www.keycloak.org/docs-api/11.0/rest-api/#_grouprepresentation)
+    tags: [auth]
+    operationId: rhub.api.auth.group.list_groups
+    responses:
+      '200':
+        description: List of Group
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/model/Group'
+            example:
+              - id: fa831aa3-7a5a-4667-9c3f-bf20465058f6
+                name: admin
+                path: /admin
+                subGroups: []
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  group_create:
+    summary: Create group
+    description: |
+      Create a group in the database. Returns created group data with extra
+      fields added by auth database (UUID and other fields).
+
+      See also [Keycloak API: GroupRepresentation](
+        https://www.keycloak.org/docs-api/11.0/rest-api/#_grouprepresentation)
+    tags: [auth]
+    operationId: rhub.api.auth.group.create_group
+    requestBody:
+      description: Group
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/model/Group'
+              - required:
+                  - name
+          example:
+            name: admin
+            attributes:
+              mailing-list:
+                - admin-list@example.com
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Group'
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  group_get:
+    summary: Get group
+    description: |
+      Returns group data including extra fields added by auth database. Data
+      object contains at least properties that are in the schema but also
+      database internal data like `subGroups` and others.
+
+      See also [Keycloak API: GroupRepresentation](
+        https://www.keycloak.org/docs-api/11.0/rest-api/#_grouprepresentation)
+    tags: [auth]
+    operationId: rhub.api.auth.group.get_group
+    parameters:
+      - $ref: '#/parameters/group_id'
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Group'
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  group_update:
+    summary: Update group
+    description: |
+      Update group in the database. Returns updated group data including extra
+      fields added by auth database.
+
+      See also [Keycloak API: GroupRepresentation](
+        https://www.keycloak.org/docs-api/11.0/rest-api/#_grouprepresentation)
+    tags: [auth]
+    operationId: rhub.api.auth.group.update_group
+    parameters:
+      - $ref: '#/parameters/group_id'
+    requestBody:
+      description: Group properties to update
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/model/Group'
+          example:
+            attributes:
+              mailing-list:
+                - admin-list@example.com
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Group'
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  group_delete:
+    summary: Delete group
+    tags: [auth]
+    operationId: rhub.api.auth.group.delete_group
+    parameters:
+      - $ref: '#/parameters/group_id'
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  group_list_users:
+    summary: Get users in group
+    description: |
+      See also [Keycloak API: UserRepresentation](
+        https://www.keycloak.org/docs-api/11.0/rest-api/#_userrepresentation)
+    tags: [auth]
+    operationId: rhub.api.auth.group.list_group_users
+    parameters:
+      - $ref: '#/parameters/group_id'
+    responses:
+      '200':
+        description: List of User
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/model/User'
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  group_list_roles:
+    summary: Get group roles
+    tags: [auth]
+    operationId: rhub.api.auth.group.list_group_roles
+    parameters:
+      - $ref: '#/parameters/group_id'
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/model/Role'
+            example:
+              - id: fa831aa3-7a5a-4667-9c3f-bf20465058f6
+                name: admin
+                description: adminRole
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  group_add_role:
+    summary: Add group to role
+    tags: [auth]
+    operationId: rhub.api.auth.group.add_group_role
+    parameters:
+      - $ref: '#/parameters/group_id'
+    requestBody:
+      description: Role ID
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                $ref: 'common.yml#/model/UUID'
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  group_remove_role:
+    summary: Remove group from role
+    tags: [auth]
+    operationId: rhub.api.auth.group.delete_group_role
+    parameters:
+      - $ref: '#/parameters/group_id'
+    requestBody:
+      description: Role ID
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                $ref: 'common.yml#/model/UUID'
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  role_list:
+    summary: Get role list
+    description: |
+      See [Keycloak API: RoleRepresentation](
+        https://www.keycloak.org/docs-api/11.0/rest-api/#_rolerepresentation)
+    tags: [auth]
+    operationId: rhub.api.auth.role.list_roles
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/model/Role'
+            example:
+              - id: fa831aa3-7a5a-4667-9c3f-bf20465058f6
+                name: admin
+                description: adminRole
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  role_create:
+    summary: Create role
+    description: |
+      Create a role in the database. Returns created role data with extra
+      fields added by auth database (UUID and other fields).
+
+      See [Keycloak API: RoleRepresentation](
+        https://www.keycloak.org/docs-api/11.0/rest-api/#_rolerepresentation)
+    tags: [auth]
+    operationId: rhub.api.auth.role.create_role
+    requestBody:
+      description: Role
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/model/Role'
+              - required:
+                  - name
+          example:
+            name: admin
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Role'
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  role_get:
+    summary: Get role
+    description: |
+      Returns role data including extra fields added by auth database. Data
+      object contains at least properties that are in the schema but also
+      database internal data like `description` and others.
+
+      See [Keycloak API: RoleRepresentation](
+        https://www.keycloak.org/docs-api/11.0/rest-api/#_rolerepresentation)
+    tags: [auth]
+    operationId: rhub.api.auth.role.get_role
+    parameters:
+      - $ref: '#/parameters/role_id'
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Role'
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  role_update:
+    summary: Update role
+    description: |
+      Update role in the database. Returns updated role data including extra
+      fields added by auth database.
+
+      See [Keycloak API: RoleRepresentation](
+        https://www.keycloak.org/docs-api/11.0/rest-api/#_rolerepresentation)
+    tags: [auth]
+    operationId: rhub.api.auth.role.update_role
+    parameters:
+      - $ref: '#/parameters/role_id'
+    requestBody:
+      description: Role properties to update
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/model/Role'
+          example:
+            composite: true
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Role'
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  role_delete:
+    summary: Delete role
+    tags: [auth]
+    operationId: rhub.api.auth.role.delete_role
+    parameters:
+      - $ref: '#/parameters/role_id'
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  token_get_info:
+    summary: Get auth token info
+    tags: [auth]
+    operationId: rhub.api.auth.token.get_token_info
+    responses:
+      '200':
+        description: Auth token
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/TokenInfo'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  token_create:
+    summary: Login and get access token
+    description: |
+      This endpoint requires HTTP basic authentication. If credentials are
+      correct then it returns oauth2 token info - access token, refresh token
+      and some other informations about generated token.
+    tags: [auth]
+    operationId: rhub.api.auth.token.create_token
+    parameters:
+      - in: header
+        name: Authorization
+        schema:
+          type: string
+          example: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
+        required: true
+    responses:
+      '200':
+        description: Auth token
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Token'
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  token_refresh:
+    summary: Refresh token
+    description: |
+      This endpoint requires HTTP bearer authentication. The bearer token in
+      'Authorization' header is not access token but refresh token. If refresh
+      was successful return new oauth2 token info. Response is the same as
+      from token create endpoint.
+    tags: [auth]
+    operationId: rhub.api.auth.token.refresh_token
+    parameters:
+      - in: header
+        name: Authorization
+        description: Bearer token is refresh token, not access token!
+        schema:
+          type: string
+          example: Bearer eyJhbGciOiJIUzI1...VLzc
+        required: true
+    responses:
+      '200':
+        description: Auth token
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Token'
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  me:
+    summary: Get info about logged in user
+    tags: [auth]
+    operationId: rhub.api.auth.user.get_current_user
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/User'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
