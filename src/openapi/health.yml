@@ -1,0 +1,26 @@
+endpoints:
+
+  cowsay:
+    summary: Most important endpoint!
+    tags: [health]
+    operationId: rhub.api.health.cowsay
+    responses:
+      '200':
+        description: Success
+        content:
+          text/plain:
+            schema:
+              type: string
+
+  ping:
+    summary: Basic availablity endpoint
+    tags: [health]
+    operationId: rhub.api.health.ping
+    responses:
+      '200':
+        description: Success
+        content:
+          text/plain:
+            schema:
+              type: string
+              enum: [pong]
