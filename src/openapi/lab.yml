@@ -401,7 +401,7 @@ endpoints:
     parameters:
       - $ref: '#/parameters/region_id'
     responses:
-      '200':
+      '204':
         description: Success
       default:
         $ref: 'common.yml#/responses/problem'
