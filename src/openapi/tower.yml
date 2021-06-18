@@ -293,7 +293,7 @@ endpoints:
     parameters:
       - $ref: '#/parameters/server_id'
     responses:
-      '200':
+      '204':
         description: Success
       default:
         $ref: 'common.yml#/responses/problem'
@@ -409,7 +409,7 @@ endpoints:
     parameters:
       - $ref: '#/parameters/template_id'
     responses:
-      '200':
+      '204':
         description: success
       default:
         $ref: 'common.yml#/responses/problem'
