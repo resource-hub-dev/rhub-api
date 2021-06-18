@@ -337,4 +337,4 @@ def webhook_notification():
     # Do something here...TBD...
     pass
 
-    return Response(status=200)
+    return Response(status=204)
