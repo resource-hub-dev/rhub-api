@@ -555,7 +555,7 @@ endpoints:
           schema:
             $ref: '#/model/WebhookNotification'
     responses:
-      '200':
+      '204':
         description: Success
       default:
         $ref: 'common.yml#/responses/problem'

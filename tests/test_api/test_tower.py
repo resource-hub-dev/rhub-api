@@ -623,3 +623,71 @@ def test_get_job_towererror(client, mocker):
     assert rv.status_code == 404
     # status_code from tower should be propagated but not problem detail
     assert rv.json['detail'] != 'Not found.'
+
+
+@pytest.mark.parametrize(
+    'payload',
+    [
+        pytest.param(
+            """
+            {
+                "id": 38,
+                "name": "Demo Job Template",
+                "url": "https://towerhost/#/jobs/playbook/38",
+                "created_by": "bianca",
+                "started": "2020-07-28T19:57:07.888193+00:00",
+                "finished": null,
+                "status": "running",
+                "traceback": "",
+                "inventory": "Demo Inventory",
+                "project": "Demo Project",
+                "playbook": "hello_world.yml",
+                "credential": "Demo Credential",
+                "limit": "",
+                "extra_vars": "{}",
+                "hosts": {}
+            }
+            """,
+            id='template',
+        ),
+        pytest.param(
+            """
+            {
+                "id": 38,
+                "name": "Demo Job Template",
+                "url": "https://towerhost/#/jobs/playbook/38",
+                "created_by": "bianca",
+                "started": "2020-07-28T19:57:07.888193+00:00",
+                "finished": null,
+                "status": "running",
+                "traceback": "",
+                "inventory": "Demo Inventory",
+                "project": "Demo Project",
+                "playbook": "hello_world.yml",
+                "credential": "Demo Credential",
+                "limit": "",
+                "extra_vars": "{}",
+                "hosts": {},
+                "body": "Some extra info about workflow ??"
+            }
+            """,
+            id='workflow template',
+        ),
+    ]
+)
+def test_webhook(client, mocker, payload):
+    mocker.patch.dict(client.application.config, {
+        'WEBHOOK_USER': 'user',
+        'WEBHOOK_PASS': 'pass',
+    })
+
+    rv = client.post(
+        f'{API_BASE}/tower/webhook_notification',
+        headers={
+            'Authorization': 'Basic ' + base64.b64encode(b'user:pass').decode(),
+            'Content-Type': 'application/json',
+        },
+        data=payload,
+    )
+
+    assert rv.status_code == 204
