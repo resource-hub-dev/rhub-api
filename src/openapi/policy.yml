@@ -23,18 +23,25 @@ model:
               type: string
               format: date-time
             maxItems: 2
+            nullable: true
           serv_avail:
             type: number
+            nullable: true
           consumption:
             type: string
+            nullable: true
           density:
             type: string
+            nullable: true
           attribute:
             type: string
+            nullable: true
           cost:
             type: number
+            nullable: true
           location:
             type: string
+            nullable: true
             maxLength: 4
 
   BriefPolicy:

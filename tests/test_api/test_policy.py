@@ -50,12 +50,12 @@ def test_get_policy(client):
         id=1,
         name='test',
         department='',
-        constraint_sched_avail='',
-        constraint_serv_avail='',
+        constraint_sched_avail=[],
+        constraint_serv_avail=3,
         constraint_consumption='',
         constraint_density='',
         constraint_attribute='',
-        constraint_cost='',
+        constraint_cost=1.23,
         constraint_location='',
     )
 
@@ -72,12 +72,12 @@ def test_get_policy(client):
         'name': 'test',
         'department': '',
         'constraint': {
-            'sched_avail': '',
-            'serv_avail': '',
+            'sched_avail': [],
+            'serv_avail': 3,
             'consumption': '',
             'density': '',
             'attribute': '',
-            'cost': '',
+            'cost': 1.23,
             'location': '',
         }
     }
@@ -151,12 +151,12 @@ def test_delete_policy(client, keycloak_mock, db_session_mock):
         id=1,
         name='test',
         department='',
-        constraint_sched_avail='',
-        constraint_serv_avail='',
+        constraint_sched_avail=[],
+        constraint_serv_avail=3,
         constraint_consumption='',
         constraint_density='',
         constraint_attribute='',
-        constraint_cost='',
+        constraint_cost=1.23,
         constraint_location='',
     )
     model.Policy.query.get.return_value = policy
@@ -182,12 +182,12 @@ def test_update_policy(client, keycloak_mock, db_session_mock):
         id=1,
         name='test',
         department='test2',
-        constraint_sched_avail='',
-        constraint_serv_avail='',
+        constraint_sched_avail=[],
+        constraint_serv_avail=3,
         constraint_consumption='',
         constraint_density='',
         constraint_attribute='',
-        constraint_cost='',
+        constraint_cost=1.23,
         constraint_location='',
     )
     model.Policy.query.get.return_value = policy
@@ -210,12 +210,12 @@ def test_update_policy(client, keycloak_mock, db_session_mock):
         'name': 'new',
         'department': 'new desc',
         'constraint': {
-            'sched_avail': '',
-            'serv_avail': '',
+            'sched_avail': [],
+            'serv_avail': 3,
             'consumption': '',
             'density': '',
             'attribute': '',
-            'cost': '',
+            'cost': 1.23,
             'location': '',
         }
     }
