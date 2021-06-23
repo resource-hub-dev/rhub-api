@@ -6,8 +6,9 @@ from keycloak import KeycloakGetError
 from werkzeug.exceptions import Forbidden
 
 from rhub.lab import model
-from rhub.api import db, get_keycloak, ADMIN_ROLE
+from rhub.api import db, get_keycloak
 from rhub.api.utils import row2dict
+from rhub.auth import ADMIN_ROLE
 from rhub.auth.keycloak import problem_from_keycloak_error
 
 

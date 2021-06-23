@@ -1,7 +1,6 @@
 import os
 import logging
 import urllib.parse
-import importlib
 
 import connexion
 import click
@@ -14,11 +13,6 @@ from flask.cli import with_appcontext
 import rhub
 from rhub.auth.keycloak import KeycloakClient
 from rhub.api.vault import Vault, HashicorpVault, FileVault
-
-
-MODULES = ['auth', 'tower', 'lab']
-
-ADMIN_ROLE = 'rhub-admin'
 
 
 logger = logging.getLogger(__name__)
@@ -62,11 +56,8 @@ def get_vault() -> Vault:
 
 def init_app():
     logger.info('Starting inititialization...')
-    for name in MODULES:
-        module = importlib.import_module(f'rhub.{name}')
-        if hasattr(module, 'init'):
-            logger.info(f'Initializing "{name}" module...')
-            module.init()
+    from ._setup import setup
+    setup()
     logger.info('Initialization finished.')
 
 
