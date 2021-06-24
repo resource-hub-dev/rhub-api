@@ -118,7 +118,7 @@ def get_template(template_id):
 
     except Exception as e:
         logger.exception(e)
-        return problem(500, 'Server Error', 'Uknown server error, {e}')
+        return problem(500, 'Server Error', f'Uknown server error, {e}')
 
 
 @route_require_admin
@@ -190,7 +190,7 @@ def launch_template(template_id, body, user):
 
     except Exception as e:
         logger.exception(e)
-        return problem(500, 'Server Error', 'Uknown server error, {e}')
+        return problem(500, 'Server Error', f'Uknown server error, {e}')
 
 
 def list_template_jobs(template_id):
@@ -225,7 +225,7 @@ def get_job(job_id):
 
     except Exception as e:
         logger.exception(e)
-        return problem(500, 'Server Error', 'Uknown server error, {e}')
+        return problem(500, 'Server Error', f'Uknown server error, {e}')
 
 
 def relaunch_job(job_id, user):
@@ -268,7 +268,7 @@ def relaunch_job(job_id, user):
 
     except Exception as e:
         logger.exception(e)
-        return problem(500, 'Server Error', 'Uknown server error, {e}')
+        return problem(500, 'Server Error', f'Uknown server error, {e}')
 
 
 def get_job_stdout(job_id):
@@ -285,11 +285,11 @@ def get_job_stdout(job_id):
     except TowerError as e:
         logger.exception(f'Failed to get job {job_id} stdout, {e}')
         return problem(e.response.status_code, 'Error',
-                       f'Failed to relaunch job {job_id}')
+                       f'Failed to get job {job_id}')
 
     except Exception as e:
         logger.exception(e)
-        return problem(500, 'Server Error', 'Uknown server error, {e}')
+        return problem(500, 'Server Error', f'Uknown server error, {e}')
 
 
 def webhook_auth(username, password, required_scopes=None):
