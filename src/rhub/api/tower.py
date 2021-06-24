@@ -8,7 +8,7 @@ from rhub.tower import model
 from rhub.tower.client import TowerError
 from rhub.api import db
 from rhub.api.utils import row2dict
-from rhub.auth.utils import route_require_admin
+from rhub.auth.utils import route_require_admin, user_is_admin
 
 
 logger = logging.getLogger(__name__)
@@ -193,20 +193,29 @@ def launch_template(template_id, body, user):
         return problem(500, 'Server Error', f'Uknown server error, {e}')
 
 
-def list_template_jobs(template_id):
+def list_template_jobs(template_id, user):
     jobs = model.Job.query.filter_by(template_id=template_id)
+    if not user_is_admin(user):
+        jobs = jobs.filter_by(launched_by=user)
     return [row2dict(job) for job in jobs]
 
 
-def list_jobs():
-    jobs = model.Job.query.all()
+def list_jobs(user):
+    if user_is_admin(user):
+        jobs = model.Job.query.all()
+    else:
+        jobs = model.Job.query.filter_by(launched_by=user)
     return [row2dict(job) for job in jobs]
 
 
-def get_job(job_id):
+def get_job(job_id, user):
     job = model.Job.query.get(job_id)
     if not job:
         return problem(404, 'Not Found', f'Job {job_id} does not exist')
+
+    if not user_is_admin(user) and job.launched_by != user:
+        return problem(403, 'Forbidden',
+                       f"You don't have permissions to view job {job_id}")
 
     try:
         tower_client = job.server.create_tower_client()
@@ -232,6 +241,10 @@ def relaunch_job(job_id, user):
     job = model.Job.query.get(job_id)
     if not job:
         return problem(404, 'Not Found', f'Job {job_id} does not exist')
+
+    if not user_is_admin(user) and job.launched_by != user:
+        return problem(403, 'Forbidden',
+                       f"You don't have permissions to relaunch job {job_id}")
 
     try:
         tower_client = job.server.create_tower_client()
@@ -271,10 +284,14 @@ def relaunch_job(job_id, user):
         return problem(500, 'Server Error', f'Uknown server error, {e}')
 
 
-def get_job_stdout(job_id):
+def get_job_stdout(job_id, user):
     job = model.Job.query.get(job_id)
     if not job:
         return problem(404, 'Not Found', f'Job {job_id} does not exist')
+
+    if not user_is_admin(user) and job.launched_by != user:
+        return problem(403, 'Forbidden',
+                       f"You don't have permissions to view job {job_id} stdout")
 
     try:
         tower_client = job.server.create_tower_client()
