@@ -5,6 +5,7 @@ from keycloak import KeycloakGetError
 
 from rhub.api import get_keycloak
 from rhub.auth.keycloak import problem_from_keycloak_error
+from rhub.auth.utils import route_require_admin
 
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,8 @@ def list_groups():
         return problem(500, 'Unknown Error', str(e))
 
 
-def create_group(body):
+@route_require_admin
+def create_group(body, user):
     try:
         group_id = get_keycloak().group_create(body)
         logger.info(f'Created group {group_id}')
@@ -45,7 +47,8 @@ def get_group(group_id):
         return problem(500, 'Unknown Error', str(e))
 
 
-def update_group(group_id, body):
+@route_require_admin
+def update_group(group_id, body, user):
     try:
         get_keycloak().group_update(group_id, body)
         logger.info(f'Updated group {group_id}')
@@ -58,7 +61,8 @@ def update_group(group_id, body):
         return problem(500, 'Unknown Error', str(e))
 
 
-def delete_group(group_id):
+@route_require_admin
+def delete_group(group_id, user):
     try:
         get_keycloak().group_delete(group_id)
         logger.info(f'Deleted group {group_id}')
@@ -86,9 +90,11 @@ def list_group_roles(group_id):
     raise NotImplementedError
 
 
-def add_group_role(group_id, body):
+@route_require_admin
+def add_group_role(group_id, body, user):
     raise NotImplementedError
 
 
-def delete_group_role(group_id, body):
+@route_require_admin
+def delete_group_role(group_id, body, user):
     raise NotImplementedError
