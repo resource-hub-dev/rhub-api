@@ -44,7 +44,7 @@ class Template(db.Model):
     tower_template_id = db.Column(db.Integer, nullable=False)
     tower_template_is_workflow = db.Column(db.Boolean, nullable=False)
 
-    jobs = db.relationship('Job')
+    jobs = db.relationship('Job', back_populates='template')
     server = db.relationship('Server')
 
 
