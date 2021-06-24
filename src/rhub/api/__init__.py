@@ -73,6 +73,9 @@ def create_app():
 
     connexion_app = connexion.App(__name__)
 
+    flask_app = connexion_app.app
+    flask_app.url_map.strict_slashes = False
+
     parser = prance.ResolvingParser(os.path.join(root, 'openapi', 'openapi.yml'))
     connexion_app.add_api(
         parser.specification,
@@ -80,7 +83,6 @@ def create_app():
         strict_validation=True,
     )
 
-    flask_app = connexion_app.app
     # Enable CORS (Cross-Origin Resource Sharing)
     # https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
     CORS(flask_app)
