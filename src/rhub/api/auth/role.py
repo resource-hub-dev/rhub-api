@@ -5,6 +5,7 @@ from keycloak import KeycloakGetError
 
 from rhub.api import get_keycloak
 from rhub.auth.keycloak import problem_from_keycloak_error
+from rhub.auth.utils import route_require_admin
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,8 @@ def list_roles():
         return problem(500, 'Unknown Error', str(e))
 
 
-def create_role(body):
+@route_require_admin
+def create_role(body, user):
     try:
         role_id = get_keycloak().role_create(body)
         logger.info(f'Create role {role_id}')
@@ -48,7 +50,8 @@ def get_role(role_id):
         return problem(500, 'Unknown Error', str(e))
 
 
-def update_role(role_id, body):
+@route_require_admin
+def update_role(role_id, body, user):
     try:
         get_keycloak().role_update(role_id, body)
         role_name = body['name']
@@ -62,7 +65,8 @@ def update_role(role_id, body):
         return problem(500, 'Unknown Error', str(e))
 
 
-def delete_role(role_id):
+@route_require_admin
+def delete_role(role_id, user):
     try:
         get_keycloak().role_delete(role_id)
         logger.info(f'Deleted role {role_id}')

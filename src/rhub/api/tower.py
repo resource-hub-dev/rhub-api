@@ -8,6 +8,7 @@ from rhub.tower import model
 from rhub.tower.client import TowerError
 from rhub.api import db
 from rhub.api.utils import row2dict
+from rhub.auth.utils import route_require_admin
 
 
 logger = logging.getLogger(__name__)
@@ -35,7 +36,8 @@ def list_servers():
     return [row2dict(server) for server in servers], 200
 
 
-def create_server(body):
+@route_require_admin
+def create_server(body, user):
     body.setdefault('description', '')
 
     server = model.Server(**body)
@@ -51,7 +53,8 @@ def get_server(server_id):
     return row2dict(server)
 
 
-def update_server(server_id, body):
+@route_require_admin
+def update_server(server_id, body, user):
     server = model.Server.query.get(server_id)
     if not server:
         return problem(404, 'Not Found', f'Server {server_id} does not exist')
@@ -63,7 +66,8 @@ def update_server(server_id, body):
     return row2dict(server)
 
 
-def delete_server(server_id):
+@route_require_admin
+def delete_server(server_id, user):
     server = model.Server.query.get(server_id)
     if not server:
         return problem(404, 'Not Found', f'Server {server_id} does not exist')
@@ -77,7 +81,8 @@ def list_templates():
     return [row2dict(template) for template in templates]
 
 
-def create_template(body):
+@route_require_admin
+def create_template(body, user):
     body.setdefault('description', '')
 
     template = model.Template(**body)
@@ -116,7 +121,8 @@ def get_template(template_id):
         return problem(500, 'Server Error', 'Uknown server error, {e}')
 
 
-def update_template(template_id, body):
+@route_require_admin
+def update_template(template_id, body, user):
     template = model.Template.query.get(template_id)
     if not template:
         return problem(404, 'Not Found', f'Template {template_id} does not exist')
@@ -128,7 +134,8 @@ def update_template(template_id, body):
     return row2dict(template)
 
 
-def delete_template(template_id):
+@route_require_admin
+def delete_template(template_id, user):
     template = model.Template.query.get(template_id)
     if not template:
         return problem(404, 'Not Found', f'Template {template_id} does not exist')

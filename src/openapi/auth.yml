@@ -493,6 +493,8 @@ endpoints:
                 subGroups: []
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   group_create:
     summary: Create group
@@ -529,6 +531,8 @@ endpoints:
               $ref: '#/model/Group'
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   group_get:
     summary: Get group
@@ -552,6 +556,8 @@ endpoints:
               $ref: '#/model/Group'
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   group_update:
     summary: Update group
@@ -585,6 +591,8 @@ endpoints:
               $ref: '#/model/Group'
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   group_delete:
     summary: Delete group
@@ -597,6 +605,8 @@ endpoints:
         description: Success
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   group_list_users:
     summary: Get users in group
@@ -618,6 +628,8 @@ endpoints:
                 $ref: '#/model/User'
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   group_list_roles:
     summary: Get group roles
@@ -640,6 +652,8 @@ endpoints:
                 description: adminRole
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   group_add_role:
     summary: Add group to role
@@ -664,6 +678,8 @@ endpoints:
         description: Success
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   group_remove_role:
     summary: Remove group from role
@@ -688,6 +704,8 @@ endpoints:
         description: Success
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   role_list:
     summary: Get role list
@@ -711,6 +729,8 @@ endpoints:
                 description: adminRole
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   role_create:
     summary: Create role
@@ -744,6 +764,8 @@ endpoints:
               $ref: '#/model/Role'
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   role_get:
     summary: Get role
@@ -767,6 +789,8 @@ endpoints:
               $ref: '#/model/Role'
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   role_update:
     summary: Update role
@@ -798,6 +822,8 @@ endpoints:
               $ref: '#/model/Role'
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   role_delete:
     summary: Delete role
@@ -810,6 +836,8 @@ endpoints:
         description: Success
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   token_get_info:
     summary: Get auth token info

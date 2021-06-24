@@ -5,6 +5,7 @@ import functools
 import pytest
 
 from rhub.api import create_app
+from rhub.auth.keycloak import KeycloakClient
 
 
 @pytest.fixture
@@ -34,6 +35,18 @@ def token_mock(mocker):
         'scope': 'tests',
     }
     yield decode_token_mock
+
+
+@pytest.fixture(autouse=True)
+def user_role_check_mock(mocker):
+    keycloak_mock = mocker.Mock(spec=KeycloakClient)
+
+    get_keycloak_mock = mocker.patch(f'rhub.auth.utils.get_keycloak')
+    get_keycloak_mock.return_value = keycloak_mock
+
+    keycloak_mock.user_check_role.return_value = True
+
+    yield keycloak_mock.user_check_role
 
 
 @pytest.fixture(autouse=True, scope='function')
