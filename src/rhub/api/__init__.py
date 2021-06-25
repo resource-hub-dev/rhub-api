@@ -55,7 +55,7 @@ def get_vault() -> Vault:
 
 
 def init_app():
-    logger.info('Starting inititialization...')
+    logger.info('Starting initialization...')
     from ._setup import setup
     setup()
     logger.info('Initialization finished.')
