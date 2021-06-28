@@ -9,6 +9,9 @@ model:
           - readOnly: true
       username:
         type: string
+      password:
+        type: string
+        writeOnly: true
       email:
         type: string
       firstName:
