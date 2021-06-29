@@ -15,6 +15,8 @@ build:
 		python3 -m flask routes
 
 install:
+	mkdir -p ./packages
+	chmod 777 ./packages
 	docker-compose run --rm api pip3 install --upgrade -r ./requirements.txt -t ./packages
 
 start:
