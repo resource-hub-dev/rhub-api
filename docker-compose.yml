@@ -13,8 +13,12 @@ services:
       # don't pollute /opt/app-root/src with home crap
       HOME: /opt/app-root/home
       RHUB_SKIP_INIT:  # pass env var
+      FLASK_APP: rhub.api:create_app()
+      FLASK_ENV: development
+      FLASK_RUN_HOST: 0.0.0.0
+      FLASK_RUN_PORT: 8081
     env_file:
       - .env
     ports:
       - 8081:8081
-    command: [./bin/entrypoint.sh]
+    command: [python3, -m, flask, run]
