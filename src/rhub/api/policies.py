@@ -18,17 +18,17 @@ API Schema:
     "constraint": {
         "sched_avail": "",
         "serv_avail": "",
-        "consumption": "",
+        "limit": "",
         "density": "",
-        "attribute": "",
+        "tag": "",
         "cost": "",
         "location": ""
     }
 }
 
 Table Schema: ['id', 'department', 'name', 'constraint_sched_avail', '
-constraint_serv_avail', 'constraint_consumption', 'constraint_density',
-'constraint_attribute', 'constraint_cost', 'constraint_location']
+constraint_serv_avail', 'constraint_limit', 'constraint_density',
+'constraint_tag', 'constraint_cost', 'constraint_location']
 """
 
 logger = logging.getLogger(__name__)

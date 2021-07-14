@@ -52,9 +52,9 @@ def test_get_policy(client):
         department='',
         constraint_sched_avail=[],
         constraint_serv_avail=3,
-        constraint_consumption='',
+        constraint_limit={},
         constraint_density='',
-        constraint_attribute='',
+        constraint_tag=[],
         constraint_cost=1.23,
         constraint_location='',
     )
@@ -74,9 +74,9 @@ def test_get_policy(client):
         'constraint': {
             'sched_avail': [],
             'serv_avail': 3,
-            'consumption': '',
+            'limit': {},
             'density': '',
-            'attribute': '',
+            'tag': [],
             'cost': 1.23,
             'location': '',
         }
@@ -112,9 +112,9 @@ def test_search_policy(client):
         department='',
         constraint_sched_avail='',
         constraint_serv_avail='',
-        constraint_consumption='',
+        constraint_limit={},
         constraint_density='',
-        constraint_attribute='',
+        constraint_tag=[],
         constraint_cost='',
         constraint_location='',
     )]
@@ -130,8 +130,8 @@ def test_search_policy(client):
     assert rv.status_code == 200
     assert rv.json == [{
         'constraint': {
-            'attribute': '',
-            'consumption': '',
+            'tag': [],
+            'limit': {},
             'cost': '',
             'density': '',
             'location': '',
@@ -153,9 +153,9 @@ def test_delete_policy(client, keycloak_mock, db_session_mock):
         department='',
         constraint_sched_avail=[],
         constraint_serv_avail=3,
-        constraint_consumption='',
+        constraint_limit={},
         constraint_density='',
-        constraint_attribute='',
+        constraint_tag=[],
         constraint_cost=1.23,
         constraint_location='',
     )
@@ -184,9 +184,9 @@ def test_update_policy(client, keycloak_mock, db_session_mock):
         department='test2',
         constraint_sched_avail=[],
         constraint_serv_avail=3,
-        constraint_consumption='',
+        constraint_limit={},
         constraint_density='',
-        constraint_attribute='',
+        constraint_tag=[],
         constraint_cost=1.23,
         constraint_location='',
     )
@@ -212,9 +212,9 @@ def test_update_policy(client, keycloak_mock, db_session_mock):
         'constraint': {
             'sched_avail': [],
             'serv_avail': 3,
-            'consumption': '',
+            'limit': {},
             'density': '',
-            'attribute': '',
+            'tag': [],
             'cost': 1.23,
             'location': '',
         }

@@ -27,14 +27,16 @@ model:
           serv_avail:
             type: number
             nullable: true
-          consumption:
-            type: string
+          limit:
+            type: object
             nullable: true
           density:
             type: string
             nullable: true
-          attribute:
-            type: string
+          tag:
+            type: array
+            items:
+              type: string
             nullable: true
           cost:
             type: number
