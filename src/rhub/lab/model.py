@@ -18,19 +18,27 @@ class Region(db.Model):
     enabled = db.Column(db.Boolean, default=True)
     quota_id = db.Column(db.Integer, db.ForeignKey('lab_quota.id'),
                          nullable=True)
+    #: :type: :class:`Quota`
     quota = db.relationship('Quota', uselist=False, back_populates='region')
     lifespan_length = db.Column(db.Integer, nullable=True)
     reservations_enabled = db.Column(db.Boolean, default=True)
     owner_group = db.Column(postgresql.UUID, nullable=False)
-    # Limits use only to specific group of people. NULL == shared lab.
+    #: Limits use only to specific group of people. `NULL` == shared lab.
     users_group = db.Column(postgresql.UUID, nullable=True, index=True)
     ...  # TODO policies?
     tower_id = db.Column(db.Integer, db.ForeignKey('lab_tower.id'))
+    #: :type: :class:`Tower`
     tower = db.relationship('Tower')
 
+    #: :type: list of :class:`Cluster`
     clusters = db.relationship('Cluster', back_populates='region')
 
     def create_cluster(self, **kwargs):
+        """
+        A factory to create :class:`Cluster` with
+        :attr:`Cluster.lifespan_expiration` set according to
+        :attr:`Region.lifespan_length` and current time.
+        """
         cluster = Cluster(**kwargs)
 
         lifespan_delta = datetime.timedelta(days=self.lifespan_length)
@@ -62,6 +70,7 @@ class Quota(db.Model):
     num_volumes = db.Column(db.Integer, nullable=True)
     volumes_gb = db.Column(db.Integer, nullable=True)
 
+    #: :type: :class:`Region`
     region = db.relationship('Region', back_populates='quota',
                              cascade='all,delete-orphan')
 
@@ -84,6 +93,7 @@ class Tower(db.Model):
     url = db.Column(db.String(256), nullable=False)
     credentials = db.Column(db.String(256), nullable=False)
 
+    #: :type: list of :class:`Region`
     regions = db.relationship('Region', back_populates='tower',
                               cascade='all,delete-orphan')
 
@@ -91,10 +101,10 @@ class Tower(db.Model):
         """
         Create Tower client.
 
-        Returns: Tower
-        Raises: RuntimeError if failed to create client due to missing
-                credentials in vault
-        Raises: Exception any other errors
+        :returns: Tower
+        :raises: RuntimeError if failed to create client due to missing
+                 credentials in vault
+        :raises: Exception any other errors
         """
         credentials = get_vault().read(self.credentials)
         if not credentials:
@@ -112,10 +122,13 @@ class Cluster(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     region_id = db.Column(db.Integer, db.ForeignKey('lab_region.id'),
                           nullable=False)
+    #: :type: :class:`Region`
     region = db.relationship('Region', back_populates='clusters')
 
     created = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     reservation_expiration = db.Column(db.DateTime, nullable=True)
+    #: Cluster lifespan expiration (hard-limit), see
+    #: :meth:`Region.create_cluster`.
     lifespan_expiration = db.Column(db.DateTime, nullable=True)
 
     ...  # TODO

@@ -24,8 +24,8 @@ class Tower:
         """
         Make request to Tower API.
 
-        Returns: requests.Response
-        Raises: TowerError if request failed (HTTP status code 4** or 5**)
+        :returns: requests.Response
+        :raises: TowerError if request failed (HTTP status code 4** or 5**)
         """
         path = path.lstrip('/')
         headers = {'Content-Type': 'application/json'}
@@ -55,8 +55,8 @@ class Tower:
         """
         Get job template data.
 
-        Returns: dict
-        Raises: TowerError
+        :returns: dict
+        :raises: TowerError
         """
         return self.request('GET', f'/job_templates/{template_id}/').json()
 
@@ -64,8 +64,8 @@ class Tower:
         """
         Get workflow job data.
 
-        Returns: dict
-        Raises: TowerError
+        :returns: dict
+        :raises: TowerError
         """
         return self.request('GET', f'/workflow_job_templates/{workflow_id}/').json()
 
@@ -73,8 +73,8 @@ class Tower:
         """
         Get job template survey spec.
 
-        Returns: dict
-        Raises: TowerError
+        :returns: dict
+        :raises: TowerError
         """
         return self.request(
             'GET',
@@ -85,8 +85,8 @@ class Tower:
         """
         Get workflow job survey spec.
 
-        Returns: dict
-        Raises: TowerError
+        :returns: dict
+        :raises: TowerError
         """
         return self.request(
             'GET',
@@ -97,8 +97,8 @@ class Tower:
         """
         Launch job template.
 
-        Returns: dict - job data
-        Raises: TowerError
+        :returns: dict - job data
+        :raises: TowerError
         """
         return self.request(
             'POST',
@@ -112,8 +112,8 @@ class Tower:
         """
         Launch workflow job.
 
-        Returns: dict - workflow job data
-        Raises: TowerError
+        :returns: dict - workflow job data
+        :raises: TowerError
         """
         return self.request(
             'POST',
@@ -127,8 +127,8 @@ class Tower:
         """
         Get job (launched job template).
 
-        Returns: dict
-        Raises: TowerError
+        :returns: dict
+        :raises: TowerError
         """
         return self.request('GET', f'/jobs/{template_job_id}/').json()
 
@@ -136,8 +136,8 @@ class Tower:
         """
         Get workflow job (launched workflow job).
 
-        Returns: dict
-        Raises: TowerError
+        :returns: dict
+        :raises: TowerError
         """
         return self.request('GET', f'/workflow_jobs/{workflow_job_id}/').json()
 
@@ -145,8 +145,8 @@ class Tower:
         """
         Relaunch job.
 
-        Returns: dict - job data
-        Raises: TowerError
+        :returns: dict - job data
+        :raises: TowerError
         """
         return self.request(
             'POST',
@@ -157,8 +157,8 @@ class Tower:
         """
         Relaunch workflow job.
 
-        Returns: dict - workflow job data
-        Raises: TowerError
+        :returns: dict - workflow job data
+        :raises: TowerError
         """
         return self.request(
             'POST',
@@ -169,8 +169,8 @@ class Tower:
         """
         Get job stdout (output from Ansible).
 
-        Returns: dict if output_format is json otherwise str
-        Raises: TowerError
+        :returns: dict if output_format is json otherwise str
+        :raises: TowerError
         """
         response = self.request(
             'GET',

@@ -7,7 +7,7 @@ from rhub.auth import ADMIN_ROLE
 
 
 def user_is_admin(user_id):
-    """Check if user is admin, has ADMIN_ROLE role."""
+    """Check if user is admin, has :const:`rhub.auth.ADMIN_ROLE` role."""
     return get_keycloak().user_check_role(user_id, ADMIN_ROLE)
 
 
@@ -43,5 +43,8 @@ def route_require_role(*roles,
 
 
 def route_require_admin(fn):
-    """Shortcut to require admin role to use API endpoint."""
+    """
+    Shortcut to require admin role (:const:`rhub.auth.ADMIN_ROLE`) to use API
+    endpoint.
+    """
     return route_require_role(ADMIN_ROLE)(fn)
