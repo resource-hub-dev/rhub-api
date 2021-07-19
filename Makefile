@@ -24,7 +24,7 @@ start:
 
 .PHONY: docs
 docs:
-	$(MAKE) -C docs api-code api-web html
+	$(MAKE) -C docs html
 
 .PHONY: clean
 clean:
