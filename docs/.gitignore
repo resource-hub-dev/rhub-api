@@ -1,0 +1,6 @@
+# Build
+/_build/
+
+# Auto-generated content
+/api-code/
+/_static/swaggerui/

@@ -21,3 +21,11 @@ install:
 
 start:
 	docker-compose up --force-recreate
+
+.PHONY: docs
+docs:
+	$(MAKE) -C docs api-code api-web html
+
+.PHONY: clean
+clean:
+	$(MAKE) -C docs clean
