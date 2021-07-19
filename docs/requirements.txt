@@ -1,5 +1,8 @@
+-r ../requirements.txt
+
 sphinx
 sphinx-rtd-theme
 sphinxcontrib-swaggerui
 pbr  # missing dependency of sphinxcontrib-swaggerui
 reno[sphinx]
+sh
