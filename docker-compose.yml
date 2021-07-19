@@ -21,4 +21,4 @@ services:
       - .env
     ports:
       - 8081:8081
-    command: [python3, -m, flask, run]
+    command: [bash, -c, python3 -m flask init && python3 -m flask run]
