@@ -71,7 +71,7 @@ class KeycloakClient:
 
     def user_role_list(self, user_id):
         """
-        Get set of all user roles !! ROLE NAMES !!, directly assigned and also
+        Get set of all user roles (**role names**), directly assigned and also
         inherited from a group.
         """
         roles = set()
@@ -134,12 +134,12 @@ class KeycloakClient:
         return self.admin.get_group_realm_roles(group_id)
 
     def group_role_add(self, role_name, group_id):
-        """Add role to group. !! Role NAME, not ID !!"""
+        """Add role to group. **Role NAME, not ID.**"""
         role = self.role_get(role_name)
         self.admin.assign_group_realm_roles(group_id, [role])
 
     def group_role_remove(self, role_name, group_id):
-        """Remove role from group. !! Role NAME, not ID !!"""
+        """Remove role from group. **Role NAME, not ID.**"""
         role = self.role_get(role_name)
         self.admin.delete_group_realm_roles(group_id, [role])
 
@@ -147,7 +147,7 @@ class KeycloakClient:
         return self.admin.get_realm_roles()
 
     def role_get(self, role_name):
-        """Get role by name. !! NAME, not ID !!"""
+        """Get role by name. **NAME, not ID.**"""
         return self.admin.get_realm_role(role_name)
 
     def role_create(self, data):

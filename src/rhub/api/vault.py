@@ -16,6 +16,7 @@ class Vault(abc.ABC):
 
 class HashicorpVault(Vault):
     """Hashicorp Vault client."""
+
     def __init__(self, url, role_id, secret_id):
         self._client = hvac.Client(url)
         self._client.auth.approle.login(role_id=role_id, secret_id=secret_id)
@@ -34,9 +35,9 @@ class HashicorpVault(Vault):
 
 class FileVault(Vault):
     """
-    UNSECURED vault that reads credentials from YAML file.
+    **Insecure** vault that reads credentials from YAML file.
 
-    YAML file structure is mapping 'credential path' -> 'data object', example:
+    YAML file structure is mapping 'credential path' -> 'data object', example ::
 
         kv/example/prod:
             username: user
