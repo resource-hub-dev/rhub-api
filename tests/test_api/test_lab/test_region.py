@@ -26,6 +26,87 @@ def _db_add_row_side_effect(data_added):
     return side_effect
 
 
+def test_to_dict():
+    region = model.Region(
+        id=1,
+        name='test',
+        location='RDU',
+        description='desc',
+        banner='ban',
+        enabled=True,
+        quota_id=1,
+        quota=model.Quota(
+            num_vcpus=40,
+            ram_mb=200000,
+            num_volumes=40,
+            volumes_gb=540,
+        ),
+        lifespan_length=None,
+        reservations_enabled=True,
+        owner_group='00000000-0000-0000-0000-000000000000',
+        users_group=None,
+        tower_id=1,
+        openstack_url='https://openstack.example.com:13000',
+        openstack_credentials='kv/example/openstack',
+        openstack_project='rhub',
+        openstack_domain_name='Default',
+        openstack_domain_id='default',
+        openstack_default_project='rhub',
+        openstack_default_network='provider_net_rhub',
+        openstack_keyname='rhub_key',
+        satellite_hostname='satellite.example.com',
+        satellite_insecure=False,
+        satellite_credentials='kv/example/satellite',
+        dns_server_hostname='ns.example.com',
+        dns_server_zone='example.com.',
+        dns_server_key='example_key',
+        vault_server='https://vault.example.com/',
+        download_server='https://download.example.com',
+    )
+
+    assert region.to_dict() == {
+        'id': 1,
+        'name': 'test',
+        'location': 'RDU',
+        'description': 'desc',
+        'banner':'ban',
+        'enabled': True,
+        'quota': {
+            'num_vcpus': 40,
+            'ram_mb': 200000,
+            'num_volumes': 40,
+            'volumes_gb': 540,
+        },
+        'lifespan_length': None,
+        'reservations_enabled': True,
+        'owner_group': '00000000-0000-0000-0000-000000000000',
+        'users_group': None,
+        'tower_id': 1,
+        'openstack': {
+            'url': 'https://openstack.example.com:13000',
+            'credentials': 'kv/example/openstack',
+            'project': 'rhub',
+            'domain_name': 'Default',
+            'domain_id': 'default',
+            'default_project': 'rhub',
+            'default_network': 'provider_net_rhub',
+            'keyname': 'rhub_key',
+        },
+        'satellite': {
+            'hostname': 'satellite.example.com',
+            'insecure': False,
+            'credentials': 'kv/example/satellite',
+        },
+        'dns_server': {
+            'hostname': 'ns.example.com',
+            'zone': 'example.com.',
+            'key': 'example_key',
+        },
+        'vault_server': 'https://vault.example.com/',
+        'download_server': 'https://download.example.com',
+    }
+
+
 def test_list_regions(client):
     model.Region.query.all.return_value = [
         model.Region(

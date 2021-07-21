@@ -51,11 +51,13 @@ model:
       name:
         type: string
         maxLength: 32
+        example: rdu2-a
       location:
         description: Geographical location of region.
         type: string
         maxLength: 32
         nullable: true
+        example: RDU
       description:
         type: string
       banner:
@@ -72,33 +74,114 @@ model:
         anyOf:
           - $ref: '#/model/Quota'
           - nullable: true
+        example:
+          num_vcpus: 40
+          ram_mb: 200000
+          num_volumes: 40
+          volumes_gb: 540
       owner_group:
         type: string
         format: uuid
         readOnly: true
+        example: 7670ac07-cb21-448d-af8a-6e3882216be3
       users_group:
         type: string
         format: uuid
         nullable: true
       tower_id:
         $ref: 'common.yml#/model/ID'
-    example:
-      id: 1
-      name: rdu2-a
-      location: RDU
-      description: ''
-      banner: ''
-      enabled: true
-      reservation_enabled: true
-      lifespan_length: 60
-      quota:
-        num_vcpus: 40
-        ram_mb: 200000
-        num_volumes: 40
-        volumes_gb: 540
-      owner_group: 7670ac07-cb21-448d-af8a-6e3882216be3
-      users_group: null
-      tower_id: 1
+      openstack:
+        type: object
+        properties:
+          url:
+            type: string
+          credentials:
+            oneOf:
+              - description: Credentials to store in Vault
+                type: object
+                properties:
+                  username:
+                    type: string
+                  password:
+                    type: string
+                writeOnly: true
+              - description: Credentials path in Vault
+                type: string
+          project:
+            type: string
+          domain_name:
+            type: string
+          domain_id:
+            type: string
+          default_project:
+            description: Default project
+            type: string
+          default_network:
+            description: Default network provider
+            type: string
+          keyname:
+            description: SSH key name
+            type: string
+        example:
+          url: https://openstack.example.com:13000
+          credentials: kv/region/rdu2-a/openstack
+          project: rhub
+          domain_name: Default
+          domain_id: default
+          default_project: rhub
+          default_network: provider_net_rhub
+          keyname: rhub
+      satellite:
+        type: object
+        properties:
+          hostname:
+            type: string
+          insecure:
+            type: boolean
+          credentials:
+            oneOf:
+              - description: Credentials to store in Vault
+                type: object
+                properties:
+                  username:
+                    type: string
+                  password:
+                    type: string
+                writeOnly: true
+              - description: Credentials path in Vault
+                type: string
+        example:
+          hostname: satellite.example.com
+          credentials: kv/region/rdu2-a/satellite
+      dns_server:
+        type: object
+        properties:
+          hostname:
+            type: string
+          zone:
+            type: string
+          key:
+            oneOf:
+              - description: Credentials to store in Vault
+                type: object
+                properties:
+                  name:
+                    type: string
+                  secret:
+                    type: string
+                writeOnly: true
+              - description: Credentials path in Vault
+                type: string
+        example:
+          hostname: ns.example.com
+          zone: example.com.
+          credentials: kv/region/rdu2-a/dns
+      vault_server:
+        type: string
+        example: https://vault.example.com
+      download_server:
+        type: string
+        example: https://download.example.com
 
   Cluster:
     type: object
