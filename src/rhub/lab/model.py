@@ -30,6 +30,32 @@ class Region(db.Model):
     #: :type: :class:`Tower`
     tower = db.relationship('Tower')
 
+    openstack_url = db.Column(db.String(256), nullable=False)
+    #: OpenStack credentials path in Vault
+    openstack_credentials = db.Column(db.String(256), nullable=False)
+    openstack_project = db.Column(db.String(64), nullable=False)
+    openstack_domain_name = db.Column(db.String(64), nullable=False)
+    openstack_domain_id = db.Column(db.String(64), nullable=False)
+    #: Default OpenStack project
+    openstack_default_project = db.Column(db.String(64), nullable=False)
+    #: Default OpenStack network provider
+    openstack_default_network = db.Column(db.String(64), nullable=False)
+    #: SSH key name
+    openstack_keyname = db.Column(db.String(64), nullable=False)
+
+    satellite_hostname = db.Column(db.String(256), nullable=False)
+    satellite_insecure = db.Column(db.Boolean, default=False, nullable=False)
+    #: Satellite credentials path in Vault
+    satellite_credentials = db.Column(db.String(256), nullable=False)
+
+    dns_server_hostname = db.Column(db.String(256), nullable=False)
+    dns_server_zone = db.Column(db.String(256), nullable=False)
+    #: DNS server credentials path in Vault
+    dns_server_key = db.Column(db.String(256), nullable=False)
+
+    vault_server = db.Column(db.String(256), nullable=False)
+    download_server = db.Column(db.String(256), nullable=False)
+
     #: :type: list of :class:`Cluster`
     clusters = db.relationship('Cluster', back_populates='region')
 
@@ -47,11 +73,21 @@ class Region(db.Model):
         return cluster
 
     def to_dict(self):
+        inline_childs = ['openstack', 'satellite', 'dns_server']
+
         data = {}
+
         for column in self.__table__.columns:
             if column.name == 'quota_id':
                 continue
-            data[column.name] = getattr(self, column.name)
+            for i in inline_childs:
+                if column.name.startswith(f'{i}_'):
+                    if i not in data:
+                        data[i] = {}
+                    data[i][column.name[len(i) + 1:]] = getattr(self, column.name)
+                    break
+            else:
+                data[column.name] = getattr(self, column.name)
 
         if self.quota:
             data['quota'] = row2dict(self.quota)
@@ -91,6 +127,7 @@ class Tower(db.Model):
     description = db.Column(db.Text, nullable=True)
     enabled = db.Column(db.Boolean, default=True)
     url = db.Column(db.String(256), nullable=False)
+    #: Credentials path in Vault
     credentials = db.Column(db.String(256), nullable=False)
 
     #: :type: list of :class:`Region`
