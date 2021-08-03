@@ -17,13 +17,7 @@ def temp_dir():
 @pytest.fixture(autouse=True)
 def vault_mock(mocker):
     vault_mock = mocker.Mock()
-    vault_mock.read.return_value = {
-        'username': 'username',
-        'password': 'password',
-    }
-
-    mocker.patch('rhub.api.get_vault', new=vault_mock)
-
+    mocker.patch('rhub.api.get_vault').return_value = vault_mock
     yield vault_mock
 
 

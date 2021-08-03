@@ -4,6 +4,8 @@ import pytest
 
 from rhub.lab import model
 from rhub.auth.keycloak import KeycloakClient
+from rhub.api.vault import Vault
+from rhub.api.lab.region import VAULT_PATH_PREFIX
 
 
 API_BASE = '/v0'
@@ -17,6 +19,13 @@ def keycloak_mock(mocker):
     get_keycloak_mock.return_value = keycloak_mock
 
     yield keycloak_mock
+
+
+@pytest.fixture(autouse=True)
+def vault_mock(mocker):
+    vault_mock = mocker.Mock()
+    mocker.patch('rhub.api.lab.region.get_vault').return_value = vault_mock
+    yield vault_mock
 
 
 def _db_add_row_side_effect(data_added):
@@ -51,15 +60,14 @@ def test_to_dict():
         openstack_project='rhub',
         openstack_domain_name='Default',
         openstack_domain_id='default',
-        openstack_default_project='rhub',
-        openstack_default_network='provider_net_rhub',
+        openstack_networks=['provider_net_rhub'],
         openstack_keyname='rhub_key',
         satellite_hostname='satellite.example.com',
         satellite_insecure=False,
         satellite_credentials='kv/example/satellite',
         dns_server_hostname='ns.example.com',
         dns_server_zone='example.com.',
-        dns_server_key='example_key',
+        dns_server_key='kv/example/key',
         vault_server='https://vault.example.com/',
         download_server='https://download.example.com',
     )
@@ -88,8 +96,7 @@ def test_to_dict():
             'project': 'rhub',
             'domain_name': 'Default',
             'domain_id': 'default',
-            'default_project': 'rhub',
-            'default_network': 'provider_net_rhub',
+            'networks': ['provider_net_rhub'],
             'keyname': 'rhub_key',
         },
         'satellite': {
@@ -100,7 +107,7 @@ def test_to_dict():
         'dns_server': {
             'hostname': 'ns.example.com',
             'zone': 'example.com.',
-            'key': 'example_key',
+            'key': 'kv/example/key',
         },
         'vault_server': 'https://vault.example.com/',
         'download_server': 'https://download.example.com',
@@ -122,6 +129,21 @@ def test_list_regions(client):
             owner_group='00000000-0000-0000-0000-000000000000',
             users_group=None,
             tower_id=1,
+            openstack_url='https://openstack.example.com:13000',
+            openstack_credentials='kv/example/openstack',
+            openstack_project='rhub',
+            openstack_domain_name='Default',
+            openstack_domain_id='default',
+            openstack_networks=['provider_net_rhub'],
+            openstack_keyname='rhub_key',
+            satellite_hostname='satellite.example.com',
+            satellite_insecure=False,
+            satellite_credentials='kv/example/satellite',
+            dns_server_hostname='ns.example.com',
+            dns_server_zone='example.com.',
+            dns_server_key='kv/example/key',
+            vault_server='https://vault.example.com/',
+            download_server='https://download.example.com',
         ),
     ]
 
@@ -145,6 +167,27 @@ def test_list_regions(client):
             'owner_group': '00000000-0000-0000-0000-000000000000',
             'users_group': None,
             'tower_id': 1,
+            'openstack': {
+                'url': 'https://openstack.example.com:13000',
+                'credentials': 'kv/example/openstack',
+                'project': 'rhub',
+                'domain_name': 'Default',
+                'domain_id': 'default',
+                'networks': ['provider_net_rhub'],
+                'keyname': 'rhub_key',
+            },
+            'satellite': {
+                'hostname': 'satellite.example.com',
+                'insecure': False,
+                'credentials': 'kv/example/satellite',
+            },
+            'dns_server': {
+                'hostname': 'ns.example.com',
+                'zone': 'example.com.',
+                'key': 'kv/example/key',
+            },
+            'vault_server': 'https://vault.example.com/',
+            'download_server': 'https://download.example.com',
         }
     ]
 
@@ -163,6 +206,21 @@ def test_get_region(client):
         owner_group='00000000-0000-0000-0000-000000000000',
         users_group=None,
         tower_id=1,
+        openstack_url='https://openstack.example.com:13000',
+        openstack_credentials='kv/example/openstack',
+        openstack_project='rhub',
+        openstack_domain_name='Default',
+        openstack_domain_id='default',
+        openstack_networks=['provider_net_rhub'],
+        openstack_keyname='rhub_key',
+        satellite_hostname='satellite.example.com',
+        satellite_insecure=False,
+        satellite_credentials='kv/example/satellite',
+        dns_server_hostname='ns.example.com',
+        dns_server_zone='example.com.',
+        dns_server_key='kv/example/key',
+        vault_server='https://vault.example.com/',
+        download_server='https://download.example.com',
     )
 
     rv = client.get(
@@ -186,6 +244,27 @@ def test_get_region(client):
         'owner_group': '00000000-0000-0000-0000-000000000000',
         'users_group': None,
         'tower_id': 1,
+        'openstack': {
+            'url': 'https://openstack.example.com:13000',
+            'credentials': 'kv/example/openstack',
+            'project': 'rhub',
+            'domain_name': 'Default',
+            'domain_id': 'default',
+            'networks': ['provider_net_rhub'],
+            'keyname': 'rhub_key',
+        },
+        'satellite': {
+            'hostname': 'satellite.example.com',
+            'insecure': False,
+            'credentials': 'kv/example/satellite',
+        },
+        'dns_server': {
+            'hostname': 'ns.example.com',
+            'zone': 'example.com.',
+            'key': 'kv/example/key',
+        },
+        'vault_server': 'https://vault.example.com/',
+        'download_server': 'https://download.example.com',
     }
 
 
@@ -194,6 +273,27 @@ def test_create_region(client, db_session_mock, keycloak_mock, mocker):
         'name': 'test',
         'location': 'RDU',
         'tower_id': 1,
+        'openstack': {
+            'url': 'https://openstack.example.com:13000',
+            'credentials': 'kv/example/openstack',
+            'project': 'rhub',
+            'domain_name': 'Default',
+            'domain_id': 'default',
+            'networks': ['provider_net_rhub'],
+            'keyname': 'rhub_key',
+        },
+        'satellite': {
+            'hostname': 'satellite.example.com',
+            'insecure': False,
+            'credentials': 'kv/example/satellite',
+        },
+        'dns_server': {
+            'hostname': 'ns.example.com',
+            'zone': 'example.com.',
+            'key': 'kv/example/key',
+        },
+        'vault_server': 'https://vault.example.com/',
+        'download_server': 'https://download.example.com',
     }
     group_id = '10000000-2000-3000-4000-000000000000'
 
@@ -213,12 +313,88 @@ def test_create_region(client, db_session_mock, keycloak_mock, mocker):
 
     region = db_session_mock.add.call_args.args[0]
     for k, v in region_data.items():
-        assert getattr(region, k) == v
+        if isinstance(v, dict):
+            for k2, v2 in v.items():
+                assert getattr(region, f'{k}_{k2}') == v2
+        else:
+            assert getattr(region, k) == v
 
     assert rv.status_code == 200
     assert rv.json['quota'] is None
     assert rv.json['owner_group'] == group_id
     assert rv.json['users_group'] is None
+
+
+def test_create_region_credentials(client, db_session_mock, keycloak_mock, vault_mock):
+    region_data = {
+        'name': 'test',
+        'location': 'RDU',
+        'tower_id': 1,
+        'openstack': {
+            'url': 'https://openstack.example.com:13000',
+            'credentials': {
+                'username': 'osp-user',
+                'password': 'osp-pass',
+            },
+            'project': 'rhub',
+            'domain_name': 'Default',
+            'domain_id': 'default',
+            'networks': ['provider_net_rhub'],
+            'keyname': 'rhub_key',
+        },
+        'satellite': {
+            'hostname': 'satellite.example.com',
+            'insecure': False,
+            'credentials': {
+                'username': 'sat-user',
+                'password': 'sat-pass',
+            },
+        },
+        'dns_server': {
+            'hostname': 'ns.example.com',
+            'zone': 'example.com.',
+            'key': {
+                'name': 'rndc-key',
+                'secret': 'abcdef==',
+            },
+        },
+        'vault_server': 'https://vault.example.com/',
+        'download_server': 'https://download.example.com',
+    }
+    group_id = '10000000-2000-3000-4000-000000000000'
+
+    db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
+
+    keycloak_mock.group_create.return_value = group_id
+
+    rv = client.post(
+        f'{API_BASE}/lab/region',
+        headers={'Authorization': 'Bearer foobar'},
+        json=region_data,
+    )
+
+    assert rv.status_code == 200
+
+    assert type(rv.json['openstack']['credentials']) is str
+    assert rv.json['openstack']['credentials'].startswith(f'{VAULT_PATH_PREFIX}/')
+    vault_mock.write.assert_any_call(
+        rv.json['openstack']['credentials'],
+        {'username': 'osp-user', 'password': 'osp-pass'},
+    )
+
+    assert type(rv.json['satellite']['credentials']) is str
+    assert rv.json['satellite']['credentials'].startswith(f'{VAULT_PATH_PREFIX}/')
+    vault_mock.write.assert_any_call(
+        rv.json['satellite']['credentials'],
+        {'username': 'sat-user', 'password': 'sat-pass'},
+    )
+
+    assert type(rv.json['dns_server']['key']) is str
+    assert rv.json['dns_server']['key'].startswith(f'{VAULT_PATH_PREFIX}/')
+    vault_mock.write.assert_any_call(
+        rv.json['dns_server']['key'],
+        {'name': 'rndc-key', 'secret': 'abcdef=='},
+    )
 
 
 def test_create_region_with_quota(client, db_session_mock, keycloak_mock, mocker):
@@ -233,6 +409,27 @@ def test_create_region_with_quota(client, db_session_mock, keycloak_mock, mocker
         'location': 'RDU',
         'tower_id': 1,
         'quota': quota_data,
+        'openstack': {
+            'url': 'https://openstack.example.com:13000',
+            'credentials': 'kv/example/openstack',
+            'project': 'rhub',
+            'domain_name': 'Default',
+            'domain_id': 'default',
+            'networks': ['provider_net_rhub'],
+            'keyname': 'rhub_key',
+        },
+        'satellite': {
+            'hostname': 'satellite.example.com',
+            'insecure': False,
+            'credentials': 'kv/example/satellite',
+        },
+        'dns_server': {
+            'hostname': 'ns.example.com',
+            'zone': 'example.com.',
+            'key': 'kv/example/key',
+        },
+        'vault_server': 'https://vault.example.com/',
+        'download_server': 'https://download.example.com',
     }
     group_id = '10000000-2000-3000-4000-000000000000'
 
@@ -254,7 +451,11 @@ def test_create_region_with_quota(client, db_session_mock, keycloak_mock, mocker
     for k, v in region_data.items():
         if k == 'quota':
             continue
-        assert getattr(region, k) == v
+        if isinstance(v, dict):
+            for k2, v2 in v.items():
+                assert getattr(region, f'{k}_{k2}') == v2
+        else:
+            assert getattr(region, k) == v
 
     assert region.quota is not None
     for k, v in quota_data.items():
@@ -280,6 +481,21 @@ def test_update_region(client):
         owner_group='00000000-0000-0000-0000-000000000000',
         users_group=None,
         tower_id=1,
+        openstack_url='https://openstack.example.com:13000',
+        openstack_credentials='kv/example/openstack',
+        openstack_project='rhub',
+        openstack_domain_name='Default',
+        openstack_domain_id='default',
+        openstack_networks=['provider_net_rhub'],
+        openstack_keyname='rhub_key',
+        satellite_hostname='satellite.example.com',
+        satellite_insecure=False,
+        satellite_credentials='kv/example/satellite',
+        dns_server_hostname='ns.example.com',
+        dns_server_zone='example.com.',
+        dns_server_key='kv/example/key',
+        vault_server='https://vault.example.com/',
+        download_server='https://download.example.com',
     )
     model.Region.query.get.return_value = region
 
@@ -298,6 +514,89 @@ def test_update_region(client):
     assert region.description == 'new desc'
 
     assert rv.status_code == 200
+
+
+def test_update_region_credentials(client, vault_mock):
+    region = model.Region(
+        id=1,
+        name='test',
+        location='RDU',
+        description='',
+        banner='',
+        enabled=True,
+        quota_id=None,
+        lifespan_length=None,
+        reservations_enabled=True,
+        owner_group='00000000-0000-0000-0000-000000000000',
+        users_group=None,
+        tower_id=1,
+        openstack_url='https://openstack.example.com:13000',
+        openstack_credentials='kv/example/openstack',
+        openstack_project='rhub',
+        openstack_domain_name='Default',
+        openstack_domain_id='default',
+        openstack_networks=['provider_net_rhub'],
+        openstack_keyname='rhub_key',
+        satellite_hostname='satellite.example.com',
+        satellite_insecure=False,
+        satellite_credentials='kv/example/satellite',
+        dns_server_hostname='ns.example.com',
+        dns_server_zone='example.com.',
+        dns_server_key='kv/example/key',
+        vault_server='https://vault.example.com/',
+        download_server='https://download.example.com',
+    )
+    model.Region.query.get.return_value = region
+
+    rv = client.patch(
+        f'{API_BASE}/lab/region/1',
+        headers={'Authorization': 'Bearer foobar'},
+        json={
+            'openstack': {
+                'credentials': {
+                    'username': 'new-osp-user',
+                    'password': 'new-osp-pass',
+                },
+            },
+            'satellite': {
+                'credentials': {
+                    'username': 'new-sat-user',
+                    'password': 'new-sat-pass',
+                },
+            },
+            'dns_server': {
+                'key': {
+                    'name': 'new-rndc-key',
+                    'secret': 'abc=',
+                },
+            },
+        },
+    )
+
+    model.Region.query.get.assert_called_with(1)
+
+    assert rv.status_code == 200
+
+    # Check that path didn't change
+    assert region.openstack_credentials == 'kv/example/openstack'
+    assert region.satellite_credentials == 'kv/example/satellite'
+    assert region.dns_server_key == 'kv/example/key'
+
+    vault_mock.write.assert_any_call(
+        'kv/example/openstack',
+        {'username': 'new-osp-user', 'password': 'new-osp-pass'},
+    )
+
+    vault_mock.write.assert_any_call(
+        'kv/example/satellite',
+        {'username': 'new-sat-user', 'password': 'new-sat-pass'},
+    )
+
+    vault_mock.write.assert_any_call(
+        'kv/example/key',
+        {'name': 'new-rndc-key', 'secret': 'abc='},
+    )
+
 
 
 @pytest.mark.parametrize(
@@ -332,6 +631,21 @@ def test_update_region_quota(client, keycloak_mock, quota_data):
         owner_group='00000000-0000-0000-0000-000000000000',
         users_group=None,
         tower_id=1,
+        openstack_url='https://openstack.example.com:13000',
+        openstack_credentials='kv/example/openstack',
+        openstack_project='rhub',
+        openstack_domain_name='Default',
+        openstack_domain_id='default',
+        openstack_networks=['provider_net_rhub'],
+        openstack_keyname='rhub_key',
+        satellite_hostname='satellite.example.com',
+        satellite_insecure=False,
+        satellite_credentials='kv/example/satellite',
+        dns_server_hostname='ns.example.com',
+        dns_server_zone='example.com.',
+        dns_server_key='kv/example/key',
+        vault_server='https://vault.example.com/',
+        download_server='https://download.example.com',
     )
     model.Region.query.get.return_value = region
 
@@ -345,6 +659,86 @@ def test_update_region_quota(client, keycloak_mock, quota_data):
 
     assert rv.status_code == 200
     assert rv.json['quota'] == quota_data
+
+
+
+@pytest.mark.parametrize(
+    'update_data',
+    [
+        pytest.param(
+            {
+                'openstack': {'credentials': 'kv/example/new-path/ocp'},
+            },
+            id='openstack',
+        ),
+        pytest.param(
+            {
+                'satellite': {'hostname': 'new-satellite.example.com'},
+            },
+            id='satellite',
+        ),
+        pytest.param(
+            {
+                'dns_server': {'hostname': 'new-ns.example.com'},
+            },
+            id='dns_server'
+        ),
+        pytest.param(
+            {
+                'openstack': {'credentials': 'kv/example/new-path/ocp'},
+                'satellite': {'hostname': 'new-satellite.example.com'},
+                'dns_server': {'hostname': 'new-ns.example.com'},
+            },
+            id='ALL',
+        ),
+    ]
+)
+def test_update_region_nested_data(client, update_data):
+    region = model.Region(
+        id=1,
+        name='test',
+        location='RDU',
+        description='',
+        banner='',
+        enabled=True,
+        quota_id=None,
+        lifespan_length=None,
+        reservations_enabled=True,
+        owner_group='00000000-0000-0000-0000-000000000000',
+        users_group=None,
+        tower_id=1,
+        openstack_url='https://openstack.example.com:13000',
+        openstack_credentials='kv/example/openstack',
+        openstack_project='rhub',
+        openstack_domain_name='Default',
+        openstack_domain_id='default',
+        openstack_networks=['provider_net_rhub'],
+        openstack_keyname='rhub_key',
+        satellite_hostname='satellite.example.com',
+        satellite_insecure=False,
+        satellite_credentials='kv/example/satellite',
+        dns_server_hostname='ns.example.com',
+        dns_server_zone='example.com.',
+        dns_server_key='kv/example/key',
+        vault_server='https://vault.example.com/',
+        download_server='https://download.example.com',
+    )
+    model.Region.query.get.return_value = region
+
+    rv = client.patch(
+        f'{API_BASE}/lab/region/1',
+        headers={'Authorization': 'Bearer foobar'},
+        json=update_data,
+    )
+
+    model.Region.query.get.assert_called_with(1)
+
+    assert rv.status_code == 200
+
+    for k1 in update_data.keys():
+        for k2, v in update_data[k1].items():
+            assert getattr(region, f'{k1}_{k2}') == v
+            assert rv.json[k1][k2] == v
 
 
 def test_delete_region(client, keycloak_mock, db_session_mock):

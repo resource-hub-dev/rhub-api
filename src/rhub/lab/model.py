@@ -1,13 +1,14 @@
 import datetime
+import copy
 
 from sqlalchemy.dialects import postgresql
 
 from rhub.api import db, get_vault
-from rhub.api.utils import row2dict
+from rhub.api.utils import ModelMixin
 from rhub.tower.client import Tower
 
 
-class Region(db.Model):
+class Region(db.Model, ModelMixin):
     __tablename__ = 'lab_region'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -36,10 +37,8 @@ class Region(db.Model):
     openstack_project = db.Column(db.String(64), nullable=False)
     openstack_domain_name = db.Column(db.String(64), nullable=False)
     openstack_domain_id = db.Column(db.String(64), nullable=False)
-    #: Default OpenStack project
-    openstack_default_project = db.Column(db.String(64), nullable=False)
-    #: Default OpenStack network provider
-    openstack_default_network = db.Column(db.String(64), nullable=False)
+    #: Network providers that can be used in the region
+    openstack_networks = db.Column(db.ARRAY(db.String(64)), nullable=False)
     #: SSH key name
     openstack_keyname = db.Column(db.String(64), nullable=False)
 
@@ -59,6 +58,8 @@ class Region(db.Model):
     #: :type: list of :class:`Cluster`
     clusters = db.relationship('Cluster', back_populates='region')
 
+    _INLINE_CHILDS = ['openstack', 'satellite', 'dns_server']
+
     def create_cluster(self, **kwargs):
         """
         A factory to create :class:`Cluster` with
@@ -73,14 +74,12 @@ class Region(db.Model):
         return cluster
 
     def to_dict(self):
-        inline_childs = ['openstack', 'satellite', 'dns_server']
-
         data = {}
 
         for column in self.__table__.columns:
             if column.name == 'quota_id':
                 continue
-            for i in inline_childs:
+            for i in self._INLINE_CHILDS:
                 if column.name.startswith(f'{i}_'):
                     if i not in data:
                         data[i] = {}
@@ -90,14 +89,50 @@ class Region(db.Model):
                 data[column.name] = getattr(self, column.name)
 
         if self.quota:
-            data['quota'] = row2dict(self.quota)
+            data['quota'] = self.quota.to_dict()
         else:
             data['quota'] = None
 
         return data
 
+    @classmethod
+    def from_dict(cls, data):
+        data = copy.deepcopy(data)
 
-class Quota(db.Model):
+        quota_data = data.pop('quota', None)
+        if quota_data:
+            data['quota'] = Quota.from_dict(quota_data)
+
+        for i in cls._INLINE_CHILDS:
+            for k, v in data[i].items():
+                data[f'{i}_{k}'] = v
+            del data[i]
+
+        return super().from_dict(data)
+
+    def update_from_dict(self, data):
+        data = copy.deepcopy(data)
+
+        if 'quota' in data:
+            if data['quota']:
+                if self.quota is None:
+                    self.quota = Quota.from_dict(data['quota'])
+                else:
+                    self.quota.update_from_dict(data['quota'])
+            else:
+                self.quota = None
+            del data['quota']
+
+        for i in self._INLINE_CHILDS:
+            if i in data:
+                for k, v in data[i].items():
+                    setattr(self, f'{i}_{k}', v)
+                del data[i]
+
+        super().update_from_dict(data)
+
+
+class Quota(db.Model, ModelMixin):
     __tablename__ = 'lab_quota'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -111,15 +146,12 @@ class Quota(db.Model):
                              cascade='all,delete-orphan')
 
     def to_dict(self):
-        data = {}
-        for column in self.__table__.columns:
-            if column.name == 'id':
-                continue
-            data[column.name] = getattr(self, column.name)
+        data = super().to_dict()
+        del data['id']
         return data
 
 
-class Tower(db.Model):
+class Tower(db.Model, ModelMixin):
     __tablename__ = 'lab_tower'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -153,7 +185,7 @@ class Tower(db.Model):
         )
 
 
-class Cluster(db.Model):
+class Cluster(db.Model, ModelMixin):
     __tablename__ = 'lab_cluster'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -175,6 +207,6 @@ class Cluster(db.Model):
         return self.region.quota
 
     def to_dict(self):
-        data = row2dict(self)
-        data['quota'] = self.quota
+        data = super().to_dict()
+        data['quota'] = self.quota.to_dict()
         return data

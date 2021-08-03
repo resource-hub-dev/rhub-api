@@ -13,6 +13,10 @@ class Vault(abc.ABC):
     def read(self, path):
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def write(self, path, data):
+        raise NotImplementedError
+
 
 class HashicorpVault(Vault):
     """Hashicorp Vault client."""
@@ -31,6 +35,14 @@ class HashicorpVault(Vault):
             return secret['data']
         except hvac.exceptions.InvalidPath:
             return None
+
+    def write(self, path, data):
+        mount_point, path = path.split('/', 1)
+        self.client.secrets.kv.v1.create_or_update_secret(
+            path=path,
+            mount_point=mount_point,
+            secret=data,
+        )
 
 
 class FileVault(Vault):
@@ -52,8 +64,14 @@ class FileVault(Vault):
             'Storing secrets in plaintext YAML files is INSECURE!! '
             'Use Hashicorp Vault in production!'
         )
-        with open(datafile) as f:
+        self._datafile = datafile
+        with open(self._datafile) as f:
             self._data = yaml.safe_load(f)
 
     def read(self, path):
         return self._data.get(path)
+
+    def write(self, path, data):
+        self._data[path] = data
+        with open(self._datafile, 'w') as f:
+            self._data = yaml.safe_dump(self._data, f)
