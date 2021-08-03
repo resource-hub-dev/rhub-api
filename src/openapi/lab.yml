@@ -113,12 +113,13 @@ model:
             type: string
           domain_id:
             type: string
-          default_project:
-            description: Default project
-            type: string
-          default_network:
-            description: Default network provider
-            type: string
+          networks:
+            description: Network providers that can be used in the region
+            type: array
+            items:
+              type: string
+            minItems: 1
+            uniqueItems: true
           keyname:
             description: SSH key name
             type: string
@@ -128,8 +129,7 @@ model:
           project: rhub
           domain_name: Default
           domain_id: default
-          default_project: rhub
-          default_network: provider_net_rhub
+          networks: [provider_net_rhub]
           keyname: rhub
       satellite:
         type: object
@@ -175,7 +175,7 @@ model:
         example:
           hostname: ns.example.com
           zone: example.com.
-          credentials: kv/region/rdu2-a/dns
+          key: kv/region/rdu2-a/dns
       vault_server:
         type: string
         example: https://vault.example.com
@@ -410,18 +410,6 @@ endpoints:
               - required:
                   - name
                   - tower_id
-          example:
-            name: rdu2-a
-            location: RDU
-            enabled: true
-            reservation_enabled: true
-            lifespan_length: 60
-            quota:
-              num_vcpus: 40
-              ram_mb: 200000
-              num_volumes: 40
-              volumes_gb: 540
-            tower_id: 1
     responses:
       '200':
         description: Success

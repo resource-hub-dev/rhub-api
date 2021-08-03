@@ -4,15 +4,20 @@ import sqlalchemy
 from connexion import problem
 from keycloak import KeycloakGetError
 from werkzeug.exceptions import Forbidden
+import dpath.util as dpath
 
 from rhub.lab import model
-from rhub.api import db, get_keycloak
+from rhub.api import db, get_keycloak, get_vault
 from rhub.api.utils import row2dict
 from rhub.auth import ADMIN_ROLE
 from rhub.auth.keycloak import problem_from_keycloak_error
 
 
 logger = logging.getLogger(__name__)
+
+
+VAULT_PATH_PREFIX = 'kv/lab/region'
+"""Vault path prefix to create new credentials in Vault."""
 
 
 def list_regions(user):
@@ -48,15 +53,6 @@ def create_region(body, user):
         return problem(500, 'Unknown Error',
                        f'Failed to create owner group in Keycloak, {e}')
 
-    if 'quota' in body:
-        if body['quota']:
-            quota = model.Quota(**body['quota'])
-        else:
-            quota = None
-        del body['quota']
-    else:
-        quota = None
-
     try:
         if body.get('users_group'):
             get_keycloak().group_get(body['users_group'])
@@ -66,8 +62,25 @@ def create_region(body, user):
                        f'Users group {body["users_group"]} does not exist in Keycloak, '
                        'you have to create group first or use existing group.')
 
-    region = model.Region(**body)
-    region.quota = quota
+    openstack_credentials = dpath.get(body, 'openstack/credentials')
+    if not isinstance(openstack_credentials, str):
+        openstack_credentials_path = f'{VAULT_PATH_PREFIX}/{body["name"]}/openstack'
+        get_vault().write(openstack_credentials_path, openstack_credentials)
+        dpath.set(body, 'openstack/credentials', openstack_credentials_path)
+
+    satellite_credentials = dpath.get(body, 'satellite/credentials')
+    if not isinstance(satellite_credentials, str):
+        satellite_credentials_path = f'{VAULT_PATH_PREFIX}/{body["name"]}/satellite'
+        get_vault().write(satellite_credentials_path, satellite_credentials)
+        dpath.set(body, 'satellite/credentials', satellite_credentials_path)
+
+    dns_server_key = dpath.get(body, 'dns_server/key')
+    if not isinstance(dns_server_key, str):
+        dns_server_key_path = f'{VAULT_PATH_PREFIX}/{body["name"]}/dns_server'
+        get_vault().write(dns_server_key_path, dns_server_key)
+        dpath.set(body, 'dns_server/key', dns_server_key_path)
+
+    region = model.Region.from_dict(body)
 
     db.session.add(region)
     db.session.commit()
@@ -119,8 +132,25 @@ def update_region(region_id, body, user):
             region.quota = None
         del body['quota']
 
-    for k, v in body.items():
-        setattr(region, k, v)
+    openstack_credentials = dpath.get(body, 'openstack/credentials',
+                                      default=region.openstack_credentials)
+    if not isinstance(openstack_credentials, str):
+        get_vault().write(region.openstack_credentials, openstack_credentials)
+        dpath.delete(body, 'openstack/credentials')
+
+    satellite_credentials = dpath.get(body, 'satellite/credentials',
+                                      default=region.satellite_credentials)
+    if not isinstance(satellite_credentials, str):
+        get_vault().write(region.satellite_credentials, satellite_credentials)
+        dpath.delete(body, 'satellite/credentials')
+
+    dns_server_key = dpath.get(body, 'dns_server/key',
+                               default=region.dns_server_key)
+    if not isinstance(dns_server_key, str):
+        get_vault().write(region.dns_server_key, dns_server_key)
+        dpath.delete(body, 'dns_server/key')
+
+    region.update_from_dict(body)
 
     db.session.commit()
     logger.info(f'Region {region.name} (id {region.id}) updated by user {user}')
