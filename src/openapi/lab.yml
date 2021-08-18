@@ -66,6 +66,9 @@ model:
         type: boolean
       reservations_enabled:
         type: boolean
+      reservation_expiration_max:
+        type: integer
+        nullable: true
       lifespan_length:
         type: integer
         minimum: 1
@@ -195,23 +198,100 @@ model:
         pattern: '^\w+$'
       description:
         type: string
-      extra_vars:
-        type: object
       user_id:
-        $ref: 'common.yml#/model/ID'
+        type: string
+        format: uuid
+        readOnly: true
+      group_id:
+        type: string
+        format: uuid
+        nullable: true
+      created:
+        type: string
+        format: date-time
+        readOnly: true
       region_id:
-        $ref: 'common.yml#/model/ID'
-      template_id:
         $ref: 'common.yml#/model/ID'
       reservation_expiration:
         type: string
         format: date-time
         description: Soft-limit expiration.
+        nullable: true
       lifespan_expiration:
         type: string
         format: date-time
-        readOnly: true
         description: Hard-limit expiration.
+        nullable: true
+      status:
+        type: string
+        readOnly: true
+        nullable: true
+
+  ClusterEvent:
+    type: object
+    properties:
+      id:
+        allOf:
+          - $ref: 'common.yml#/model/ID'
+          - readOnly: true
+      date:
+        type: string
+        format: date-time
+        readOnly: true
+      user_id:
+        type: string
+        format: uuid
+        nullable: true
+      cluster_id:
+        allOf:
+          - $ref: 'common.yml#/model/ID'
+          - readOnly: true
+    oneOf:
+      - properties:
+          type:
+            type: string
+            enum: [tower_job]
+          tower_id:
+            $ref: 'common.yml#/model/ID'
+          tower_job_id:
+            $ref: 'common.yml#/model/ID'
+          status:
+            type: string
+      - properties:
+          type:
+            type: string
+            enum: [reservation_change, lifespan_change]
+          old_value:
+            type: string
+            format: date-time
+            nullable: true
+          new_value:
+            type: string
+            format: date-time
+            nullable: true
+
+  ClusterHost:
+    type: object
+    properties:
+      id:
+        allOf:
+          - $ref: 'common.yml#/model/ID'
+          - readOnly: true
+      cluster_id:
+        allOf:
+          - $ref: 'common.yml#/model/ID'
+          - readOnly: true
+      fqdn:
+        type: string
+        format: hostname
+      ipaddr:
+        type: array
+        items:
+          oneOf:
+            - type: string
+              format: ipv4
+            - type: string
+              format: ipv6
 
   Template:
     type: object
@@ -277,6 +357,13 @@ parameters:
     name: bundle_id
     in: path
     description: ID of the bundle
+    required: true
+    schema:
+      $ref: 'common.yml#/model/ID'
+  event_id:
+    name: event_id
+    in: path
+    description: ID of the event
     required: true
     schema:
       $ref: 'common.yml#/model/ID'
@@ -790,6 +877,8 @@ endpoints:
                 $ref: '#/model/Cluster'
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   cluster_create:
     summary: Create cluster
@@ -797,14 +886,17 @@ endpoints:
       When the Reservation System is enabled in a region, a new cluster in
       that region will be required to select the length of the reservation in
       `reservation_expiration` field. Reservation sets soft-limit on cluster,
-      when reservation expires cluster will be scheduled for deletion.
+      when reservation expires cluster will be scheduled for deletion. Maximal
+      `reservation_expiration` date is determined from the date of creation (or
+      current expiration date when extending expiration) and
+      `reservation_expiration_max` attribute on the region.
 
       When the Lifespan System is enabled in a region, `lifespan_expiration`
       date will automatically be applied to the cluster by backend at time of
       creation. The date is configured on region. Unlike the reservation
       expiration, lifespan is hard-limit and this date can not be set nor
-      modified once cluster is created. When livespan expires cluster will be
-      unconditionally scheduled for deletion
+      modified once cluster is created. When lifespan expires cluster will be
+      unconditionally scheduled for deletion.
     tags: [lab]
     operationId: rhub.api.lab.cluster.create_cluster
     requestBody:
@@ -812,19 +904,23 @@ endpoints:
       content:
         application/json:
           schema:
-            type: object
-            allOf:
-              - $ref: '#/model/Cluster'
-              - required:
-                  - name
-                  - user_id
-                  - region_id
-                  - template_id
+            $ref: '#/model/Cluster'
     responses:
       '200':
-        description: Success
+        description: Cluster
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/model/Cluster'
+                - required:
+                    - name
+                    - region_id
+                    - reservation_expiration
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   cluster_get:
     summary: Get cluster
@@ -839,10 +935,10 @@ endpoints:
           application/json:
             schema:
               $ref: '#/model/Cluster'
-      '404':
-        description: Not found
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   cluster_update:
     summary: Update cluster
@@ -860,9 +956,15 @@ endpoints:
             $ref: '#/model/Cluster'
     responses:
       '200':
-        description: Success
+        description: Cluster
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Cluster'
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   cluster_delete:
     summary: Delete cluster
@@ -871,7 +973,131 @@ endpoints:
     parameters:
       - $ref: '#/parameters/cluster_id'
     responses:
-      '200':
+      '204':
         description: Success
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cluster_list_events:
+    summary: Get cluster events list
+    tags: [lab]
+    operationId: rhub.api.lab.cluster.list_cluster_events
+    parameters:
+      - $ref: '#/parameters/cluster_id'
+    responses:
+      '200':
+        description: Cluster events
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/model/ClusterEvent'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cluster_event_get:
+    summary: Get cluster event
+    tags: [lab]
+    operationId: rhub.api.lab.cluster.get_cluster_event
+    parameters:
+      - $ref: '#/parameters/event_id'
+    responses:
+      '200':
+        description: Cluster event
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/ClusterEvent'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cluster_event_get_stdout:
+    summary: Get cluster event output
+    tags: [lab]
+    operationId: rhub.api.lab.cluster.get_cluster_event_stdout
+    parameters:
+      - $ref: '#/parameters/event_id'
+    responses:
+      '200':
+        description: Event output
+        content:
+          text/plain:
+            schema:
+              type: string
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cluster_hosts_list:
+    summary: Get cluster hosts
+    tags: [lab]
+    operationId: rhub.api.lab.cluster.list_cluster_hosts
+    parameters:
+      - $ref: '#/parameters/cluster_id'
+    responses:
+      '200':
+        description: Cluster hosts
+        content:
+          text/plain:
+            schema:
+              type: array
+              items:
+                $ref: '#/model/ClusterHost'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cluster_hosts_create:
+    summary: Create or update cluster hosts
+    tags: [lab]
+    operationId: rhub.api.lab.cluster.create_cluster_hosts
+    parameters:
+      - $ref: '#/parameters/cluster_id'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              allOf:
+                - $ref: '#/model/ClusterHost'
+                - required:
+                    - fqdn
+                    - ipaddr
+    responses:
+      '200':
+        description: Cluster hosts
+        content:
+          text/plain:
+            schema:
+              type: array
+              items:
+                $ref: '#/model/ClusterHost'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cluster_hosts_delete:
+    summary: Delete cluster hosts
+    tags: [lab]
+    operationId: rhub.api.lab.cluster.delete_cluster_hosts
+    parameters:
+      - $ref: '#/parameters/cluster_id'
+    responses:
+      '204':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []

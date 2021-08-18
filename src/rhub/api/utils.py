@@ -1,3 +1,6 @@
+import datetime
+
+
 def row2dict(row):
     """Convert SQLAlchemy row to dict."""
     if hasattr(row, 'to_dict'):
@@ -27,3 +30,7 @@ class ModelMixin:
         """Update from `dict`."""
         for k, v in data.items():
             setattr(self, k, v)
+
+
+def date_now():
+    return datetime.datetime.now().astimezone(datetime.timezone.utc)
