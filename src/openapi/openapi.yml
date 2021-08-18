@@ -111,6 +111,22 @@ paths:
       $ref: 'lab.yml#/endpoints/cluster_update'
     delete:
       $ref: 'lab.yml#/endpoints/cluster_delete'
+  /lab/cluster/{cluster_id}/events:
+    get:
+      $ref: 'lab.yml#/endpoints/cluster_list_events'
+  /lab/cluster/{cluster_id}/hosts:
+    get:
+      $ref: 'lab.yml#/endpoints/cluster_hosts_list'
+    post:
+      $ref: 'lab.yml#/endpoints/cluster_hosts_create'
+    delete:
+      $ref: 'lab.yml#/endpoints/cluster_hosts_delete'
+  /lab/cluster_event/{event_id}:
+    get:
+      $ref: 'lab.yml#/endpoints/cluster_event_get'
+  /lab/cluster_event/{event_id}/stdout:
+    get:
+      $ref: 'lab.yml#/endpoints/cluster_event_get_stdout'
 
   /auth/user:
     get:
