@@ -89,15 +89,22 @@ def test_create_policy(client, keycloak_mock, db_session_mock):
         'name': 'test',
         'department': 'test server',
     }
+    group_id = '00000004-0003-0002-0001-000000000000'
+
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
-    keycloak_mock.user_get.return_value = user_data
+
+    keycloak_mock.group_create.return_value = group_id
+
     rv = client.post(
         f'{API_BASE}/policies',
         headers={'Authorization': 'Bearer foobar'},
         json=policy_data,
     )
 
-    keycloak_mock.user_get.assert_called_with('00000000-0000-0000-0000-000000000000')
+    keycloak_mock.group_role_add.assert_called_with('policy-owner', group_id)
+    keycloak_mock.group_user_add.assert_called_with(
+        '00000000-0000-0000-0000-000000000000', group_id)
+
     server = db_session_mock.add.call_args.args[0]
     for k, v in policy_data.items():
         assert getattr(server, k) == v
@@ -173,7 +180,7 @@ def test_delete_policy(client, keycloak_mock, db_session_mock):
 
     db_session_mock.delete.assert_called_with(policy)
 
-    assert rv.status_code == 200
+    assert rv.status_code == 204
 
 
 def test_update_policy(client, keycloak_mock, db_session_mock):

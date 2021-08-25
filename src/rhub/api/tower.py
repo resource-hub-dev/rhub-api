@@ -7,7 +7,6 @@ from werkzeug.exceptions import Unauthorized
 from rhub.tower import model
 from rhub.tower.client import TowerError
 from rhub.api import db
-from rhub.api.utils import row2dict
 from rhub.auth.utils import route_require_admin, user_is_admin
 
 
@@ -20,7 +19,7 @@ def _tower_job(db_row, tower_data):
     OpenAPI schema.
     """
     return {
-        **row2dict(db_row),
+        **db_row.to_dict(),
         'status': tower_data['status'],
         'created_at': tower_data['created'],
         'started': tower_data['started'] is not None,
@@ -33,24 +32,24 @@ def _tower_job(db_row, tower_data):
 
 def list_servers():
     servers = model.Server.query.all()
-    return [row2dict(server) for server in servers], 200
+    return [server.to_dict() for server in servers], 200
 
 
 @route_require_admin
 def create_server(body, user):
     body.setdefault('description', '')
 
-    server = model.Server(**body)
+    server = model.Server.from_dict(body)
     db.session.add(server)
     db.session.commit()
-    return row2dict(server)
+    return server.to_dict()
 
 
 def get_server(server_id):
     server = model.Server.query.get(server_id)
     if not server:
         return problem(404, 'Not Found', f'Server {server_id} does not exist')
-    return row2dict(server)
+    return server.to_dict()
 
 
 @route_require_admin
@@ -59,11 +58,10 @@ def update_server(server_id, body, user):
     if not server:
         return problem(404, 'Not Found', f'Server {server_id} does not exist')
 
-    for k, v in body.items():
-        setattr(server, k, v)
+    server.update_from_dict(body)
     db.session.commit()
 
-    return row2dict(server)
+    return server.to_dict()
 
 
 @route_require_admin
@@ -78,17 +76,18 @@ def delete_server(server_id, user):
 
 def list_templates():
     templates = model.Template.query.all()
-    return [row2dict(template) for template in templates]
+    return [template.to_dict() for template in templates]
 
 
 @route_require_admin
 def create_template(body, user):
     body.setdefault('description', '')
 
-    template = model.Template(**body)
+    template = model.Template.from_dict(body)
     db.session.add(template)
     db.session.commit()
-    return row2dict(template)
+
+    return template.to_dict()
 
 
 def get_template(template_id):
@@ -107,7 +106,7 @@ def get_template(template_id):
                 template.tower_template_id)
 
         return {
-            **row2dict(template),
+            **template.to_dict(),
             'tower_survey': tower_survey_data,
         }
 
@@ -127,11 +126,10 @@ def update_template(template_id, body, user):
     if not template:
         return problem(404, 'Not Found', f'Template {template_id} does not exist')
 
-    for k, v in body.items():
-        setattr(template, k, v)
+    template.update_from_dict(body)
     db.session.commit()
 
-    return row2dict(template)
+    return template.to_dict()
 
 
 @route_require_admin
@@ -197,7 +195,7 @@ def list_template_jobs(template_id, user):
     jobs = model.Job.query.filter_by(template_id=template_id)
     if not user_is_admin(user):
         jobs = jobs.filter_by(launched_by=user)
-    return [row2dict(job) for job in jobs]
+    return [job.to_dict() for job in jobs]
 
 
 def list_jobs(user):
@@ -205,7 +203,7 @@ def list_jobs(user):
         jobs = model.Job.query.all()
     else:
         jobs = model.Job.query.filter_by(launched_by=user)
-    return [row2dict(job) for job in jobs]
+    return [job.to_dict() for job in jobs]
 
 
 def get_job(job_id, user):

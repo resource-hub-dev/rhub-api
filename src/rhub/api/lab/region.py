@@ -8,7 +8,6 @@ import dpath.util as dpath
 
 from rhub.lab import model
 from rhub.api import db, get_keycloak, get_vault
-from rhub.api.utils import row2dict
 from rhub.auth import ADMIN_ROLE
 from rhub.auth.keycloak import problem_from_keycloak_error
 
@@ -31,7 +30,7 @@ def list_regions(user):
             model.Region.owner_group.in_(user_groups),
         ))
 
-    return [row2dict(region) for region in regions]
+    return [region.to_dict() for region in regions]
 
 
 def create_region(body, user):
@@ -86,7 +85,7 @@ def create_region(body, user):
     db.session.commit()
     logger.info(f'Region {region.name} (id {region.id}) created by user {user}')
 
-    return row2dict(region)
+    return region.to_dict()
 
 
 def get_region(region_id, user):
@@ -100,7 +99,7 @@ def get_region(region_id, user):
                     user, [region.users_group, region.owner_group]):
                 raise Forbidden("You don't have access to this region.")
 
-    return row2dict(region)
+    return region.to_dict()
 
 
 def update_region(region_id, body, user):
@@ -155,7 +154,7 @@ def update_region(region_id, body, user):
     db.session.commit()
     logger.info(f'Region {region.name} (id {region.id}) updated by user {user}')
 
-    return row2dict(region)
+    return region.to_dict()
 
 
 def delete_region(region_id, user):
