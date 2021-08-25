@@ -179,12 +179,8 @@ endpoints:
     parameters:
       - $ref: '#/parameters/policy_id'
     responses:
-      '200':
-        description: Policy
-        content:
-          application/json:
-            schema:
-              $ref: '#/model/Policy'
+      '204':
+        description: Success
       default:
         $ref: 'common.yml#/responses/problem'
     security:
