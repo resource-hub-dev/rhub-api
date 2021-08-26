@@ -40,7 +40,7 @@ def get_vault() -> Vault:
         vault_type = current_app.config['VAULT_TYPE']
         if vault_type == 'hashicorp':
             g.vault = HashicorpVault(
-                url=current_app.config['VAULT_URL'],
+                url=current_app.config['VAULT_ADDR'],
                 role_id=current_app.config['VAULT_ROLE_ID'],
                 secret_id=current_app.config['VAULT_SECRET_ID'],
             )
@@ -122,7 +122,7 @@ def create_app():
 
     flask_app.config['VAULT_TYPE'] = os.getenv('VAULT_TYPE')
     # hashicorp vault variables
-    flask_app.config['VAULT_URL'] = os.getenv('VAULT_URL')
+    flask_app.config['VAULT_ADDR'] = os.getenv('VAULT_ADDR')
     flask_app.config['VAULT_ROLE_ID'] = os.getenv('VAULT_ROLE_ID')
     flask_app.config['VAULT_SECRET_ID'] = os.getenv('VAULT_SECRET_ID')
     # file vault variables
