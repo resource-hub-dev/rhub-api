@@ -26,23 +26,18 @@ class HashicorpVault(Vault):
         self._client.auth.approle.login(role_id=role_id, secret_id=secret_id)
 
     def read(self, path):
-        mount_point, path = path.split('/', 1)
         try:
-            secret = self._client.secrets.kv.v1.read_secret(
-                path=path,
-                mount_point=mount_point,
-            )
+            secret = self._client.read(path)
+            # Check if response is kv-v2
+            if 'data' in secret['data'] and 'metadata' in secret['data']:
+                return secret['data']['data']
             return secret['data']
         except hvac.exceptions.InvalidPath:
+            logger.exception(f'Failed to get credentials from {path!r}')
             return None
 
     def write(self, path, data):
-        mount_point, path = path.split('/', 1)
-        self.client.secrets.kv.v1.create_or_update_secret(
-            path=path,
-            mount_point=mount_point,
-            secret=data,
-        )
+        self._client.write(path, **data)
 
 
 class FileVault(Vault):
