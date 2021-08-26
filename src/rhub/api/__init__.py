@@ -165,7 +165,7 @@ def create_app():
 
     except Exception as e:
         logger.warning(
-            'Failed to load {flask_app.config["WEBHOOK_VAULT_PATH"]} tower'
+            f'Failed to load {flask_app.config["WEBHOOK_VAULT_PATH"]} tower'
             f' webhook notification credentials {e!s}.'
         )
 
