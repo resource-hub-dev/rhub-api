@@ -36,6 +36,20 @@ def list_regions(user):
 
 def create_region(body, user):
     try:
+        if body.get('users_group'):
+            get_keycloak().group_get(body['users_group'])
+    except KeycloakGetError as e:
+        logger.exception(e)
+        return problem(400, 'Users group does not exist',
+                       f'Users group {body["users_group"]} does not exist in Keycloak, '
+                       'you have to create group first or use existing group.')
+
+    tower = model.Tower.query.get(body['tower_id'])
+    if not tower:
+        return problem(404, 'Not Found',
+                       f'Tower instance with ID {body["tower_id"]} does not exist')
+
+    try:
         owners_id = get_keycloak().group_create({
             'name': f'{body["name"]}-owners',
         })
@@ -52,20 +66,6 @@ def create_region(body, user):
         logger.exception(e)
         return problem(500, 'Unknown Error',
                        f'Failed to create owner group in Keycloak, {e}')
-
-    try:
-        if body.get('users_group'):
-            get_keycloak().group_get(body['users_group'])
-    except KeycloakGetError as e:
-        logger.exception(e)
-        return problem(400, 'Users group does not exist',
-                       f'Users group {body["users_group"]} does not exist in Keycloak, '
-                       'you have to create group first or use existing group.')
-
-    tower = model.Tower.query.get(body['tower_id'])
-    if not tower:
-        return problem(404, 'Not Found',
-                       f'Tower instance with ID {body["tower_id"]} does not exist')
 
     openstack_credentials = dpath.get(body, 'openstack/credentials')
     if not isinstance(openstack_credentials, str):
