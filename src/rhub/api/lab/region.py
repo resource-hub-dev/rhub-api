@@ -62,6 +62,11 @@ def create_region(body, user):
                        f'Users group {body["users_group"]} does not exist in Keycloak, '
                        'you have to create group first or use existing group.')
 
+    tower = model.Tower.query.get(body['tower_id'])
+    if not tower:
+        return problem(404, 'Not Found',
+                       f'Tower instance with ID {body["tower_id"]} does not exist')
+
     openstack_credentials = dpath.get(body, 'openstack/credentials')
     if not isinstance(openstack_credentials, str):
         openstack_credentials_path = f'{VAULT_PATH_PREFIX}/{body["name"]}/openstack'
