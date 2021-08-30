@@ -1,6 +1,7 @@
 import logging
 
 import sqlalchemy
+import sqlalchemy.exc
 from connexion import problem
 from keycloak import KeycloakGetError
 from werkzeug.exceptions import Forbidden
@@ -81,9 +82,14 @@ def create_region(body, user):
 
     region = model.Region.from_dict(body)
 
-    db.session.add(region)
-    db.session.commit()
-    logger.info(f'Region {region.name} (id {region.id}) created by user {user}')
+    try:
+        db.session.add(region)
+        db.session.commit()
+        logger.info(f'Region {region.name} (id {region.id}) created by user {user}')
+    except sqlalchemy.exc.SQLAlchemyError:
+        # If database transaction failed remove group in Keycloak.
+        get_keycloak().group_delete(owners_id)
+        raise
 
     return region.to_dict()
 
