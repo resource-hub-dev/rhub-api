@@ -7,6 +7,7 @@ import click
 import prance
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from flask_apscheduler import APScheduler
 from flask import g, current_app
 from flask.cli import with_appcontext
 
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 db = SQLAlchemy()
+sched = APScheduler()
 
 
 def get_keycloak() -> KeycloakClient:
@@ -168,5 +170,17 @@ def create_app():
             'Failed to load {flask_app.config["WEBHOOK_VAULT_PATH"]} tower'
             f' webhook notification credentials {e!s}.'
         )
+
+    flask_app.config['SCHEDULER_API_ENABLED'] = False
+
+    sched.init_app(flask_app)
+
+    @sched.task('interval', id='rhub_scheduler', seconds=60, max_instances=1)
+    def rhub_scheduler():
+        from rhub import scheduler
+        with flask_app.app_context():
+            scheduler.run()
+
+    sched.start()
 
     return flask_app
