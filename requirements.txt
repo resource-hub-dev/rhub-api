@@ -1,7 +1,7 @@
 gunicorn
 connexion[swagger-ui]
 flask-cors
-python-keycloak >= 0.25.0
+python-keycloak == 0.25.0
 flask-sqlalchemy
 psycopg2-binary
 pyyaml
