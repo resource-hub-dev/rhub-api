@@ -1,0 +1,146 @@
+model:
+
+  CronJob:
+    type: object
+    properties:
+      id:
+        allOf:
+          - $ref: 'common.yml#/model/ID'
+          - readOnly: true
+      name:
+        type: string
+      description:
+        type: string
+        nullable: true
+      enabled:
+        type: boolean
+      time_expr:
+        description: cron time expression
+        type: string
+      job_name:
+        type: string
+        enum:
+          - example
+          - tower_launch
+      job_params:
+        type: object
+        nullable: true
+      last_run:
+        type: string
+        format: date-time
+        nullable: true
+        readOnly: true
+
+parameters:
+
+  cron_job_id:
+    name: cron_job_id
+    in: path
+    description: ID of the CronJob
+    required: true
+    schema:
+      $ref: 'common.yml#/model/ID'
+
+endpoints:
+
+  cron_job_list:
+    summary: Get CronJob list
+    tags: [scheduler]
+    operationId: rhub.api.scheduler.cron.list_jobs
+    responses:
+      '200':
+        description: List of CronJobs
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/model/CronJob'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cron_job_create:
+    summary: Create CronJob
+    tags: [scheduler]
+    operationId: rhub.api.scheduler.cron.create_job
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/model/CronJob'
+              - required:
+                  - name
+                  - time_expr
+                  - job_name
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/CronJob'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cron_job_get:
+    summary: Get CronJob
+    tags: [scheduler]
+    operationId: rhub.api.scheduler.cron.get_job
+    parameters:
+      - $ref: '#/parameters/cron_job_id'
+    responses:
+      '200':
+        description: CronJobs
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/CronJob'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cron_job_update:
+    summary: Update CronJob
+    tags: [scheduler]
+    operationId: rhub.api.scheduler.cron.update_job
+    parameters:
+      - $ref: '#/parameters/cron_job_id'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/model/CronJob'
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/CronJob'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cron_job_delete:
+    summary: Delete CronJob
+    tags: [scheduler]
+    operationId: rhub.api.scheduler.cron.delete_job
+    parameters:
+      - $ref: '#/parameters/cron_job_id'
+    responses:
+      '204':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []

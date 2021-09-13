@@ -262,3 +262,16 @@ paths:
   /policies/search:
     post:
       $ref: 'policy.yml#/endpoints/policy_search'
+
+  /scheduler/cron:
+    get:
+      $ref: 'scheduler.yml#/endpoints/cron_job_list'
+    post:
+      $ref: 'scheduler.yml#/endpoints/cron_job_create'
+  /scheduler/cron/{cron_job_id}:
+    get:
+      $ref: 'scheduler.yml#/endpoints/cron_job_get'
+    patch:
+      $ref: 'scheduler.yml#/endpoints/cron_job_update'
+    delete:
+      $ref: 'scheduler.yml#/endpoints/cron_job_delete'
