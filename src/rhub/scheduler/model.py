@@ -23,11 +23,13 @@ class SchedulerCronJob(db.Model, ModelMixin):
     def validate_time_expr(self, key, value):
         if not CronValidator.parse(value):
             raise ValueError(f'Cron time expression {value!r} is not valid')
+        return value
 
     @validates('job_name')
     def validate_job_name(self, key, value):
         if value not in jobs.CronJob.get_jobs():
             raise ValueError('CronJob is not defined')
+        return value
 
     @property
     def job(self):
