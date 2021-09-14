@@ -1,12 +1,12 @@
 import logging
 
 from connexion import problem
-from sqlalchemy import exc
+from keycloak import KeycloakGetError
 
 from rhub.policies import model
 from rhub.api import db
-from rhub.api.utils import row2dict
 from rhub.api import get_keycloak
+from rhub.auth.keycloak import problem_from_keycloak_error
 
 
 """
@@ -34,34 +34,6 @@ constraint_serv_avail', 'constraint_limit', 'constraint_density',
 logger = logging.getLogger(__name__)
 
 
-def normalize(body):
-    """
-    Flatten constraint field in given JSON
-    """
-    new = {}
-    for key, value in body.items():
-        if key == "constraint":
-            for key, value in value.items():
-                new["constraint_" + key] = value
-        else:
-            new[key] = value
-    return new
-
-
-def denormalize(body):
-    """
-    Unflatten constraint field in given JSON
-    """
-    new = {}
-    new["constraint"] = {}
-    for key, value in body.items():
-        if "constraint_" in key:
-            new["constraint"][key[11:]] = value
-        else:
-            new[key] = value
-    return new
-
-
 def check_access(func):
     """
     Check whether user is in policy owners group
@@ -85,9 +57,9 @@ def check_access(func):
 
 
 def list_policies(user):
-    '''
+    """
     API endpoint to provide a list of policies
-    '''
+    """
     policies = db.session.query(model.Policy.id,
                                 model.Policy.name,
                                 model.Policy.department).all()
@@ -99,29 +71,39 @@ def create_policy(user, body):
     """
     API endpoint to create a policy (JSON formatted)
     """
-    body = normalize(body)
-    keycloak = get_keycloak()
-    current_user = get_keycloak().user_get(user)
-    policy = model.Policy(**body)
+    policy = model.Policy.from_dict(body)
+
+    try:
+        keycloak = get_keycloak()
+        group_id = keycloak.group_create({'name': f'policy-{policy.id}-owners'})
+        keycloak.group_user_add(user, group_id)
+        keycloak.group_role_add('policy-owner', group_id)
+    except KeycloakGetError as e:
+        logger.exception(e)
+        return problem_from_keycloak_error(e)
+    except Exception as e:
+        logger.exception(e)
+        return problem(500, 'Unknown Error',
+                       f'Failed to delete owner group in Keycloak, {e}')
+
     db.session.add(policy)
     db.session.commit()
-    group_name = f'policy-{policy.id}-owners'
-    group = keycloak.group_create({'name': group_name})
-    keycloak.group_user_add(current_user['id'], group)
-    keycloak.group_role_add('policy-owner', group)
-    return denormalize(row2dict(policy))
+
+    return policy.to_dict()
 
 
 def search_policies(user, body):
     """
     API endpoint to list/search policies for attributes (UUID/Dept/Name*)
     """
-    body = normalize(body)
+    body = model.Policy.flatten_data(body)
+
     sql_query = model.Policy.query
     for key, value in body.items():
         sql_query.filter(getattr(model.Policy, key).like(value))
     policies = sql_query.all()
-    return [denormalize(row2dict(policy)) for policy in policies]
+
+    return [policy.to_dict() for policy in policies]
 
 
 def get_policy(user, policy_id):
@@ -131,7 +113,7 @@ def get_policy(user, policy_id):
     policy = model.Policy.query.get(policy_id)
     if not policy:
         return problem(404, 'Not Found', f'Policy {policy_id} does not exist')
-    return denormalize(row2dict(policy))
+    return policy.to_dict()
 
 
 @check_access
@@ -139,15 +121,14 @@ def update_policy(user, policy_id, body, **kwargs):
     """
     API endpoint to update policy attributes
     """
-    body = normalize(body)
-    try:
-        policy = model.Policy.query.get(policy_id)
-        for k, v in body.items():
-            setattr(policy, k, v)
-        db.session.commit()
-    except exc.NoResultFound:
+    policy = model.Policy.query.get(policy_id)
+    if not policy:
         return problem(404, 'Not Found', 'Record Does Not Exist')
-    return denormalize(row2dict(policy))
+
+    policy.update_from_dict(body)
+    db.session.commit()
+
+    return policy.to_dict()
 
 
 @check_access
@@ -155,15 +136,24 @@ def delete_policy(user, policy_id, **kwargs):
     """
     API endpoint to delete policy given policy id
     """
-    try:
-        policy = model.Policy.query.get(policy_id)
-        db.session.delete(policy)
-        db.session.commit()
-    except exc.NoResultFound:
+    policy = model.Policy.query.get(policy_id)
+    if not policy:
         return problem(404, 'Not Found', 'Record Does Not Exist')
+
     keycloak = get_keycloak()
-    groups = {group['name']: group for group in keycloak.group_list()}
-    group_name = f'policy-{policy_id}-owners'
-    group_id = groups[group_name]['id']
-    keycloak.group_delete(group_id)
-    return denormalize(row2dict(policy))
+
+    try:
+        groups = {group['name']: group for group in keycloak.group_list()}
+        group_name = f'policy-{policy_id}-owners'
+        group_id = groups[group_name]['id']
+        keycloak.group_delete(group_id)
+    except KeycloakGetError as e:
+        logger.exception(e)
+        return problem_from_keycloak_error(e)
+    except Exception as e:
+        logger.exception(e)
+        return problem(500, 'Unknown Error',
+                       f'Failed to delete owner group in Keycloak, {e}')
+
+    db.session.delete(policy)
+    db.session.commit()
