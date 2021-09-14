@@ -61,6 +61,7 @@ def test_create(client, db_session_mock):
         'job_params': {'foo': 'bar'},
     }
 
+    model.SchedulerCronJob.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
     rv = client.post(
@@ -77,6 +78,28 @@ def test_create(client, db_session_mock):
     cron_job = db_session_mock.add.call_args.args[0]
     for k, v in cron_job_data.items():
         assert getattr(cron_job, k) == v
+
+
+def test_create_duplicate_name(client, db_session_mock):
+    cron_job_data = {
+        'name': 'example',
+        'description': 'Example cron job',
+        'enabled': True,
+        'time_expr': '0 */2 * * *',
+        'job_name': 'example',
+        'job_params': {'foo': 'bar'},
+    }
+
+    model.SchedulerCronJob.query.filter.return_value.count.return_value = 1
+
+    rv = client.post(
+        f'{API_BASE}/scheduler/cron',
+        headers={'Authorization': 'Bearer foobar'},
+        json=cron_job_data,
+    )
+
+    assert rv.status_code == 400
+    assert "'example' already exists" in rv.json['detail']
 
 
 def test_get(client):
@@ -137,6 +160,33 @@ def test_update(client, db_session_mock):
 
     assert cron_job.time_expr == '0 */5 * * *'
     assert cron_job.job_params == {'bar': 'foo'}
+
+
+def test_update_duplicate_name(client, db_session_mock):
+    cron_job = model.SchedulerCronJob(
+        id=1,
+        name='example',
+        description=None,
+        enabled=True,
+        time_expr='0 */2 * * *',
+        job_name='example',
+        job_params={'foo': 'bar'},
+        last_run=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
+    )
+    model.SchedulerCronJob.query.get.return_value = cron_job
+
+    model.SchedulerCronJob.query.filter.return_value.count.return_value = 1
+
+    rv = client.patch(
+        f'{API_BASE}/scheduler/cron/1',
+        headers={'Authorization': 'Bearer foobar'},
+        json={
+            'name': 'example-duplicate'
+        },
+    )
+
+    assert rv.status_code == 400
+    assert "'example-duplicate' already exists" in rv.json['detail']
 
 
 def test_delete(client, db_session_mock):
