@@ -74,10 +74,13 @@ def create_policy(user, body):
     policy = model.Policy.from_dict(body)
 
     try:
+        db.session.add(policy)
+        db.session.flush()
         keycloak = get_keycloak()
         group_id = keycloak.group_create({'name': f'policy-{policy.id}-owners'})
         keycloak.group_user_add(user, group_id)
         keycloak.group_role_add('policy-owner', group_id)
+        db.session.commit()
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -85,9 +88,6 @@ def create_policy(user, body):
         logger.exception(e)
         return problem(500, 'Unknown Error',
                        f'Failed to delete owner group in Keycloak, {e}')
-
-    db.session.add(policy)
-    db.session.commit()
 
     return policy.to_dict()
 
