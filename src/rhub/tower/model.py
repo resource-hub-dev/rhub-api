@@ -13,6 +13,7 @@ class Server(db.Model, ModelMixin):
     description = db.Column(db.Text, nullable=True)
     enabled = db.Column(db.Boolean, default=True)
     url = db.Column(db.String(256), nullable=False)
+    verify_ssl = db.Column(db.Boolean, default=True)
     #: Tower credentials path (Vault mount/path)
     credentials = db.Column(db.String(256), nullable=False)
 
@@ -32,6 +33,7 @@ class Server(db.Model, ModelMixin):
             url=self.url,
             username=credentials['username'],
             password=credentials['password'],
+            verify_ssl=self.verify_ssl,
         )
 
 

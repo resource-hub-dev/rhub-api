@@ -13,6 +13,7 @@ class Tower:
     url = attr.ib()
     username = attr.ib()
     password = attr.ib(repr=False)
+    verify_ssl = attr.ib(default=True)
 
     def __attrs_post_init__(self):
         self.url = self.url.rstrip('/')
@@ -33,6 +34,7 @@ class Tower:
         response = self._session.request(
             method=method,
             url=f'{self.url}/api/v2/{path}',
+            verify=self.verify_ssl,
             headers=headers,
             params=params,
             json=data,
