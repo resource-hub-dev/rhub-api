@@ -24,6 +24,7 @@ def test_list_servers(client):
             description='',
             enabled=True,
             url='https://tower.example.com',
+            verify_ssl=True,
             credentials='kv/test',
         ),
     ]
@@ -41,6 +42,7 @@ def test_list_servers(client):
             'description': '',
             'enabled': True,
             'url': 'https://tower.example.com',
+            'verify_ssl': True,
             'credentials': 'kv/test',
         }
     ]
@@ -53,6 +55,7 @@ def test_get_server(client):
         description='',
         enabled=True,
         url='https://tower.example.com',
+        verify_ssl=True,
         credentials='kv/test',
     )
 
@@ -70,6 +73,7 @@ def test_get_server(client):
         'description': '',
         'enabled': True,
         'url': 'https://tower.example.com',
+        'verify_ssl': True,
         'credentials': 'kv/test',
     }
 
@@ -85,6 +89,7 @@ def test_create_server(client, db_session_mock, mocker):
     db_session_mock.add.side_effect = _db_add_row_side_effect({
         'id': 1,
         'enabled': True,  # DB default
+        'verify_ssl': True,
     })
 
     rv = client.post(
@@ -109,6 +114,7 @@ def test_update_server(client):
         description='',
         enabled=True,
         url='https://tower.example.com',
+        verify_ssl=True,
         credentials='kv/test',
     )
     model.Server.query.get.return_value = server
@@ -137,6 +143,7 @@ def test_delete_server(client, db_session_mock):
         description='',
         enabled=True,
         url='https://tower.example.com',
+        verify_ssl=True,
         credentials='kv/test',
     )
     model.Server.query.get.return_value = server

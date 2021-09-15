@@ -16,6 +16,9 @@ model:
       url:
         type: string
         format: url
+      verify_ssl:
+        type: boolean
+        description: Option to disable SSL certificate verification.
       credentials:
         type: string
         description: Tower credentials path (Vault mount/path)
