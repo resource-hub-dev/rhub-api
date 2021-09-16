@@ -338,10 +338,12 @@ endpoints:
                   - name
                   - server_id
                   - tower_template_id
+                  - tower_template_is_workflow
           example:
             name: Create OpenStack project
-            tower_id: 1
+            server_id: 1
             tower_template_id: 123
+            tower_template_is_workflow: false
     responses:
       '200':
         description: Tower Template
