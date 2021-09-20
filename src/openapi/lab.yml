@@ -202,9 +202,14 @@ model:
         type: string
         format: uuid
         readOnly: true
+      user_name:
+        type: string
       group_id:
         type: string
         format: uuid
+        nullable: true
+      group_name:
+        type: string
         nullable: true
       created:
         type: string
@@ -212,6 +217,9 @@ model:
         readOnly: true
       region_id:
         $ref: 'common.yml#/model/ID'
+      region_name:
+        type: string
+        nullable: true
       reservation_expiration:
         type: string
         format: date-time
@@ -284,6 +292,18 @@ model:
       fqdn:
         type: string
         format: hostname
+      num_vcpus:
+        type: integer
+        nullable: true
+      ram_mb:
+        type: integer
+        nullable: true
+      num_volumes:
+        type: integer
+        nullable: true
+      volumes_gb:
+        type: integer
+        nullable: true
       ipaddr:
         type: array
         items:
