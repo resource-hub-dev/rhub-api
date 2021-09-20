@@ -17,7 +17,7 @@ def keycloak_mock(mocker):
 
     get_keycloak_mock = mocker.patch(f'rhub.api.lab.cluster.get_keycloak')
     get_keycloak_mock.return_value = keycloak_mock
-
+    mocker.patch(f'rhub.lab.model.get_keycloak').return_value = keycloak_mock
     yield keycloak_mock
 
 
@@ -68,7 +68,10 @@ def _create_test_region():
     )
 
 
-def test_list_clusters(client):
+def test_list_clusters(client, keycloak_mock, mocker):
+    user_id = '00000000-0000-0000-0000-000000000000'
+    sample_region = _create_test_region()
+    keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
     model.Cluster.query.all.return_value = [
         model.Cluster(
             id=1,
@@ -78,6 +81,7 @@ def test_list_clusters(client):
             group_id=None,
             created=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
             region_id=1,
+            region=sample_region,
             reservation_expiration=None,
             lifespan_expiration=None,
             status=model.ClusterStatus.ACTIVE,
@@ -88,6 +92,7 @@ def test_list_clusters(client):
         f'{API_BASE}/lab/cluster',
         headers={'Authorization': 'Bearer foobar'},
     )
+    keycloak_mock.user_get.assert_called_with(user_id)
 
     assert rv.status_code == 200
     assert rv.json == [
@@ -102,11 +107,18 @@ def test_list_clusters(client):
             'reservation_expiration': None,
             'lifespan_expiration': None,
             'status': model.ClusterStatus.ACTIVE.value,
+            'region_name': 'test',
+            'user_name': 'test-user',
+            'group_name': None,
         },
     ]
 
 
-def test_get_cluster(client):
+def test_get_cluster(client, keycloak_mock):
+    user_id = '00000000-0000-0000-0000-000000000000'
+    sample_region = _create_test_region()
+    keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
+
     model.Cluster.query.get.return_value = model.Cluster(
         id=1,
         name='testcluster',
@@ -115,6 +127,7 @@ def test_get_cluster(client):
         group_id=None,
         created=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
         region_id=1,
+        region=sample_region,
         reservation_expiration=None,
         lifespan_expiration=None,
         status=model.ClusterStatus.ACTIVE,
@@ -128,6 +141,7 @@ def test_get_cluster(client):
     assert rv.status_code == 200
 
     model.Cluster.query.get.assert_called_with(1)
+    keycloak_mock.user_get.assert_called_with(user_id)
 
     assert rv.json == {
         'id': 1,
@@ -140,12 +154,16 @@ def test_get_cluster(client):
         'reservation_expiration': None,
         'lifespan_expiration': None,
         'status': model.ClusterStatus.ACTIVE.value,
+        'region_name': 'test',
+        'user_name': 'test-user',
+        'group_name': None,
     }
 
 
-def test_create_cluster(client, db_session_mock):
+def test_create_cluster(client, keycloak_mock, db_session_mock):
+    user_id = '00000000-0000-0000-0000-000000000000'
     model.Region.query.get.return_value = _create_test_region()
-
+    keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
     cluster_data = {
         'name': 'testcluster',
         'description': 'test cluster',
@@ -263,8 +281,11 @@ def test_create_cluster_set_lifespan_forbidden(client, mocker):
     assert rv.status_code == 403
 
 
-def test_update_cluster(client, db_session_mock):
+def test_update_cluster(client, keycloak_mock, db_session_mock):
     region = _create_test_region()
+    user_id = '00000000-0000-0000-0000-000000000000'
+    keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
+    keycloak_mock.group_get.return_value = {'id': None, 'name': 'None'}
     cluster = model.Cluster(
         id=1,
         name='testcluster',
@@ -330,7 +351,9 @@ def test_update_cluster_ro_field(client, cluster_data):
     assert rv.status_code == 400
 
 
-def test_update_cluster_reservation(client):
+def test_update_cluster_reservation(client, keycloak_mock):
+    user_id = '00000000-0000-0000-0000-000000000000'
+    keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
     region = _create_test_region()
     cluster = model.Cluster(
         id=1,
@@ -541,12 +564,20 @@ def test_get_cluster_hosts(client):
                 cluster_id=1,
                 fqdn='host0.example.com',
                 ipaddr=['1.2.3.4'],
+                num_vcpus=2,
+                ram_mb=2048,
+                num_volumes=3,
+                volumes_gb=30,
             ),
             model.ClusterHost(
                 id=2,
                 cluster_id=1,
                 fqdn='host1.example.com',
                 ipaddr=['1:2::3:4'],
+                num_vcpus=2,
+                ram_mb=2048,
+                num_volumes=3,
+                volumes_gb=30,
             ),
         ],
     )
@@ -566,12 +597,20 @@ def test_get_cluster_hosts(client):
             'cluster_id': 1,
             'fqdn': 'host0.example.com',
             'ipaddr': ['1.2.3.4'],
+            'num_vcpus': 2,
+            'ram_mb': 2048,
+            'num_volumes': 3,
+            'volumes_gb': 30,
         },
         {
             'id': 2,
             'cluster_id': 1,
             'fqdn': 'host1.example.com',
             'ipaddr': ['1:2::3:4'],
+            'num_vcpus': 2,
+            'ram_mb': 2048,
+            'num_volumes': 3,
+            'volumes_gb': 30,
         },
     ]
 
@@ -593,10 +632,18 @@ def test_create_cluster_hosts(client, db_session_mock):
         {
             'fqdn': 'host0.example.com',
             'ipaddr': ['1.2.3.4'],
+            'num_vcpus': 2,
+            'ram_mb': 2048,
+            'num_volumes': 3,
+            'volumes_gb': 30,
         },
         {
             'fqdn': 'host1.example.com',
             'ipaddr': ['1:2::3:4'],
+            'num_vcpus': 2,
+            'ram_mb': 2048,
+            'num_volumes': 3,
+            'volumes_gb': 30,
         },
     ]
 

@@ -6,7 +6,7 @@ import re
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import validates
 
-from rhub.api import db, get_vault
+from rhub.api import db, get_keycloak, get_vault
 from rhub.api.utils import ModelMixin
 from rhub.tower.client import Tower
 
@@ -289,6 +289,12 @@ class Cluster(db.Model, ModelMixin):
 
     def to_dict(self):
         data = super().to_dict()
+        if self.region:
+            data['region_name'] = self.region.name
+        data['user_name'] = get_keycloak().user_get(self.user_id)['username'] \
+            if self.user_id is not None else None
+        data['group_name'] = get_keycloak().group_get(self.group_id)['name'] \
+            if self.group_id is not None else None
         if self.quota:
             data['quota'] = self.quota.to_dict()
         if self.status:
@@ -379,6 +385,9 @@ class ClusterHost(db.Model, ModelMixin):
                            nullable=False)
     fqdn = db.Column(db.String(256), nullable=False)
     ipaddr = db.Column(db.ARRAY(postgresql.INET))
-
+    num_vcpus = db.Column(db.Integer, nullable=True)
+    ram_mb = db.Column(db.Integer, nullable=True)
+    num_volumes = db.Column(db.Integer, nullable=True)
+    volumes_gb = db.Column(db.Integer, nullable=True)
     #: :type: :class:`Cluster`
     cluster = db.relationship('Cluster', back_populates='hosts')

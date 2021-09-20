@@ -14,7 +14,6 @@ class KeycloakClient:
             realm_name=realm,
             client_secret_key=secret,
         )
-
         self.admin = KeycloakAdmin(
             server_url=server,
             client_id=resource,
