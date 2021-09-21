@@ -39,6 +39,13 @@ def list_servers():
 def create_server(body, user):
     body.setdefault('description', '')
 
+    query = model.Server.query.filter(model.Server.name == body['name'])
+    if query.count() > 0:
+        return problem(
+            400, 'Bad Request',
+            f'Server with name {body["name"]!r} already exists',
+        )
+
     server = model.Server.from_dict(body)
     db.session.add(server)
     db.session.commit()
@@ -82,6 +89,13 @@ def list_templates():
 @route_require_admin
 def create_template(body, user):
     body.setdefault('description', '')
+
+    query = model.Template.query.filter(model.Template.name == body['name'])
+    if query.count() > 0:
+        return problem(
+            400, 'Bad Request',
+            f'Template with name {body["name"]!r} already exists',
+        )
 
     template = model.Template.from_dict(body)
     db.session.add(template)

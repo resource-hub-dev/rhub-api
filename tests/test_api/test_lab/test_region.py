@@ -304,6 +304,7 @@ def test_create_region(client, db_session_mock, keycloak_mock, mocker):
     }
     group_id = '10000000-2000-3000-4000-000000000000'
 
+    model.Region.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
     keycloak_mock.group_create.return_value = group_id
@@ -370,6 +371,7 @@ def test_create_region_credentials(client, db_session_mock, keycloak_mock, vault
     }
     group_id = '10000000-2000-3000-4000-000000000000'
 
+    model.Region.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
     keycloak_mock.group_create.return_value = group_id
@@ -440,6 +442,7 @@ def test_create_region_with_quota(client, db_session_mock, keycloak_mock, mocker
     }
     group_id = '10000000-2000-3000-4000-000000000000'
 
+    model.Region.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
     keycloak_mock.group_create.return_value = group_id
@@ -503,6 +506,7 @@ def test_create_region_fail_keycloak_cleanup(client, db_session_mock, keycloak_m
     }
     group_id = '10000000-2000-3000-4000-000000000000'
 
+    model.Region.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
     db_session_mock.commit.side_effect = sqlalchemy.exc.SQLAlchemyError
 

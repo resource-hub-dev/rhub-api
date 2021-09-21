@@ -49,6 +49,13 @@ def create_region(body, user):
         return problem(404, 'Not Found',
                        f'Tower instance with ID {body["tower_id"]} does not exist')
 
+    query = model.Region.query.filter(model.Region.name == body['name'])
+    if query.count() > 0:
+        return problem(
+            400, 'Bad Request',
+            f'Region with name {body["name"]!r} already exists',
+        )
+
     try:
         owners_id = get_keycloak().group_create({
             'name': f'{body["name"]}-owners',
