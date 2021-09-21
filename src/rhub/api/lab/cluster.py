@@ -89,6 +89,13 @@ def create_cluster(body, user):
                        'Reservations are disabled in the selected region, only admin '
                        'and region owners are allowed to create new reservations.')
 
+    query = model.Cluster.query.filter(model.Cluster.name == body['name'])
+    if query.count() > 0:
+        return problem(
+            400, 'Bad Request',
+            f'Cluster with name {body["name"]!r} already exists',
+        )
+
     cluster_data = body.copy()
     cluster_data['user_id'] = user
     cluster_data['created'] = date_now()

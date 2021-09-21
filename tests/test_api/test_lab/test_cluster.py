@@ -154,6 +154,7 @@ def test_create_cluster(client, db_session_mock):
         'lifespan_expiration': None
     }
 
+    model.Cluster.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
     rv = client.post(
@@ -180,6 +181,7 @@ def test_create_cluster_in_disabled_region(client, db_session_mock):
     region = _create_test_region()
     region.enabled = False
     model.Region.query.get.return_value = region
+    model.Cluster.query.filter.return_value.count.return_value = 0
 
     cluster_data = {
         'name': 'testcluster',
@@ -209,6 +211,7 @@ def test_create_cluster_in_disabled_region(client, db_session_mock):
 def test_create_cluster_invalid_name(client, cluster_name):
     region = _create_test_region()
     model.Region.query.get.return_value = region
+    model.Cluster.query.filter.return_value.count.return_value = 0
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
@@ -227,6 +230,7 @@ def test_create_cluster_exceeded_reservation(client):
     region = _create_test_region()
     region.reservation_expiration_max = 1
     model.Region.query.get.return_value = region
+    model.Cluster.query.filter.return_value.count.return_value = 0
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
@@ -248,6 +252,7 @@ def test_create_cluster_set_lifespan_forbidden(client, mocker):
     region = _create_test_region()
     region.lifespan_length = 30
     model.Region.query.get.return_value = region
+    model.Cluster.query.filter.return_value.count.return_value = 0
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',

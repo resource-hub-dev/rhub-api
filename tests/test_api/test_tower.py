@@ -86,6 +86,7 @@ def test_create_server(client, db_session_mock, mocker):
         'credentials': 'kv/test',
     }
 
+    model.Server.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({
         'id': 1,
         'enabled': True,  # DB default
@@ -294,6 +295,7 @@ def test_create_template(client, db_session_mock, mocker):
         'tower_template_is_workflow': False,
     }
 
+    model.Template.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
     rv = client.post(
