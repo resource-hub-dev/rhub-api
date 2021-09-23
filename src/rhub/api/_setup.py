@@ -7,6 +7,7 @@ from rhub.auth import ADMIN_USER, ADMIN_GROUP, ADMIN_ROLE
 from rhub.tower import model as tower_model  # noqa: F401
 from rhub.lab import model as lab_model  # noqa: F401
 from rhub.policies import model as policies_model  # noqa: F401
+from rhub.scheduler import model as scheduler_model  # noqa: F401
 
 
 logger = logging.getLogger(__name__)

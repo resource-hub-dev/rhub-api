@@ -16,6 +16,9 @@ model:
       url:
         type: string
         format: url
+      verify_ssl:
+        type: boolean
+        description: Option to disable SSL certificate verification.
       credentials:
         type: string
         description: Tower credentials path (Vault mount/path)
@@ -335,10 +338,12 @@ endpoints:
                   - name
                   - server_id
                   - tower_template_id
+                  - tower_template_is_workflow
           example:
             name: Create OpenStack project
-            tower_id: 1
+            server_id: 1
             tower_template_id: 123
+            tower_template_is_workflow: false
     responses:
       '200':
         description: Tower Template

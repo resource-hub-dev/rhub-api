@@ -1,6 +1,7 @@
 import logging
 
 import sqlalchemy
+import sqlalchemy.exc
 from connexion import problem
 from keycloak import KeycloakGetError
 from werkzeug.exceptions import Forbidden
@@ -8,7 +9,6 @@ import dpath.util as dpath
 
 from rhub.lab import model
 from rhub.api import db, get_keycloak, get_vault
-from rhub.api.utils import row2dict
 from rhub.auth import ADMIN_ROLE
 from rhub.auth.keycloak import problem_from_keycloak_error
 
@@ -31,10 +31,31 @@ def list_regions(user):
             model.Region.owner_group.in_(user_groups),
         ))
 
-    return [row2dict(region) for region in regions]
+    return [region.to_dict() for region in regions]
 
 
 def create_region(body, user):
+    try:
+        if body.get('users_group'):
+            get_keycloak().group_get(body['users_group'])
+    except KeycloakGetError as e:
+        logger.exception(e)
+        return problem(400, 'Users group does not exist',
+                       f'Users group {body["users_group"]} does not exist in Keycloak, '
+                       'you have to create group first or use existing group.')
+
+    tower = model.Tower.query.get(body['tower_id'])
+    if not tower:
+        return problem(404, 'Not Found',
+                       f'Tower instance with ID {body["tower_id"]} does not exist')
+
+    query = model.Region.query.filter(model.Region.name == body['name'])
+    if query.count() > 0:
+        return problem(
+            400, 'Bad Request',
+            f'Region with name {body["name"]!r} already exists',
+        )
+
     try:
         owners_id = get_keycloak().group_create({
             'name': f'{body["name"]}-owners',
@@ -52,15 +73,6 @@ def create_region(body, user):
         logger.exception(e)
         return problem(500, 'Unknown Error',
                        f'Failed to create owner group in Keycloak, {e}')
-
-    try:
-        if body.get('users_group'):
-            get_keycloak().group_get(body['users_group'])
-    except KeycloakGetError as e:
-        logger.exception(e)
-        return problem(400, 'Users group does not exist',
-                       f'Users group {body["users_group"]} does not exist in Keycloak, '
-                       'you have to create group first or use existing group.')
 
     openstack_credentials = dpath.get(body, 'openstack/credentials')
     if not isinstance(openstack_credentials, str):
@@ -82,11 +94,16 @@ def create_region(body, user):
 
     region = model.Region.from_dict(body)
 
-    db.session.add(region)
-    db.session.commit()
-    logger.info(f'Region {region.name} (id {region.id}) created by user {user}')
+    try:
+        db.session.add(region)
+        db.session.commit()
+        logger.info(f'Region {region.name} (id {region.id}) created by user {user}')
+    except sqlalchemy.exc.SQLAlchemyError:
+        # If database transaction failed remove group in Keycloak.
+        get_keycloak().group_delete(owners_id)
+        raise
 
-    return row2dict(region)
+    return region.to_dict()
 
 
 def get_region(region_id, user):
@@ -100,7 +117,7 @@ def get_region(region_id, user):
                     user, [region.users_group, region.owner_group]):
                 raise Forbidden("You don't have access to this region.")
 
-    return row2dict(region)
+    return region.to_dict()
 
 
 def update_region(region_id, body, user):
@@ -155,7 +172,7 @@ def update_region(region_id, body, user):
     db.session.commit()
     logger.info(f'Region {region.name} (id {region.id}) updated by user {user}')
 
-    return row2dict(region)
+    return region.to_dict()
 
 
 def delete_region(region_id, user):

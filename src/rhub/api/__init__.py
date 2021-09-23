@@ -7,6 +7,7 @@ import click
 import prance
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from flask_apscheduler import APScheduler
 from flask import g, current_app
 from flask.cli import with_appcontext
 
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 db = SQLAlchemy()
+sched = APScheduler()
 
 
 def get_keycloak() -> KeycloakClient:
@@ -40,7 +42,7 @@ def get_vault() -> Vault:
         vault_type = current_app.config['VAULT_TYPE']
         if vault_type == 'hashicorp':
             g.vault = HashicorpVault(
-                url=current_app.config['VAULT_URL'],
+                url=current_app.config['VAULT_ADDR'],
                 role_id=current_app.config['VAULT_ROLE_ID'],
                 secret_id=current_app.config['VAULT_SECRET_ID'],
             )
@@ -122,7 +124,7 @@ def create_app():
 
     flask_app.config['VAULT_TYPE'] = os.getenv('VAULT_TYPE')
     # hashicorp vault variables
-    flask_app.config['VAULT_URL'] = os.getenv('VAULT_URL')
+    flask_app.config['VAULT_ADDR'] = os.getenv('VAULT_ADDR')
     flask_app.config['VAULT_ROLE_ID'] = os.getenv('VAULT_ROLE_ID')
     flask_app.config['VAULT_SECRET_ID'] = os.getenv('VAULT_SECRET_ID')
     # file vault variables
@@ -165,8 +167,20 @@ def create_app():
 
     except Exception as e:
         logger.warning(
-            'Failed to load {flask_app.config["WEBHOOK_VAULT_PATH"]} tower'
+            f'Failed to load {flask_app.config["WEBHOOK_VAULT_PATH"]} tower'
             f' webhook notification credentials {e!s}.'
         )
+
+    flask_app.config['SCHEDULER_API_ENABLED'] = False
+
+    sched.init_app(flask_app)
+
+    @sched.task('interval', id='rhub_scheduler', seconds=60, max_instances=1)
+    def rhub_scheduler():
+        from rhub import scheduler
+        with flask_app.app_context():
+            scheduler.run()
+
+    sched.start()
 
     return flask_app

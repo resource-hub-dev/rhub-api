@@ -63,7 +63,7 @@ object are created automatically on first start.
 In the HashiCorp Vault create AppRole and policy to limit access to secrets.
 
 * `VAULT_TYPE=hashicorp`
-* `VAULT_URL` - URL, with `https://`
+* `VAULT_ADDR` - URL, with `https://`
 * `VAULT_ROLE_ID` - AppRole `role_id`
 * `VAULT_SECRET_ID` - AppRole `secret_id`
 

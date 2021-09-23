@@ -1,6 +1,7 @@
 import base64
 
 import pytest
+import sqlalchemy.exc
 
 from rhub.lab import model
 from rhub.auth.keycloak import KeycloakClient
@@ -303,6 +304,7 @@ def test_create_region(client, db_session_mock, keycloak_mock, mocker):
     }
     group_id = '10000000-2000-3000-4000-000000000000'
 
+    model.Region.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
     keycloak_mock.group_create.return_value = group_id
@@ -369,6 +371,7 @@ def test_create_region_credentials(client, db_session_mock, keycloak_mock, vault
     }
     group_id = '10000000-2000-3000-4000-000000000000'
 
+    model.Region.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
     keycloak_mock.group_create.return_value = group_id
@@ -439,6 +442,7 @@ def test_create_region_with_quota(client, db_session_mock, keycloak_mock, mocker
     }
     group_id = '10000000-2000-3000-4000-000000000000'
 
+    model.Region.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
     keycloak_mock.group_create.return_value = group_id
@@ -471,6 +475,56 @@ def test_create_region_with_quota(client, db_session_mock, keycloak_mock, mocker
     assert rv.json['quota'] == quota_data
     assert rv.json['owner_group'] == group_id
     assert rv.json['users_group'] is None
+
+
+def test_create_region_fail_keycloak_cleanup(client, db_session_mock, keycloak_mock):
+    region_data = {
+        'name': 'test',
+        'location': 'RDU',
+        'tower_id': 1,
+        'openstack': {
+            'url': 'https://openstack.example.com:13000',
+            'credentials': 'kv/example/openstack',
+            'project': 'rhub',
+            'domain_name': 'Default',
+            'domain_id': 'default',
+            'networks': ['provider_net_rhub'],
+            'keyname': 'rhub_key',
+        },
+        'satellite': {
+            'hostname': 'satellite.example.com',
+            'insecure': False,
+            'credentials': 'kv/example/satellite',
+        },
+        'dns_server': {
+            'hostname': 'ns.example.com',
+            'zone': 'example.com.',
+            'key': 'kv/example/key',
+        },
+        'vault_server': 'https://vault.example.com/',
+        'download_server': 'https://download.example.com',
+    }
+    group_id = '10000000-2000-3000-4000-000000000000'
+
+    model.Region.query.filter.return_value.count.return_value = 0
+    db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
+    db_session_mock.commit.side_effect = sqlalchemy.exc.SQLAlchemyError
+
+    keycloak_mock.group_create.return_value = group_id
+
+    rv = client.post(
+        f'{API_BASE}/lab/region',
+        headers={'Authorization': 'Bearer foobar'},
+        json=region_data,
+    )
+
+    keycloak_mock.group_create.assert_called_with({'name': 'test-owners'})
+
+    db_session_mock.add.assert_called()
+
+    keycloak_mock.group_delete.called_with(group_id)
+
+    assert rv.status_code == 500
 
 
 def test_update_region(client):

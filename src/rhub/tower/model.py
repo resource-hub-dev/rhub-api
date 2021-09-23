@@ -2,9 +2,10 @@ from sqlalchemy.dialects import postgresql
 
 from rhub.api import db, get_vault
 from rhub.tower.client import Tower
+from rhub.api.utils import ModelMixin
 
 
-class Server(db.Model):
+class Server(db.Model, ModelMixin):
     __tablename__ = 'tower_server'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -12,6 +13,7 @@ class Server(db.Model):
     description = db.Column(db.Text, nullable=True)
     enabled = db.Column(db.Boolean, default=True)
     url = db.Column(db.String(256), nullable=False)
+    verify_ssl = db.Column(db.Boolean, default=True)
     #: Tower credentials path (Vault mount/path)
     credentials = db.Column(db.String(256), nullable=False)
 
@@ -31,10 +33,11 @@ class Server(db.Model):
             url=self.url,
             username=credentials['username'],
             password=credentials['password'],
+            verify_ssl=self.verify_ssl,
         )
 
 
-class Template(db.Model):
+class Template(db.Model, ModelMixin):
     __tablename__ = 'tower_template'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -54,7 +57,7 @@ class Template(db.Model):
     server = db.relationship('Server')
 
 
-class Job(db.Model):
+class Job(db.Model, ModelMixin):
     __tablename__ = 'tower_job'
 
     id = db.Column(db.Integer, primary_key=True)
