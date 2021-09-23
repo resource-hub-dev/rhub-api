@@ -339,9 +339,9 @@ class ClusterTowerJobEvent(ClusterEvent):
         'polymorphic_identity': ClusterEventType.TOWER_JOB,
     }
 
-    tower_id = db.Column(db.Integer, db.ForeignKey('lab_tower.id'), nullable=False)
+    tower_id = db.Column(db.Integer, db.ForeignKey('lab_tower.id'), nullable=True)
     #: ID of template in Tower.
-    tower_job_id = db.Column(db.Integer, nullable=False)
+    tower_job_id = db.Column(db.Integer, nullable=True)
     #: :type: :class:`ClusterStatus`
     status = db.Column(db.Enum(ClusterStatus))
     #: :type: :class:`Tower`
