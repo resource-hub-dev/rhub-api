@@ -260,9 +260,13 @@ model:
             type: string
             enum: [tower_job]
           tower_id:
-            $ref: 'common.yml#/model/ID'
+            anyOf:
+              - $ref: 'common.yml#/model/ID'
+              - nullable: true
           tower_job_id:
-            $ref: 'common.yml#/model/ID'
+            anyOf:
+              - $ref: 'common.yml#/model/ID'
+              - nullable: true
           status:
             type: string
       - properties:
