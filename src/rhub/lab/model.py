@@ -297,6 +297,8 @@ class Cluster(db.Model, ModelMixin):
             if self.group_id is not None else None
         if self.quota:
             data['quota'] = self.quota.to_dict()
+        if self.hosts:
+            data['hosts'] = [host.to_dict() for host in self.hosts]
         if self.status:
             data['status'] = self.status.value
         else:

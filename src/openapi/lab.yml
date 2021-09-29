@@ -234,6 +234,12 @@ model:
         type: string
         readOnly: true
         nullable: true
+      hosts:
+        type: array
+        readOnly: true
+        nullable: true
+        items:
+          $ref: '#/model/ClusterHost'
 
   ClusterEvent:
     type: object
