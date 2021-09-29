@@ -8,6 +8,7 @@ from werkzeug.exceptions import Forbidden
 import dpath.util as dpath
 
 from rhub.lab import model
+from rhub.tower import model as tower_model
 from rhub.api import db, get_keycloak, get_vault
 from rhub.auth import ADMIN_ROLE
 from rhub.auth.keycloak import problem_from_keycloak_error
@@ -44,7 +45,7 @@ def create_region(body, user):
                        f'Users group {body["users_group"]} does not exist in Keycloak, '
                        'you have to create group first or use existing group.')
 
-    tower = model.Tower.query.get(body['tower_id'])
+    tower = tower_model.Server.query.get(body['tower_id'])
     if not tower:
         return problem(404, 'Not Found',
                        f'Tower instance with ID {body["tower_id"]} does not exist')

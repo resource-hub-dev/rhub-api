@@ -20,27 +20,6 @@ model:
         minimum: 1
         nullable: true
 
-  Tower:
-    type: object
-    properties:
-      id:
-        allOf:
-          - $ref: 'common.yml#/model/ID'
-          - readOnly: true
-      name:
-        type: string
-        pattern: '^\w+$'
-      description:
-        type: string
-      enabled:
-        type: boolean
-      url:
-        type: string
-        format: url
-      credentials:
-        type: string
-        description: Tower credentials path (Vault mount/path)
-
   Region:
     type: object
     properties:
@@ -349,13 +328,6 @@ model:
 
 parameters:
 
-  tower_id:
-    name: tower_id
-    in: path
-    description: ID of the tower
-    required: true
-    schema:
-      $ref: 'common.yml#/model/ID'
   region_id:
     name: region_id
     in: path
@@ -393,91 +365,6 @@ parameters:
       $ref: 'common.yml#/model/ID'
 
 endpoints:
-
-  tower_list:
-    summary: Get tower list
-    tags: [lab]
-    operationId: rhub.api.lab.tower.list_towers
-    responses:
-      '200':
-        description: List of Tower
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/model/Tower'
-      default:
-        $ref: 'common.yml#/responses/problem'
-
-  tower_create:
-    summary: Create tower
-    tags: [lab]
-    operationId: rhub.api.lab.tower.create_tower
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            allOf:
-              - $ref: '#/model/Tower'
-              - required:
-                  - name
-                  - url
-    responses:
-      '200':
-        description: Success
-      default:
-        $ref: 'common.yml#/responses/problem'
-
-  tower_get:
-    summary: Get tower
-    tags: [lab]
-    operationId: rhub.api.lab.tower.get_tower
-    parameters:
-      - $ref: '#/parameters/tower_id'
-    responses:
-      '200':
-        description: Tower
-        content:
-          application/json:
-            schema:
-              $ref: '#/model/Tower'
-      '404':
-        description: Not found
-      default:
-        $ref: 'common.yml#/responses/problem'
-
-  tower_update:
-    summary: Update tower
-    tags: [lab]
-    operationId: rhub.api.lab.tower.update_tower
-    parameters:
-      - $ref: '#/parameters/tower_id'
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/model/Tower'
-    responses:
-      '200':
-        description: Success
-      default:
-        $ref: 'common.yml#/responses/problem'
-
-  tower_delete:
-    summary: Delete tower
-    tags: [lab]
-    operationId: rhub.api.lab.tower.delete_tower
-    parameters:
-      - $ref: '#/parameters/tower_id'
-    responses:
-      '200':
-        description: Success
-      default:
-        $ref: 'common.yml#/responses/problem'
 
   region_list:
     summary: Get region list

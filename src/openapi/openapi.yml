@@ -37,18 +37,6 @@ paths:
     get:
       $ref: 'health.yml#/endpoints/ping'
 
-  /lab/tower:
-    get:
-      $ref: 'lab.yml#/endpoints/tower_list'
-    post:
-      $ref: 'lab.yml#/endpoints/tower_create'
-  /lab/tower/{tower_id}:
-    get:
-      $ref: 'lab.yml#/endpoints/tower_get'
-    patch:
-      $ref: 'lab.yml#/endpoints/tower_update'
-    delete:
-      $ref: 'lab.yml#/endpoints/tower_delete'
   /lab/region:
     get:
       $ref: 'lab.yml#/endpoints/region_list'
