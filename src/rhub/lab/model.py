@@ -6,9 +6,9 @@ import re
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import validates
 
-from rhub.api import db, get_keycloak, get_vault
+from rhub.api import db, get_keycloak
 from rhub.api.utils import ModelMixin
-from rhub.tower.client import Tower
+from rhub.tower import model as tower_model
 
 
 class Region(db.Model, ModelMixin):
@@ -31,9 +31,9 @@ class Region(db.Model, ModelMixin):
     #: Limits use only to specific group of people. `NULL` == shared lab.
     users_group = db.Column(postgresql.UUID, nullable=True, index=True)
     ...  # TODO policies?
-    tower_id = db.Column(db.Integer, db.ForeignKey('lab_tower.id'))
-    #: :type: :class:`Tower`
-    tower = db.relationship('Tower')
+    tower_id = db.Column(db.Integer, db.ForeignKey(tower_model.Server.id))
+    #: :type: :class:`rhub.tower.model.Server`
+    tower = db.relationship(tower_model.Server)
 
     openstack_url = db.Column(db.String(256), nullable=False)
     #: OpenStack credentials path in Vault
@@ -158,40 +158,6 @@ class Quota(db.Model, ModelMixin):
         data = super().to_dict()
         del data['id']
         return data
-
-
-class Tower(db.Model, ModelMixin):
-    __tablename__ = 'lab_tower'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(32), unique=True, nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    enabled = db.Column(db.Boolean, default=True)
-    url = db.Column(db.String(256), nullable=False)
-    #: Credentials path in Vault
-    credentials = db.Column(db.String(256), nullable=False)
-
-    #: :type: list of :class:`Region`
-    regions = db.relationship('Region', back_populates='tower',
-                              cascade='all,delete-orphan')
-
-    def create_tower_client(self) -> Tower:
-        """
-        Create Tower client.
-
-        :returns: Tower
-        :raises: RuntimeError if failed to create client due to missing
-                 credentials in vault
-        :raises: Exception any other errors
-        """
-        credentials = get_vault().read(self.credentials)
-        if not credentials:
-            raise RuntimeError('Missing credentials in vault')
-        return Tower(
-            url=self.url,
-            username=credentials['username'],
-            password=credentials['password'],
-        )
 
 
 class ClusterStatus(str, enum.Enum):
@@ -341,13 +307,14 @@ class ClusterTowerJobEvent(ClusterEvent):
         'polymorphic_identity': ClusterEventType.TOWER_JOB,
     }
 
-    tower_id = db.Column(db.Integer, db.ForeignKey('lab_tower.id'), nullable=True)
+    tower_id = db.Column(db.Integer, db.ForeignKey(tower_model.Server.id),
+                         nullable=True)
     #: ID of template in Tower.
     tower_job_id = db.Column(db.Integer, nullable=True)
     #: :type: :class:`ClusterStatus`
     status = db.Column(db.Enum(ClusterStatus))
-    #: :type: :class:`Tower`
-    tower = db.relationship('Tower')
+    #: :type: :class:`rhub.tower.model.Server`
+    tower = db.relationship(tower_model.Server)
 
     def to_dict(self):
         data = super().to_dict()
