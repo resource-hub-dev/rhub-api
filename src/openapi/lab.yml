@@ -376,15 +376,53 @@ endpoints:
     summary: Get region list
     tags: [lab]
     operationId: rhub.api.lab.region.list_regions
+    parameters:
+      - name: filter
+        in: query
+        description: Filter clusters by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              pattern: '^[\w%]+$'
+              description: >
+                Name of a region. Wildcard ``%`` can be used to match zero, one,
+                or multiple characters
+            location:
+              type: string
+              pattern: '^[\w%]+$'
+              description: >
+                Location of a region. Wildcard ``%`` can be used to match zero,
+                one, or multiple characters
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
     responses:
       '200':
         description: List of Region
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/model/Region'
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/Region'
+                count:
+                  type: integer
+                  minimum: 0
+                  description: The total number of items
       default:
         $ref: 'common.yml#/responses/problem'
     security:
@@ -783,15 +821,63 @@ endpoints:
     summary: Get cluster list
     tags: [lab]
     operationId: rhub.api.lab.cluster.list_clusters
+    parameters:
+      - name: filter
+        in: query
+        description: Filter clusters by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              pattern: '^[\w%]+$'
+              description: >
+                Name of a cluster. Wildcard ``%`` can be used to match zero, one, or
+                multiple characters
+            region_id:
+              type: integer
+              minimum: 1
+              description: ID of the region.
+            user_id:
+              description: ID of the user.
+              type: string
+              format: uuid
+            group_id:
+              type: string
+              format: uuid
+              nullable: true
+              description: ID of the group or ``null``.
+            shared:
+              type: boolean
+              description: Filter shared clusters
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
     responses:
       '200':
         description: List of Cluster
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/model/Cluster'
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/Cluster'
+                count:
+                  type: integer
+                  minimum: 0
+                  description: The total number of items.
       default:
         $ref: 'common.yml#/responses/problem'
     security:

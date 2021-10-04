@@ -77,15 +77,51 @@ endpoints:
     summary: Get policy list
     tags: [policy]
     operationId: rhub.api.policies.list_policies
+    parameters:
+      - name: filter
+        in: query
+        description: Filter policies by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: >
+                Name of a policy. Wildcard ``%`` can be used to match zero, one,
+                or multiple characters
+            department:
+              type: string
+              description: >
+                Department of a policy. Wildcard ``%`` can be used to match
+                zero, one, or multiple characters
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
     responses:
       '200':
         description: List of Policies
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/model/BriefPolicy'
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/BriefPolicy'
+                count:
+                  type: integer
+                  minimum: 0
+                  description: The total number of items.
       default:
         $ref: 'common.yml#/responses/problem'
     security:
@@ -181,36 +217,6 @@ endpoints:
     responses:
       '204':
         description: Success
-      default:
-        $ref: 'common.yml#/responses/problem'
-    security:
-      - oauth2: []
-
-  policy_search:
-    summary: Search Policies
-    tags: [policy]
-    operationId: rhub.api.policies.search_policies
-    requestBody:
-      description: Policy search
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            allOf:
-              - $ref: '#/model/Policy'
-          example:
-            constraint:
-              location: RDU2
-    responses:
-      '200':
-        description: List of Policies
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/model/BriefPolicy'
       default:
         $ref: 'common.yml#/responses/problem'
     security:

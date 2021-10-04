@@ -47,15 +47,46 @@ endpoints:
     summary: Get CronJob list
     tags: [scheduler]
     operationId: rhub.api.scheduler.cron.list_jobs
+    parameters:
+      - name: filter
+        in: query
+        description: Filter cron jobs by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: >
+                Name of a job. Wildcard ``%`` can be used to match zero, one, or
+                multiple characters
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
     responses:
       '200':
         description: List of CronJobs
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/model/CronJob'
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/CronJob'
+                count:
+                  type: integer
+                  minimum: 0
+                  description: The total number of items.
       default:
         $ref: 'common.yml#/responses/problem'
     security:
