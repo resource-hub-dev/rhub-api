@@ -399,6 +399,15 @@ def webhook_notification():
     #      - update_cluster_status(id)  [database operation]
     #      - send_email(user.email, message) or submit the notification to Hydra?
 
+    # if this is a test notification from Tower, allow it to succeed
+    try:
+        body = request.json['body']
+        if 'Ansible Tower Test Notification' in body:
+            logger.info(f'Received a test notification from tower ({body})')
+            return Response(status=204)
+    except Exception:
+        pass
+
     # inspect json payload to ensure certain fields are present
     try:
         jobId = request.json['id']
