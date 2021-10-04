@@ -247,9 +247,6 @@ paths:
       $ref: 'policy.yml#/endpoints/policy_update'
     delete:
       $ref: 'policy.yml#/endpoints/policy_delete'
-  /policies/search:
-    post:
-      $ref: 'policy.yml#/endpoints/policy_search'
 
   /scheduler/cron:
     get:

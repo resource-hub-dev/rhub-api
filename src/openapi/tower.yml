@@ -198,15 +198,47 @@ endpoints:
     summary: Get list of Tower servers
     operationId: rhub.api.tower.list_servers
     tags: [tower]
+    parameters:
+      - name: filter
+        in: query
+        description: Filter servers by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              pattern: '^[\w%]+$'
+              description: >
+                Name of a server. Wildcard ``%`` can be used to match zero, one, or
+                multiple characters
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
     responses:
       '200':
         description: List of Tower Server
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/model/Server'
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/Server'
+                count:
+                  type: integer
+                  minimum: 0
+                  description: The total number of items.
       default:
         $ref: 'common.yml#/responses/problem'
     security:
@@ -307,15 +339,51 @@ endpoints:
     summary: Get list of Tower templates
     operationId: rhub.api.tower.list_templates
     tags: [tower]
+    parameters:
+      - name: filter
+        in: query
+        description: Filter templates by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              pattern: '^[\w%]+$'
+              description: >
+                Name of a template. Wildcard ``%`` can be used to match zero,
+                one, or multiple characters
+            server_id:
+              type: integer
+              minimum: 1
+              description: ID of the server
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
     responses:
       '200':
         description: List of Tower Template
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/model/Template'
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/Template'
+                count:
+                  type: integer
+                  minimum: 0
+                  description: The total number of items.
       default:
         $ref: 'common.yml#/responses/problem'
     security:
@@ -462,15 +530,44 @@ endpoints:
     tags: [tower]
     parameters:
       - $ref: '#/parameters/template_id'
+      - name: filter
+        in: query
+        description: Filter jobs by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            launched_by:
+              type: string
+              format: uuid
+              description: ID of the user who launched template
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
     responses:
       '200':
         description: List of Tower Jobs
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/model/Job'
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/Job'
+                count:
+                  type: integer
+                  minimum: 0
+                  description: The total number of items.
       default:
         $ref: 'common.yml#/responses/problem'
     security:
@@ -480,15 +577,45 @@ endpoints:
     summary: List Tower jobs
     operationId: rhub.api.tower.list_jobs
     tags: [tower]
+    parameters:
+      - name: filter
+        in: query
+        description: Filter jobs by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            launched_by:
+              type: string
+              format: uuid
+              description: ID of the user who launched template
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
     responses:
       '200':
         description: List of Tower Jobs
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/model/Job'
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/Job'
+                count:
+                  type: integer
+                  minimum: 0
+                  description: The total number of items.
       default:
         $ref: 'common.yml#/responses/problem'
     security:
