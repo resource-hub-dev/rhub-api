@@ -3,6 +3,7 @@ import base64
 import pytest
 
 from rhub.auth.keycloak import KeycloakClient
+from rhub.api import DEFAULT_PAGE_LIMIT
 
 
 API_BASE = '/v0'
@@ -55,7 +56,7 @@ def test_list_users(client, keycloak_mock):
         headers={'Authorization': 'Bearer foobar'},
     )
 
-    keycloak_mock.user_list.assert_called_with({})
+    keycloak_mock.user_list.assert_called_with({'first': 0, 'max': DEFAULT_PAGE_LIMIT})
 
     assert rv.status_code == 200
     assert rv.json == [{'username': 'user'}]
