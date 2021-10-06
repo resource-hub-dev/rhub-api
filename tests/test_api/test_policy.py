@@ -20,29 +20,39 @@ def keycloak_mock(mocker):
     yield keycloak_mock
 
 
-def test_list_policy(client):
-    db.session.query(model.Policy.id,
-                     model.Policy.name,
-                     model.Policy.department).all.return_value = [(1, "test", "test"), (2, "test", "test")]
+def test_list_policy(client, mocker):
+    def row(data):
+        row = mocker.Mock()
+        row._asdict.return_value = data
+        return row
+
+    db.session.query.return_value.limit.return_value.offset.return_value = [
+        row({'id': 1, 'name': 'test', 'department': 'test'}),
+        row({'id': 2, 'name': 'test', 'department': 'test'}),
+    ]
+    db.session.query.return_value.count.return_value = 2
 
     rv = client.get(
         f'{API_BASE}/policies',
         headers={'Authorization': 'Bearer foobar'},
     )
-    print(rv)
+
     assert rv.status_code == 200
-    assert rv.json == [
-        {
-            'department': 'test',
-            'id': 1,
-            'name': 'test'
-        },
-        {
-            'department': 'test',
-            'id': 2,
-            'name': 'test'
-        }
-    ]
+    assert rv.json == {
+        'data': [
+            {
+                'department': 'test',
+                'id': 1,
+                'name': 'test'
+            },
+            {
+                'department': 'test',
+                'id': 2,
+                'name': 'test'
+            }
+        ],
+        'total': 2,
+    }
 
 
 def test_get_policy(client):
@@ -110,45 +120,6 @@ def test_create_policy(client, keycloak_mock, db_session_mock):
         assert getattr(server, k) == v
 
     assert rv.status_code == 200
-
-
-def test_search_policy(client):
-    model.Policy.query.all.return_value = [model.Policy(
-        id=1,
-        name='test',
-        department='',
-        constraint_sched_avail='',
-        constraint_serv_avail='',
-        constraint_limit={},
-        constraint_density='',
-        constraint_tag=[],
-        constraint_cost='',
-        constraint_location='',
-    )]
-
-    rv = client.post(
-        f'{API_BASE}/policies/search',
-        headers={'Authorization': 'Bearer foobar'},
-        json={'name': 'test'}
-    )
-
-    model.Policy.query.get.assert_called_with(1)
-
-    assert rv.status_code == 200
-    assert rv.json == [{
-        'constraint': {
-            'tag': [],
-            'limit': {},
-            'cost': '',
-            'density': '',
-            'location': '',
-            'sched_avail': '',
-            'serv_avail': '',
-        },
-        'department': '',
-        'id': 1,
-        'name': 'test',
-    }]
 
 
 def test_delete_policy(client, keycloak_mock, db_session_mock):

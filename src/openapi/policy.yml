@@ -118,7 +118,7 @@ endpoints:
                   type: array
                   items:
                     $ref: '#/model/BriefPolicy'
-                count:
+                total:
                   type: integer
                   minimum: 0
                   description: The total number of items.

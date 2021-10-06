@@ -17,7 +17,7 @@ def _db_add_row_side_effect(data_added):
 
 
 def test_list_servers(client):
-    model.Server.query.all.return_value = [
+    model.Server.query.limit.return_value.offset.return_value = [
         model.Server(
             id=1,
             name='test',
@@ -28,6 +28,7 @@ def test_list_servers(client):
             credentials='kv/test',
         ),
     ]
+    model.Server.query.count.return_value = 1
 
     rv = client.get(
         f'{API_BASE}/tower/server',
@@ -35,17 +36,20 @@ def test_list_servers(client):
     )
 
     assert rv.status_code == 200
-    assert rv.json == [
-        {
-            'id': 1,
-            'name': 'test',
-            'description': '',
-            'enabled': True,
-            'url': 'https://tower.example.com',
-            'verify_ssl': True,
-            'credentials': 'kv/test',
-        }
-    ]
+    assert rv.json == {
+        'data': [
+            {
+                'id': 1,
+                'name': 'test',
+                'description': '',
+                'enabled': True,
+                'url': 'https://tower.example.com',
+                'verify_ssl': True,
+                'credentials': 'kv/test',
+            }
+        ],
+        'total': 1,
+    }
 
 
 def test_get_server(client):
@@ -161,7 +165,7 @@ def test_delete_server(client, db_session_mock):
 
 
 def test_list_templates(client):
-    model.Template.query.all.return_value = [
+    model.Template.query.limit.return_value.offset.return_value = [
         model.Template(
             id=1,
             name='test',
@@ -171,6 +175,7 @@ def test_list_templates(client):
             tower_template_is_workflow=False,
         ),
     ]
+    model.Template.query.count.return_value = 1
 
     rv = client.get(
         f'{API_BASE}/tower/template',
@@ -178,16 +183,19 @@ def test_list_templates(client):
     )
 
     assert rv.status_code == 200
-    assert rv.json == [
-        {
-            'id': 1,
-            'name': 'test',
-            'description': '',
-            'server_id': 1,
-            'tower_template_id': 1,
-            'tower_template_is_workflow': False,
-        }
-    ]
+    assert rv.json == {
+        'data': [
+            {
+                'id': 1,
+                'name': 'test',
+                'description': '',
+                'server_id': 1,
+                'tower_template_id': 1,
+                'tower_template_is_workflow': False,
+            }
+        ],
+        'total': 1,
+    }
 
 
 @pytest.mark.parametrize(
@@ -513,7 +521,7 @@ def test_job_relaunch(client, db_session_mock, mocker):
 
 
 def test_list_jobs(client):
-    model.Job.query.all.return_value = [
+    model.Job.query.limit.return_value.offset.return_value = [
         model.Job(
             id=1,
             template_id=1,
@@ -521,6 +529,7 @@ def test_list_jobs(client):
             launched_by='00000000-0000-0000-0000-000000000000',
         ),
     ]
+    model.Job.query.count.return_value = 1
 
     rv = client.get(
         f'{API_BASE}/tower/job',
@@ -528,14 +537,17 @@ def test_list_jobs(client):
     )
 
     assert rv.status_code == 200
-    assert rv.json == [
-        {
-            'id': 1,
-            'template_id': 1,
-            'tower_job_id': 1,
-            'launched_by': '00000000-0000-0000-0000-000000000000',
-        }
-    ]
+    assert rv.json == {
+        'data': [
+            {
+                'id': 1,
+                'template_id': 1,
+                'tower_job_id': 1,
+                'launched_by': '00000000-0000-0000-0000-000000000000',
+            }
+        ],
+        'total': 1,
+    }
 
 
 def test_get_job(client, mocker):

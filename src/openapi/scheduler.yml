@@ -83,7 +83,7 @@ endpoints:
                   type: array
                   items:
                     $ref: '#/model/CronJob'
-                count:
+                total:
                   type: integer
                   minimum: 0
                   description: The total number of items.
