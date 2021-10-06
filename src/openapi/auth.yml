@@ -190,6 +190,38 @@ endpoints:
         https://www.keycloak.org/docs-api/11.0/rest-api/#_userrepresentation)
     tags: [auth]
     operationId: rhub.api.auth.user.list_users
+    parameters:
+      - name: filter
+        in: query
+        description: |
+          Filter users by attributes. See [Keycloak API: Users](
+            https://www.keycloak.org/docs-api/8.0/rest-api/index.html#_users_resource)
+
+          *Due to limitations of the Keycloak API / library, wildcard ``%`` is
+          not supported and filtering is based on substring search.*
+        explode: false
+        schema:
+          type: object
+          properties:
+            username:
+              type: string
+            email:
+              type: string
+            firstName:
+              type: string
+            lastName:
+              type: string
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
     responses:
       '200':
         description: List of User

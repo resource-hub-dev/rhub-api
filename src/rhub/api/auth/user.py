@@ -4,7 +4,7 @@ from flask import request
 from connexion import problem
 from keycloak import KeycloakGetError
 
-from rhub.api import get_keycloak
+from rhub.api import get_keycloak, DEFAULT_PAGE_LIMIT
 from rhub.auth.keycloak import problem_from_keycloak_error
 from rhub.auth.utils import route_require_admin
 
@@ -12,9 +12,13 @@ from rhub.auth.utils import route_require_admin
 logger = logging.getLogger(__name__)
 
 
-def list_users():
+def list_users(filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
     try:
-        return get_keycloak().user_list({}), 200
+        return get_keycloak().user_list({
+            'first': page * limit,
+            'max': limit,
+            **filter_,
+        }), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
