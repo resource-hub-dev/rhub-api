@@ -1,11 +1,13 @@
 import logging
+import functools
 
 import sqlalchemy
 from connexion import problem
 from dateutil.parser import isoparse as date_parse
 
+from rhub.lab import SHAREDCLUSTER_USER
 from rhub.lab import model
-from rhub.api import db, get_keycloak
+from rhub.api import db, get_keycloak, DEFAULT_PAGE_LIMIT
 from rhub.auth import ADMIN_ROLE
 from rhub.auth.utils import route_require_admin
 from rhub.api.utils import date_now
@@ -59,17 +61,56 @@ def _user_can_disable_expiration(region, user_id):
     return get_keycloak().user_check_group(user_id, region.owner_group)
 
 
-def list_clusters(user):
+@functools.lru_cache()
+def _get_sharedcluster_user_id():
+    user_search = get_keycloak().user_list({'username': SHAREDCLUSTER_USER})
+    if user_search:
+        return user_search[0]['id']
+    return None
+
+
+def list_clusters(user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
     if get_keycloak().user_check_role(user, ADMIN_ROLE):
-        clusters = model.Cluster.query.all()
+        clusters = model.Cluster.query
     else:
         user_groups = [group['id'] for group in get_keycloak().user_group_list(user)]
+        user_list = [user]
+        if sharedcluster_user_id := _get_sharedcluster_user_id():
+            user_list.append(sharedcluster_user_id)
         clusters = model.Cluster.query.filter(sqlalchemy.or_(
-            model.Cluster.user_id == user,
+            model.Cluster.user_id.in_(user_list),
             model.Cluster.group_id.in_(user_groups),
         ))
 
-    return [cluster.to_dict() for cluster in clusters]
+    if 'name' in filter_:
+        clusters = clusters.filter(model.Cluster.name.ilike(filter_['name']))
+
+    if 'region_id' in filter_:
+        clusters = clusters.filter(model.Cluster.region_id == filter_['region_id'])
+
+    if 'user_id' in filter_:
+        clusters = clusters.filter(model.Cluster.user_id == filter_['user_id'])
+
+    if 'group_id' in filter_:
+        clusters = clusters.filter(model.Cluster.group_id == filter_['group_id'])
+
+    if 'shared' in filter_:
+        if sharedcluster_user_id := _get_sharedcluster_user_id():
+            if filter_['shared']:
+                clusters = clusters.filter(
+                    model.Cluster.user_id == sharedcluster_user_id
+                )
+            else:
+                clusters = clusters.filter(
+                    model.Cluster.user_id != sharedcluster_user_id
+                )
+
+    return {
+        'data': [
+            cluster.to_dict() for cluster in clusters.limit(limit).offset(page * limit)
+        ],
+        'total': clusters.count(),
+    }
 
 
 def create_cluster(body, user):

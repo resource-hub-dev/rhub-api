@@ -9,7 +9,7 @@ import dpath.util as dpath
 
 from rhub.lab import model
 from rhub.tower import model as tower_model
-from rhub.api import db, get_keycloak, get_vault
+from rhub.api import db, get_keycloak, get_vault, DEFAULT_PAGE_LIMIT
 from rhub.auth import ADMIN_ROLE
 from rhub.auth.keycloak import problem_from_keycloak_error
 
@@ -21,9 +21,9 @@ VAULT_PATH_PREFIX = 'kv/lab/region'
 """Vault path prefix to create new credentials in Vault."""
 
 
-def list_regions(user):
+def list_regions(user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
     if get_keycloak().user_check_role(user, ADMIN_ROLE):
-        regions = model.Region.query.all()
+        regions = model.Region.query
     else:
         user_groups = [group['id'] for group in get_keycloak().user_group_list(user)]
         regions = model.Region.query.filter(sqlalchemy.or_(
@@ -32,7 +32,18 @@ def list_regions(user):
             model.Region.owner_group.in_(user_groups),
         ))
 
-    return [region.to_dict() for region in regions]
+    if 'name' in filter_:
+        regions = regions.filter(model.Region.name.ilike(filter_['name']))
+
+    if 'location' in filter_:
+        regions = regions.filter(model.Region.location.ilike(filter_['location']))
+
+    return {
+        'data': [
+            region.to_dict() for region in regions.limit(limit).offset(page * limit)
+        ],
+        'total': regions.count(),
+    }
 
 
 def create_region(body, user):

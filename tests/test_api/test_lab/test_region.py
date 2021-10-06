@@ -118,7 +118,7 @@ def test_to_dict():
 
 
 def test_list_regions(client):
-    model.Region.query.all.return_value = [
+    model.Region.query.limit.return_value.offset.return_value = [
         model.Region(
             id=1,
             name='test',
@@ -150,6 +150,7 @@ def test_list_regions(client):
             download_server='https://download.example.com',
         ),
     ]
+    model.Region.query.count.return_value = 1
 
     rv = client.get(
         f'{API_BASE}/lab/region',
@@ -157,44 +158,47 @@ def test_list_regions(client):
     )
 
     assert rv.status_code == 200
-    assert rv.json == [
-        {
-            'id': 1,
-            'name': 'test',
-            'location': 'RDU',
-            'description': '',
-            'banner': '',
-            'enabled': True,
-            'quota': None,
-            'lifespan_length': None,
-            'reservations_enabled': True,
-            'reservation_expiration_max': 7,
-            'owner_group': '00000000-0000-0000-0000-000000000000',
-            'users_group': None,
-            'tower_id': 1,
-            'openstack': {
-                'url': 'https://openstack.example.com:13000',
-                'credentials': 'kv/example/openstack',
-                'project': 'rhub',
-                'domain_name': 'Default',
-                'domain_id': 'default',
-                'networks': ['provider_net_rhub'],
-                'keyname': 'rhub_key',
-            },
-            'satellite': {
-                'hostname': 'satellite.example.com',
-                'insecure': False,
-                'credentials': 'kv/example/satellite',
-            },
-            'dns_server': {
-                'hostname': 'ns.example.com',
-                'zone': 'example.com.',
-                'key': 'kv/example/key',
-            },
-            'vault_server': 'https://vault.example.com/',
-            'download_server': 'https://download.example.com',
-        }
-    ]
+    assert rv.json == {
+        'data': [
+            {
+                'id': 1,
+                'name': 'test',
+                'location': 'RDU',
+                'description': '',
+                'banner': '',
+                'enabled': True,
+                'quota': None,
+                'lifespan_length': None,
+                'reservations_enabled': True,
+                'reservation_expiration_max': 7,
+                'owner_group': '00000000-0000-0000-0000-000000000000',
+                'users_group': None,
+                'tower_id': 1,
+                'openstack': {
+                    'url': 'https://openstack.example.com:13000',
+                    'credentials': 'kv/example/openstack',
+                    'project': 'rhub',
+                    'domain_name': 'Default',
+                    'domain_id': 'default',
+                    'networks': ['provider_net_rhub'],
+                    'keyname': 'rhub_key',
+                },
+                'satellite': {
+                    'hostname': 'satellite.example.com',
+                    'insecure': False,
+                    'credentials': 'kv/example/satellite',
+                },
+                'dns_server': {
+                    'hostname': 'ns.example.com',
+                    'zone': 'example.com.',
+                    'key': 'kv/example/key',
+                },
+                'vault_server': 'https://vault.example.com/',
+                'download_server': 'https://download.example.com',
+            }
+        ],
+        'total': 1,
+    }
 
 
 def test_get_region(client):

@@ -4,7 +4,7 @@ from connexion import problem
 from keycloak import KeycloakGetError
 
 from rhub.policies import model
-from rhub.api import db
+from rhub.api import db, DEFAULT_PAGE_LIMIT
 from rhub.api import get_keycloak
 from rhub.auth.keycloak import problem_from_keycloak_error
 
@@ -56,15 +56,28 @@ def check_access(func):
     return inner
 
 
-def list_policies(user):
+def list_policies(user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
     """
     API endpoint to provide a list of policies
     """
-    policies = db.session.query(model.Policy.id,
-                                model.Policy.name,
-                                model.Policy.department).all()
-    columns = ['id', 'name', 'department']
-    return [dict(zip(columns, policy)) for policy in policies]
+    policies = db.session.query(
+        model.Policy.id,
+        model.Policy.name,
+        model.Policy.department,
+    )
+
+    if 'name' in filter_:
+        policies = policies.filter(model.Policy.name.ilike(filter_['name']))
+
+    if 'department' in filter_:
+        policies = policies.filter(model.Policy.department.ilike(filter_['department']))
+
+    return {
+        'data': [
+            policy._asdict() for policy in policies.limit(limit).offset(page * limit)
+        ],
+        'total': policies.count(),
+    }
 
 
 def create_policy(user, body):
@@ -90,20 +103,6 @@ def create_policy(user, body):
                        f'Failed to delete owner group in Keycloak, {e}')
 
     return policy.to_dict()
-
-
-def search_policies(user, body):
-    """
-    API endpoint to list/search policies for attributes (UUID/Dept/Name*)
-    """
-    body = model.Policy.flatten_data(body)
-
-    sql_query = model.Policy.query
-    for key, value in body.items():
-        sql_query.filter(getattr(model.Policy, key).like(value))
-    policies = sql_query.all()
-
-    return [policy.to_dict() for policy in policies]
 
 
 def get_policy(user, policy_id):

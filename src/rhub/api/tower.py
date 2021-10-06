@@ -6,7 +6,7 @@ from werkzeug.exceptions import Unauthorized
 
 from rhub.tower import model
 from rhub.tower.client import TowerError
-from rhub.api import db
+from rhub.api import db, DEFAULT_PAGE_LIMIT
 from rhub.auth.utils import route_require_admin, user_is_admin
 
 
@@ -30,9 +30,18 @@ def _tower_job(db_row, tower_data):
     }
 
 
-def list_servers():
-    servers = model.Server.query.all()
-    return [server.to_dict() for server in servers], 200
+def list_servers(filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
+    servers = model.Server.query
+
+    if 'name' in filter_:
+        servers = servers.filter(model.Server.name.ilike(filter_['name']))
+
+    return {
+        'data': [
+            server.to_dict() for server in servers.limit(limit).offset(page * limit)
+        ],
+        'total': servers.count(),
+    }
 
 
 @route_require_admin
@@ -81,9 +90,22 @@ def delete_server(server_id, user):
     db.session.commit()
 
 
-def list_templates():
-    templates = model.Template.query.all()
-    return [template.to_dict() for template in templates]
+def list_templates(filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
+    templates = model.Template.query
+
+    if 'name' in filter_:
+        templates = templates.filter(model.Template.name.ilike(filter_['name']))
+
+    if 'server_id' in filter_:
+        templates = templates.filter(model.Template.server_id == filter_['server_id'])
+
+    return {
+        'data': [
+            template.to_dict()
+            for template in templates.limit(limit).offset(page * limit)
+        ],
+        'total': templates.count(),
+    }
 
 
 @route_require_admin
@@ -205,19 +227,38 @@ def launch_template(template_id, body, user):
         return problem(500, 'Server Error', f'Unknown server error, {e}')
 
 
-def list_template_jobs(template_id, user):
-    jobs = model.Job.query.filter_by(template_id=template_id)
+def list_template_jobs(template_id, user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
+    jobs = model.Job.query.filter(model.Job.template_id == template_id)
+
     if not user_is_admin(user):
-        jobs = jobs.filter_by(launched_by=user)
-    return [job.to_dict() for job in jobs]
+        jobs = jobs.filter(model.Job.launched_by == user)
+
+    if 'launched_by' in filter_:
+        jobs = jobs.filter(model.Job.launched_by == filter_['launched_by'])
+
+    return {
+        'data': [
+            job.to_dict() for job in jobs.limit(limit).offset(page * limit)
+        ],
+        'total': jobs.count(),
+    }
 
 
-def list_jobs(user):
-    if user_is_admin(user):
-        jobs = model.Job.query.all()
-    else:
-        jobs = model.Job.query.filter_by(launched_by=user)
-    return [job.to_dict() for job in jobs]
+def list_jobs(user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
+    jobs = model.Job.query
+
+    if not user_is_admin(user):
+        jobs = jobs.filter(model.Job.launched_by == user)
+
+    if 'launched_by' in filter_:
+        jobs = jobs.filter(model.Job.launched_by == filter_['launched_by'])
+
+    return {
+        'data': [
+            job.to_dict() for job in jobs.limit(limit).offset(page * limit)
+        ],
+        'total': jobs.count(),
+    }
 
 
 def get_job(job_id, user):

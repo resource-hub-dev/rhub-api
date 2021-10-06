@@ -23,6 +23,9 @@ db = SQLAlchemy()
 sched = APScheduler()
 
 
+DEFAULT_PAGE_LIMIT = 20
+
+
 def get_keycloak() -> KeycloakClient:
     """Get KeycloakClient instance."""
     if 'keycloak' not in g:
@@ -83,6 +86,7 @@ def create_app():
         parser.specification,
         validate_responses=True,
         strict_validation=True,
+        pythonic_params=True,
     )
 
     # Enable CORS (Cross-Origin Resource Sharing)

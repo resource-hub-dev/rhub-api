@@ -2,7 +2,7 @@ import logging
 
 from connexion import problem
 
-from rhub.api import db
+from rhub.api import db, DEFAULT_PAGE_LIMIT
 from rhub.auth.utils import route_require_admin
 from rhub.scheduler import model
 
@@ -11,9 +11,20 @@ logger = logging.getLogger(__name__)
 
 
 @route_require_admin
-def list_jobs(user):
-    cron_jobs = model.SchedulerCronJob.query.all()
-    return [i.to_dict() for i in cron_jobs]
+def list_jobs(user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
+    cron_jobs = model.SchedulerCronJob.query
+
+    if 'name' in filter_:
+        cron_jobs = cron_jobs.filter(
+            model.SchedulerCronJob.name.ilike(filter_['name']),
+        )
+
+    return {
+        'data': [
+            i.to_dict() for i in cron_jobs.limit(limit).offset(page * limit)
+        ],
+        'total': cron_jobs.count()
+    }
 
 
 @route_require_admin

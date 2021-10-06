@@ -235,7 +235,7 @@ endpoints:
                   type: array
                   items:
                     $ref: '#/model/Server'
-                count:
+                total:
                   type: integer
                   minimum: 0
                   description: The total number of items.
@@ -380,7 +380,7 @@ endpoints:
                   type: array
                   items:
                     $ref: '#/model/Template'
-                count:
+                total:
                   type: integer
                   minimum: 0
                   description: The total number of items.
@@ -564,7 +564,7 @@ endpoints:
                   type: array
                   items:
                     $ref: '#/model/Job'
-                count:
+                total:
                   type: integer
                   minimum: 0
                   description: The total number of items.
@@ -612,7 +612,7 @@ endpoints:
                   type: array
                   items:
                     $ref: '#/model/Job'
-                count:
+                total:
                   type: integer
                   minimum: 0
                   description: The total number of items.

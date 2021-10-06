@@ -72,7 +72,7 @@ def test_list_clusters(client, keycloak_mock, mocker):
     user_id = '00000000-0000-0000-0000-000000000000'
     sample_region = _create_test_region()
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
-    model.Cluster.query.all.return_value = [
+    model.Cluster.query.limit.return_value.offset.return_value = [
         model.Cluster(
             id=1,
             name='testcluster',
@@ -87,6 +87,7 @@ def test_list_clusters(client, keycloak_mock, mocker):
             status=model.ClusterStatus.ACTIVE,
         ),
     ]
+    model.Cluster.query.count.return_value = 1
 
     rv = client.get(
         f'{API_BASE}/lab/cluster',
@@ -95,23 +96,26 @@ def test_list_clusters(client, keycloak_mock, mocker):
     keycloak_mock.user_get.assert_called_with(user_id)
 
     assert rv.status_code == 200
-    assert rv.json == [
-        {
-            'id': 1,
-            'name': 'testcluster',
-            'description': 'test cluster',
-            'user_id': '00000000-0000-0000-0000-000000000000',
-            'group_id': None,
-            'created': '2021-01-01T01:00:00+00:00',
-            'region_id': 1,
-            'reservation_expiration': None,
-            'lifespan_expiration': None,
-            'status': model.ClusterStatus.ACTIVE.value,
-            'region_name': 'test',
-            'user_name': 'test-user',
-            'group_name': None,
-        },
-    ]
+    assert rv.json == {
+        'data': [
+            {
+                'id': 1,
+                'name': 'testcluster',
+                'description': 'test cluster',
+                'user_id': '00000000-0000-0000-0000-000000000000',
+                'group_id': None,
+                'created': '2021-01-01T01:00:00+00:00',
+                'region_id': 1,
+                'reservation_expiration': None,
+                'lifespan_expiration': None,
+                'status': model.ClusterStatus.ACTIVE.value,
+                'region_name': 'test',
+                'user_name': 'test-user',
+                'group_name': None,
+            },
+        ],
+        'total': 1,
+    }
 
 
 def test_get_cluster(client, keycloak_mock):

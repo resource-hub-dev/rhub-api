@@ -5,6 +5,7 @@ import retrying
 from rhub.api import db, get_keycloak
 from rhub.auth import ADMIN_USER, ADMIN_GROUP, ADMIN_ROLE
 from rhub.tower import model as tower_model  # noqa: F401
+from rhub.lab import SHAREDCLUSTER_USER
 from rhub.lab import model as lab_model  # noqa: F401
 from rhub.policies import model as policies_model  # noqa: F401
 from rhub.scheduler import model as scheduler_model  # noqa: F401
@@ -56,3 +57,12 @@ def setup():
         if i not in roles:
             logger.info(f'Creating "{i}" role')
             roles[i] = keycloak.role_create({'name': i})
+
+    if not keycloak.user_list({'username': SHAREDCLUSTER_USER}):
+        logger.info(f'Creating sharedclusters account "{SHAREDCLUSTER_USER}"')
+        keycloak.user_create({
+            'username': SHAREDCLUSTER_USER,
+            'email': f'nobody+{SHAREDCLUSTER_USER}@redhat.com',
+            'firstName': 'Shared Cluster',
+            'lastName': 'RHub',
+        })

@@ -18,7 +18,7 @@ def _db_add_row_side_effect(data_added):
 
 
 def test_list(client):
-    model.SchedulerCronJob.query.all.return_value = [
+    model.SchedulerCronJob.query.limit.return_value.offset.return_value = [
         model.SchedulerCronJob(
             id=1,
             name='example-job',
@@ -30,6 +30,7 @@ def test_list(client):
             last_run=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
         ),
     ]
+    model.SchedulerCronJob.query.count.return_value = 1
 
     rv = client.get(
         f'{API_BASE}/scheduler/cron',
@@ -37,18 +38,21 @@ def test_list(client):
     )
 
     assert rv.status_code == 200
-    assert rv.json == [
-        {
-            'id': 1,
-            'name': 'example-job',
-            'description': None,
-            'enabled': True,
-            'time_expr': '0 */2 * * *',
-            'job_name': 'example',
-            'job_params': {'foo': 'bar'},
-            'last_run': '2021-01-01T01:00:00+00:00',
-        },
-    ]
+    assert rv.json == {
+        'data': [
+            {
+                'id': 1,
+                'name': 'example-job',
+                'description': None,
+                'enabled': True,
+                'time_expr': '0 */2 * * *',
+                'job_name': 'example',
+                'job_params': {'foo': 'bar'},
+                'last_run': '2021-01-01T01:00:00+00:00',
+            },
+        ],
+        'total': 1,
+    }
 
 
 def test_create(client, db_session_mock):
