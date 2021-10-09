@@ -185,17 +185,18 @@ def launch_template(template_id, body, user):
 
     try:
         tower_client = template.server.create_tower_client()
-        extra_vars = body.get('extra_vars', {})
+        template_launch_params = body
 
         logger.info(
-            f'Launching tower template {template.id}, extra_vars={extra_vars!r}'
+            f'''Launching tower template {template.id},
+                template_launch_params={template_launch_params!r}'''
         )
         if template.tower_template_is_workflow:
             tower_job_data = tower_client.workflow_launch(
-                template.tower_template_id, extra_vars)
+                template.tower_template_id, template_launch_params)
         else:
             tower_job_data = tower_client.template_launch(
-                template.tower_template_id, extra_vars)
+                template.tower_template_id, template_launch_params)
 
         job = model.Job(
             template_id=template.id,

@@ -95,7 +95,7 @@ class Tower:
             f'/workflow_job_templates/{workflow_id}/survey_spec/',
         ).json()
 
-    def template_launch(self, template_id, extra_vars=None):
+    def template_launch(self, template_id, template_launch_params=None):
         """
         Launch job template.
 
@@ -105,9 +105,7 @@ class Tower:
         return self.request(
             'POST',
             f'/job_templates/{template_id}/launch/',
-            data={
-                'extra_vars': extra_vars or {},
-            },
+            data=template_launch_params or {},
         ).json()
 
     def workflow_launch(self, workflow_id, extra_vars=None):

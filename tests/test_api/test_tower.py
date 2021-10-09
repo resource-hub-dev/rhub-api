@@ -412,9 +412,9 @@ def test_template_launch(client, db_session_mock, mocker, workflow):
     )
 
     if workflow:
-        tower_client_mock.workflow_launch.assert_called_with(1, {'foo': 'bar'})
+        tower_client_mock.workflow_launch.assert_called_with(1, {'extra_vars':{'foo': 'bar'}})
     else:
-        tower_client_mock.template_launch.assert_called_with(1, {'foo': 'bar'})
+        tower_client_mock.template_launch.assert_called_with(1, {'extra_vars':{'foo': 'bar'}})
 
     assert rv.status_code == 200
     assert rv.json == {
@@ -459,7 +459,7 @@ def test_template_launch_towererror(client, mocker):
         json={'extra_vars': {'foo': 'bar'}},
     )
 
-    tower_client_mock.template_launch.assert_called_with(1, {'foo': 'bar'})
+    tower_client_mock.template_launch.assert_called_with(1, {'extra_vars': {'foo': 'bar'}})
 
     assert rv.status_code == 400
     assert rv.json['variables_needed_to_start'] == ["'foobar' value missing"]
