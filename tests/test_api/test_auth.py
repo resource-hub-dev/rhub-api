@@ -9,17 +9,6 @@ from rhub.api import DEFAULT_PAGE_LIMIT
 API_BASE = '/v0'
 
 
-@pytest.fixture
-def keycloak_mock(mocker):
-    keycloak_mock = mocker.Mock(spec=KeycloakClient)
-
-    for m in ['token', 'user', 'group', 'role']:
-        get_keycloak_mock = mocker.patch(f'rhub.api.auth.{m}.get_keycloak')
-        get_keycloak_mock.return_value = keycloak_mock
-
-    yield keycloak_mock
-
-
 def test_token_create(client, keycloak_mock):
     keycloak_mock.login.return_value = {'access_token': 'foobar'}
 

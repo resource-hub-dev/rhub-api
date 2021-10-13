@@ -9,17 +9,6 @@ from rhub.auth.keycloak import KeycloakClient
 API_BASE = '/v0'
 
 
-@pytest.fixture
-def keycloak_mock(mocker):
-    keycloak_mock = mocker.Mock(spec=KeycloakClient)
-
-    for m in ['policies']:
-        get_keycloak_mock = mocker.patch(f'rhub.api.{m}.get_keycloak')
-        get_keycloak_mock.return_value = keycloak_mock
-
-    yield keycloak_mock
-
-
 def test_list_policy(client, mocker):
     def row(data):
         row = mocker.Mock()

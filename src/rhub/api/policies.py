@@ -1,12 +1,13 @@
 import logging
+import functools
 
 from connexion import problem
-from keycloak import KeycloakGetError
 
 from rhub.policies import model
-from rhub.api import db, DEFAULT_PAGE_LIMIT
-from rhub.api import get_keycloak
-from rhub.auth.keycloak import problem_from_keycloak_error
+from rhub.api import db, di, DEFAULT_PAGE_LIMIT
+from rhub.auth.keycloak import (
+    KeycloakClient, KeycloakGetError, problem_from_keycloak_error,
+)
 
 
 """
@@ -38,8 +39,9 @@ def check_access(func):
     """
     Check whether user is in policy owners group
     """
+    @functools.wraps(func)
     def inner(*args, **kwargs):
-        keycloak = get_keycloak()
+        keycloak = di.get(KeycloakClient)
         if 'policy_id' in kwargs:
             current_user = kwargs['user']
             group_name = f'policy-{kwargs["policy_id"]}-owners'
@@ -80,7 +82,7 @@ def list_policies(user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
     }
 
 
-def create_policy(user, body):
+def create_policy(keycloak: KeycloakClient, user, body):
     """
     API endpoint to create a policy (JSON formatted)
     """
@@ -89,7 +91,6 @@ def create_policy(user, body):
     try:
         db.session.add(policy)
         db.session.flush()
-        keycloak = get_keycloak()
         group_id = keycloak.group_create({'name': f'policy-{policy.id}-owners'})
         keycloak.group_user_add(user, group_id)
         keycloak.group_role_add('policy-owner', group_id)
@@ -116,7 +117,7 @@ def get_policy(user, policy_id):
 
 
 @check_access
-def update_policy(user, policy_id, body, **kwargs):
+def update_policy(user, policy_id, body):
     """
     API endpoint to update policy attributes
     """
@@ -131,15 +132,13 @@ def update_policy(user, policy_id, body, **kwargs):
 
 
 @check_access
-def delete_policy(user, policy_id, **kwargs):
+def delete_policy(keycloak: KeycloakClient, user, policy_id):
     """
     API endpoint to delete policy given policy id
     """
     policy = model.Policy.query.get(policy_id)
     if not policy:
         return problem(404, 'Not Found', 'Record Does Not Exist')
-
-    keycloak = get_keycloak()
 
     try:
         groups = {group['name']: group for group in keycloak.group_list()}

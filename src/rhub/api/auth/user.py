@@ -2,19 +2,20 @@ import logging
 
 from flask import request
 from connexion import problem
-from keycloak import KeycloakGetError
 
-from rhub.api import get_keycloak, DEFAULT_PAGE_LIMIT
-from rhub.auth.keycloak import problem_from_keycloak_error
+from rhub.api import DEFAULT_PAGE_LIMIT
+from rhub.auth.keycloak import (
+    KeycloakClient, KeycloakGetError, problem_from_keycloak_error,
+)
 from rhub.auth.utils import route_require_admin
 
 
 logger = logging.getLogger(__name__)
 
 
-def list_users(filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
+def list_users(keycloak: KeycloakClient, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
     try:
-        return get_keycloak().user_list({
+        return keycloak.user_list({
             'first': page * limit,
             'max': limit,
             **filter_,
@@ -28,11 +29,11 @@ def list_users(filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
 
 
 @route_require_admin
-def create_user(body, user):
+def create_user(keycloak: KeycloakClient, body, user):
     try:
-        user_id = get_keycloak().user_create(body)
+        user_id = keycloak.user_create(body)
         logger.info(f'Created user {user_id}')
-        return get_keycloak().user_get(user_id), 200
+        return keycloak.user_get(user_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -41,9 +42,9 @@ def create_user(body, user):
         return problem(500, 'Unknown Error', str(e))
 
 
-def get_user(user_id):
+def get_user(keycloak: KeycloakClient, user_id):
     try:
-        return get_keycloak().user_get(user_id), 200
+        return keycloak.user_get(user_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -53,11 +54,11 @@ def get_user(user_id):
 
 
 @route_require_admin
-def update_user(user_id, body, user):
+def update_user(keycloak: KeycloakClient, user_id, body, user):
     try:
-        get_keycloak().user_update(user_id, body)
+        keycloak.user_update(user_id, body)
         logger.info(f'Updated user {user_id}')
-        return get_keycloak().user_get(user_id), 200
+        return keycloak.user_get(user_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -67,9 +68,9 @@ def update_user(user_id, body, user):
 
 
 @route_require_admin
-def delete_user(user_id, user):
+def delete_user(keycloak: KeycloakClient, user_id, user):
     try:
-        get_keycloak().user_delete(user_id)
+        keycloak.user_delete(user_id)
         logger.info(f'Deleted user {user_id}')
         return {}, 200
     except KeycloakGetError as e:
@@ -80,9 +81,9 @@ def delete_user(user_id, user):
         return problem(500, 'Unknown Error', str(e))
 
 
-def list_user_groups(user_id):
+def list_user_groups(keycloak: KeycloakClient, user_id):
     try:
-        return get_keycloak().user_group_list(user_id), 200
+        return keycloak.user_group_list(user_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -92,9 +93,9 @@ def list_user_groups(user_id):
 
 
 @route_require_admin
-def add_user_group(user_id, body, user):
+def add_user_group(keycloak: KeycloakClient, user_id, body, user):
     try:
-        get_keycloak().group_user_add(user_id, body['id'])
+        keycloak.group_user_add(user_id, body['id'])
         return {}, 200
     except KeycloakGetError as e:
         logger.exception(e)
@@ -105,9 +106,9 @@ def add_user_group(user_id, body, user):
 
 
 @route_require_admin
-def delete_user_group(user_id, user):
+def delete_user_group(keycloak: KeycloakClient, user_id, user):
     try:
-        get_keycloak().group_user_remove(user_id, request.json['id'])
+        keycloak.group_user_remove(user_id, request.json['id'])
         return {}, 200
     except KeycloakGetError as e:
         logger.exception(e)
@@ -131,9 +132,9 @@ def delete_user_role(user_id, body, user):
     raise NotImplementedError
 
 
-def get_current_user(user):
+def get_current_user(keycloak: KeycloakClient, user):
     try:
-        return get_keycloak().user_get(user), 200
+        return keycloak.user_get(user), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)

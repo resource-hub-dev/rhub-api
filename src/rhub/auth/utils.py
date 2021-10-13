@@ -2,13 +2,15 @@ import functools
 
 from werkzeug.exceptions import Forbidden
 
-from rhub.api import get_keycloak
+from rhub.api import di
 from rhub.auth import ADMIN_ROLE
+from rhub.auth.keycloak import KeycloakClient
 
 
 def user_is_admin(user_id):
     """Check if user is admin, has :const:`rhub.auth.ADMIN_ROLE` role."""
-    return get_keycloak().user_check_role(user_id, ADMIN_ROLE)
+    keycloak = di.get(KeycloakClient)
+    return keycloak.user_check_role(user_id, ADMIN_ROLE)
 
 
 def route_require_role(*roles,
@@ -33,7 +35,8 @@ def route_require_role(*roles,
         @functools.wraps(fn)
         def inner(*args, **kwargs):
             user = kwargs['user']
-            if not user or not any(get_keycloak().user_check_role(user, role)
+            keycloak = di.get(KeycloakClient)
+            if not user or not any(keycloak.user_check_role(user, role)
                                    for role in roles):
                 raise Forbidden(forbidden_message)
             return fn(*args, **kwargs)

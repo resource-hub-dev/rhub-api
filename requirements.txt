@@ -14,3 +14,4 @@ dpath
 python-dateutil
 cron-validator
 flask-apscheduler
+flask_injector

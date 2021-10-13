@@ -5,6 +5,7 @@ import functools
 import pytest
 
 from rhub.api import create_app
+from rhub.api.vault import Vault
 from rhub.auth.keycloak import KeycloakClient
 
 
@@ -14,10 +15,24 @@ def temp_dir():
         yield pathlib.Path(tmp)
 
 
-@pytest.fixture(autouse=True)
-def vault_mock(mocker):
-    vault_mock = mocker.Mock()
-    mocker.patch('rhub.api.get_vault').return_value = vault_mock
+@pytest.fixture(autouse=True, scope='session')
+def keycloak_mock(session_mocker):
+    keycloak_mock = session_mocker.Mock(spec=KeycloakClient)
+    keycloak_mock.user_check_role.return_value = True
+
+    m = session_mocker.patch('rhub.auth.keycloak.KeycloakModule._create_keycloak')
+    m.return_value = keycloak_mock
+
+    yield keycloak_mock
+
+
+@pytest.fixture(autouse=True, scope='session')
+def vault_mock(session_mocker):
+    vault_mock = session_mocker.Mock(spec=Vault)
+
+    m = session_mocker.patch('rhub.api.vault.VaultModule._create_vault')
+    m.return_value = vault_mock
+
     yield vault_mock
 
 
@@ -29,18 +44,6 @@ def token_mock(mocker):
         'scope': 'tests',
     }
     yield decode_token_mock
-
-
-@pytest.fixture(autouse=True)
-def user_role_check_mock(mocker):
-    keycloak_mock = mocker.Mock(spec=KeycloakClient)
-
-    get_keycloak_mock = mocker.patch(f'rhub.auth.utils.get_keycloak')
-    get_keycloak_mock.return_value = keycloak_mock
-
-    keycloak_mock.user_check_role.return_value = True
-
-    yield keycloak_mock.user_check_role
 
 
 @pytest.fixture(autouse=True, scope='function')
@@ -76,6 +79,7 @@ def client(mocker, temp_dir):
     app = create_app()
     with app.test_client() as client:
         yield client
+
 
 @pytest.fixture(autouse=True)
 def scheduler_mock(mocker):
