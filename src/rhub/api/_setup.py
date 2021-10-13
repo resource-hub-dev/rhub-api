@@ -2,8 +2,9 @@ import logging
 
 import retrying
 
-from rhub.api import db, get_keycloak
+from rhub.api import db, di
 from rhub.auth import ADMIN_USER, ADMIN_GROUP, ADMIN_ROLE
+from rhub.auth.keycloak import KeycloakClient
 from rhub.tower import model as tower_model  # noqa: F401
 from rhub.lab import SHAREDCLUSTER_USER
 from rhub.lab import model as lab_model  # noqa: F401
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 def setup():
     db.create_all()
 
-    keycloak = get_keycloak()
+    keycloak = di.get(KeycloakClient)
 
     groups = {group['name']: group for group in keycloak.group_list()}
     roles = {role['name']: role for role in keycloak.role_list()}

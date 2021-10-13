@@ -12,16 +12,6 @@ API_BASE = '/v0'
 
 
 @pytest.fixture(autouse=True)
-def keycloak_mock(mocker):
-    keycloak_mock = mocker.Mock(spec=KeycloakClient)
-
-    get_keycloak_mock = mocker.patch(f'rhub.api.lab.cluster.get_keycloak')
-    get_keycloak_mock.return_value = keycloak_mock
-    mocker.patch(f'rhub.lab.model.get_keycloak').return_value = keycloak_mock
-    yield keycloak_mock
-
-
-@pytest.fixture(autouse=True)
 def date_now_mock(mocker):
     date_now_mock = mocker.patch('rhub.api.lab.cluster.date_now')
     date_now_mock.return_value = datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc())

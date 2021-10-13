@@ -6,9 +6,10 @@ import re
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import validates
 
-from rhub.api import db, get_keycloak
+from rhub.api import db, di
 from rhub.api.utils import ModelMixin
 from rhub.tower import model as tower_model
+from rhub.auth.keycloak import KeycloakClient
 
 
 class Region(db.Model, ModelMixin):
@@ -257,9 +258,10 @@ class Cluster(db.Model, ModelMixin):
         data = super().to_dict()
         if self.region:
             data['region_name'] = self.region.name
-        data['user_name'] = get_keycloak().user_get(self.user_id)['username'] \
+        keycloak = di.get(KeycloakClient)
+        data['user_name'] = keycloak.user_get(self.user_id)['username'] \
             if self.user_id is not None else None
-        data['group_name'] = get_keycloak().group_get(self.group_id)['name'] \
+        data['group_name'] = keycloak.group_get(self.group_id)['name'] \
             if self.group_id is not None else None
         if self.quota:
             data['quota'] = self.quota.to_dict()

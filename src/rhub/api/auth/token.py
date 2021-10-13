@@ -3,32 +3,37 @@ import logging
 from flask import request
 from connexion import problem
 from werkzeug.exceptions import Unauthorized
-from keycloak import KeycloakGetError
 
-from rhub.api import get_keycloak
-from rhub.auth.keycloak import problem_from_keycloak_error
+from rhub.api import di
+from rhub.auth.keycloak import (
+    KeycloakClient, KeycloakGetError, problem_from_keycloak_error,
+)
 
 
 logger = logging.getLogger(__name__)
 
 
 def decode_token(token):
-    token = get_keycloak().token_info(token)
+    keycloak = di.get(KeycloakClient)
+
+    token = keycloak.token_info(token)
     if not token['active']:
         raise Unauthorized('Token is not valid')
     return token
 
 
 def basic_auth(username, password, required_scopes=None):
-    return get_keycloak().login(username, password)
+    keycloak = di.get(KeycloakClient)
+
+    return keycloak.login(username, password)
 
 
-def get_token_info():
+def get_token_info(keycloak: KeycloakClient):
     # Bearer auth is enforced by connexion (see openapi spec)
     _, access_token = request.headers['Authorization'].split()
 
     try:
-        return get_keycloak().token_info(access_token), 200
+        return keycloak.token_info(access_token), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -37,7 +42,7 @@ def get_token_info():
         return problem(500, 'Unknown Error', str(e))
 
 
-def create_token():
+def create_token(keycloak: KeycloakClient):
     if not request.authorization:
         return problem(401, 'Unauthorized', 'Missing basic auth credentials')
 
@@ -45,7 +50,7 @@ def create_token():
     password = request.authorization['password']
 
     try:
-        return get_keycloak().login(username, password), 200
+        return keycloak.login(username, password), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -54,7 +59,7 @@ def create_token():
         return problem(500, 'Unknown Error', str(e))
 
 
-def refresh_token():
+def refresh_token(keycloak: KeycloakClient):
     if 'Authorization' not in request.headers:
         return problem(401, 'Unauthorized', 'Missing refresh token')
 
@@ -64,7 +69,7 @@ def refresh_token():
         return problem(401, 'Unauthorized', 'Invalid token')
 
     try:
-        return get_keycloak().token_refresh(refresh_token), 200
+        return keycloak.token_refresh(refresh_token), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)

@@ -7,9 +7,10 @@ from dateutil.parser import isoparse as date_parse
 
 from rhub.lab import SHAREDCLUSTER_USER
 from rhub.lab import model
-from rhub.api import db, get_keycloak, DEFAULT_PAGE_LIMIT
+from rhub.api import db, di, DEFAULT_PAGE_LIMIT
 from rhub.auth import ADMIN_ROLE
 from rhub.auth.utils import route_require_admin
+from rhub.auth.keycloak import KeycloakClient
 from rhub.api.utils import date_now
 
 
@@ -18,62 +19,69 @@ logger = logging.getLogger(__name__)
 
 def _user_can_access_cluster(cluster, user_id):
     """Check if user can access cluster."""
-    if get_keycloak().user_check_role(user_id, ADMIN_ROLE):
+    keycloak = di.get(KeycloakClient)
+    if keycloak.user_check_role(user_id, ADMIN_ROLE):
         return True
     if cluster.user_id == user_id:
         return True
     if cluster.group_id is not None:
-        return get_keycloak().user_check_group(user_id, cluster.group_id)
+        return keycloak.user_check_group(user_id, cluster.group_id)
     return False
 
 
 def _user_can_access_region(region, user_id):
     """Check if user can access region."""
-    if get_keycloak().user_check_role(user_id, ADMIN_ROLE):
+    keycloak = di.get(KeycloakClient)
+    if keycloak.user_check_role(user_id, ADMIN_ROLE):
         return True
     if region.users_group is None:  # shared region
         return True
-    return get_keycloak().user_check_group_any(
+    return keycloak.user_check_group_any(
         user_id, [region.users_group, region.owner_group]
     )
 
 
 def _user_can_create_reservation(region, user_id):
     """Check if user can create in reservations in the region."""
-    if get_keycloak().user_check_role(user_id, ADMIN_ROLE):
+    keycloak = di.get(KeycloakClient)
+    if keycloak.user_check_role(user_id, ADMIN_ROLE):
         return True
     if region.reservations_enabled:
         return True
-    return get_keycloak().user_check_group(user_id, region.owner_group)
+    return keycloak.user_check_group(user_id, region.owner_group)
 
 
 def _user_can_set_lifespan(region, user_id):
     """Check if user can set/change lifespan expiration of cluster in the region."""
-    if get_keycloak().user_check_role(user_id, ADMIN_ROLE):
+    keycloak = di.get(KeycloakClient)
+    if keycloak.user_check_role(user_id, ADMIN_ROLE):
         return True
-    return get_keycloak().user_check_group(user_id, region.owner_group)
+    return keycloak.user_check_group(user_id, region.owner_group)
 
 
 def _user_can_disable_expiration(region, user_id):
     """Check if user can disable cluster reservation expiration."""
-    if get_keycloak().user_check_role(user_id, ADMIN_ROLE):
+    keycloak = di.get(KeycloakClient)
+    if keycloak.user_check_role(user_id, ADMIN_ROLE):
         return True
-    return get_keycloak().user_check_group(user_id, region.owner_group)
+    return keycloak.user_check_group(user_id, region.owner_group)
 
 
 @functools.lru_cache()
 def _get_sharedcluster_user_id():
-    user_search = get_keycloak().user_list({'username': SHAREDCLUSTER_USER})
+    keycloak = di.get(KeycloakClient)
+    user_search = keycloak.user_list({'username': SHAREDCLUSTER_USER})
     if user_search:
         return user_search[0]['id']
     return None
 
 
-def list_clusters(user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
-    if get_keycloak().user_check_role(user, ADMIN_ROLE):
+def list_clusters(keycloak: KeycloakClient,
+                  user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
+    if keycloak.user_check_role(user, ADMIN_ROLE):
         clusters = model.Cluster.query
     else:
-        user_groups = [group['id'] for group in get_keycloak().user_group_list(user)]
+        user_groups = [group['id'] for group in keycloak.user_group_list(user)]
         user_list = [user]
         if sharedcluster_user_id := _get_sharedcluster_user_id():
             user_list.append(sharedcluster_user_id)

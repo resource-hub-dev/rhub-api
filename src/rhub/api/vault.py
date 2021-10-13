@@ -3,6 +3,7 @@ import abc
 
 import hvac
 import yaml
+import injector
 
 
 logger = logging.getLogger(__name__)
@@ -70,3 +71,36 @@ class FileVault(Vault):
         self._data[path] = data
         with open(self._datafile, 'w') as f:
             self._data = yaml.safe_dump(self._data, f)
+
+
+class VaultModule(injector.Module):
+    def __init__(self, app):
+        self.app = app
+
+    def configure(self, binder):
+        try:
+            binder.bind(
+                Vault,
+                to=self._create_vault(),
+                scope=injector.singleton,
+            )
+        except Exception:
+            logger.exception(
+                'Failed to create Vault client. Some endpoints may not work.'
+            )
+
+    def _create_vault(self):
+        vault_type = self.app.config['VAULT_TYPE']
+
+        if vault_type == 'hashicorp':
+            return HashicorpVault(
+                url=self.app.config['VAULT_ADDR'],
+                role_id=self.app.config['VAULT_ROLE_ID'],
+                secret_id=self.app.config['VAULT_SECRET_ID'],
+            )
+
+        elif vault_type == 'file':
+            return FileVault(self.app.config['VAULT_PATH'])
+
+        logger.error(f'Unknown vault type {vault_type}')
+        raise Exception(f'Unknown vault type {vault_type}')

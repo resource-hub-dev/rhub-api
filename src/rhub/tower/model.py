@@ -1,6 +1,7 @@
 from sqlalchemy.dialects import postgresql
 
-from rhub.api import db, get_vault
+from rhub.api import db, di
+from rhub.api.vault import Vault
 from rhub.tower.client import Tower
 from rhub.api.utils import ModelMixin
 
@@ -26,7 +27,7 @@ class Server(db.Model, ModelMixin):
                  credentials in vault
         :raises: `Exception` any other errors
         """
-        credentials = get_vault().read(self.credentials)
+        credentials = di.get(Vault).read(self.credentials)
         if not credentials:
             raise RuntimeError('Missing credentials in vault')
         return Tower(

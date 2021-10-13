@@ -12,23 +12,6 @@ from rhub.api.lab.region import VAULT_PATH_PREFIX
 API_BASE = '/v0'
 
 
-@pytest.fixture(autouse=True)
-def keycloak_mock(mocker):
-    keycloak_mock = mocker.Mock(spec=KeycloakClient)
-
-    get_keycloak_mock = mocker.patch(f'rhub.api.lab.region.get_keycloak')
-    get_keycloak_mock.return_value = keycloak_mock
-
-    yield keycloak_mock
-
-
-@pytest.fixture(autouse=True)
-def vault_mock(mocker):
-    vault_mock = mocker.Mock()
-    mocker.patch('rhub.api.lab.region.get_vault').return_value = vault_mock
-    yield vault_mock
-
-
 def _db_add_row_side_effect(data_added):
     def side_effect(row):
         for k, v in data_added.items():

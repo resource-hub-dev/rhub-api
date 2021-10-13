@@ -1,19 +1,19 @@
 import logging
 
 from connexion import problem
-from keycloak import KeycloakGetError
 
-from rhub.api import get_keycloak
-from rhub.auth.keycloak import problem_from_keycloak_error
+from rhub.auth.keycloak import (
+    KeycloakClient, KeycloakGetError, problem_from_keycloak_error,
+)
 from rhub.auth.utils import route_require_admin
 
 
 logger = logging.getLogger(__name__)
 
 
-def list_groups():
+def list_groups(keycloak: KeycloakClient):
     try:
-        return get_keycloak().group_list(), 200
+        return keycloak.group_list(), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -23,11 +23,11 @@ def list_groups():
 
 
 @route_require_admin
-def create_group(body, user):
+def create_group(keycloak: KeycloakClient, body, user):
     try:
-        group_id = get_keycloak().group_create(body)
+        group_id = keycloak.group_create(body)
         logger.info(f'Created group {group_id}')
-        return get_keycloak().group_get(group_id), 200
+        return keycloak.group_get(group_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -36,9 +36,9 @@ def create_group(body, user):
         return problem(500, 'Unknown Error', str(e))
 
 
-def get_group(group_id):
+def get_group(keycloak: KeycloakClient, group_id):
     try:
-        return get_keycloak().group_get(group_id), 200
+        return keycloak.group_get(group_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -48,11 +48,11 @@ def get_group(group_id):
 
 
 @route_require_admin
-def update_group(group_id, body, user):
+def update_group(keycloak: KeycloakClient, group_id, body, user):
     try:
-        get_keycloak().group_update(group_id, body)
+        keycloak.group_update(group_id, body)
         logger.info(f'Updated group {group_id}')
-        return get_keycloak().group_get(group_id), 200
+        return keycloak.group_get(group_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -62,9 +62,9 @@ def update_group(group_id, body, user):
 
 
 @route_require_admin
-def delete_group(group_id, user):
+def delete_group(keycloak: KeycloakClient, group_id, user):
     try:
-        get_keycloak().group_delete(group_id)
+        keycloak.group_delete(group_id)
         logger.info(f'Deleted group {group_id}')
         return {}, 200
     except KeycloakGetError as e:
@@ -75,9 +75,9 @@ def delete_group(group_id, user):
         return problem(500, 'Unknown Error', str(e))
 
 
-def list_group_users(group_id):
+def list_group_users(keycloak: KeycloakClient, group_id):
     try:
-        return get_keycloak().group_user_list(group_id), 200
+        return keycloak.group_user_list(group_id), 200
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)

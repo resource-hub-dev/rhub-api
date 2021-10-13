@@ -5,58 +5,27 @@ import urllib.parse
 import connexion
 import click
 import prance
+import injector
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_apscheduler import APScheduler
-from flask import g, current_app
+from flask import current_app
 from flask.cli import with_appcontext
+from flask_injector import FlaskInjector
 
 import rhub
-from rhub.auth.keycloak import KeycloakClient
-from rhub.api.vault import Vault, HashicorpVault, FileVault
+from rhub.auth.keycloak import KeycloakModule
+from rhub.api.vault import Vault, VaultModule
 
 
 logger = logging.getLogger(__name__)
 
 
+di = injector.Injector()
 db = SQLAlchemy()
-sched = APScheduler()
 
 
 DEFAULT_PAGE_LIMIT = 20
-
-
-def get_keycloak() -> KeycloakClient:
-    """Get KeycloakClient instance."""
-    if 'keycloak' not in g:
-        g.keycloak = KeycloakClient(
-            server=current_app.config['KEYCLOAK_SERVER'],
-            resource=current_app.config['KEYCLOAK_RESOURCE'],
-            realm=current_app.config['KEYCLOAK_REALM'],
-            secret=current_app.config['KEYCLOAK_SECRET'],
-            admin_user=current_app.config['KEYCLOAK_ADMIN_USER'],
-            admin_pass=current_app.config['KEYCLOAK_ADMIN_PASS'],
-        )
-    return g.keycloak
-
-
-def get_vault() -> Vault:
-    if 'vault' not in g:
-        vault_type = current_app.config['VAULT_TYPE']
-        if vault_type == 'hashicorp':
-            g.vault = HashicorpVault(
-                url=current_app.config['VAULT_ADDR'],
-                role_id=current_app.config['VAULT_ROLE_ID'],
-                secret_id=current_app.config['VAULT_SECRET_ID'],
-            )
-        elif vault_type == 'file':
-            g.vault = FileVault(
-                current_app.config['VAULT_PATH'],
-            )
-        else:
-            logger.error(f'Unknown vault type {vault_type}')
-            raise Exception(f'Unknown vault type {vault_type}')
-    return g.vault
 
 
 def init_app():
@@ -140,29 +109,20 @@ def create_app():
     except ImportError:
         logging.basicConfig(level=flask_app.config['LOG_LEVEL'])
 
-    # Try to create keycloak client to report early if something is wrong.
-    try:
-        with flask_app.app_context():
-            get_keycloak()
-    except Exception as e:
-        logger.warning(
-            f'Failed to create keycloak instance {e!s}, auth endpoints will not work.'
-        )
-
-    # Try to create vault client and report errors.
-    try:
-        with flask_app.app_context():
-            vault = get_vault()
-    except Exception as e:
-        logger.warning(
-            f'Failed to create {flask_app.config["VAULT_TYPE"]} vault instance {e!s}.'
-        )
+    FlaskInjector(
+        app=flask_app,
+        injector=di,
+        modules=[
+            KeycloakModule(flask_app),
+            VaultModule(flask_app),
+        ],
+    )
 
     # Try to retrieve Tower notification webhook creds from vault
     try:
         with flask_app.app_context():
-            webhookCreds = vault.read(current_app.config['WEBHOOK_VAULT_PATH'])
-            if (webhookCreds):
+            webhookCreds = di.get(Vault).read(current_app.config['WEBHOOK_VAULT_PATH'])
+            if webhookCreds:
                 flask_app.config['WEBHOOK_USER'] = webhookCreds['username']
                 flask_app.config['WEBHOOK_PASS'] = webhookCreds['password']
             else:
@@ -177,6 +137,7 @@ def create_app():
 
     flask_app.config['SCHEDULER_API_ENABLED'] = False
 
+    sched = APScheduler()
     sched.init_app(flask_app)
 
     @sched.task('interval', id='rhub_scheduler', seconds=60, max_instances=1)

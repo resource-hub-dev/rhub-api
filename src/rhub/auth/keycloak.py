@@ -1,7 +1,12 @@
 import json
+import logging
 
 from connexion import problem
-from keycloak import KeycloakOpenID, KeycloakAdmin
+from keycloak import KeycloakOpenID, KeycloakAdmin, KeycloakGetError  # noqa: F401
+import injector
+
+
+logger = logging.getLogger(__name__)
 
 
 class KeycloakClient:
@@ -177,3 +182,30 @@ def problem_from_keycloak_error(e):
     except json.JSONDecodeError:
         pass
     return problem(e.response_code, 'Keycloak Error', detail, ext=ext)
+
+
+class KeycloakModule(injector.Module):
+    def __init__(self, app):
+        self.app = app
+
+    def configure(self, binder):
+        try:
+            binder.bind(
+                KeycloakClient,
+                to=self._create_keycloak(),
+                scope=injector.singleton,
+            )
+        except Exception:
+            logger.exception(
+                'Failed to create Keycloak client. Some endpoints may not work.'
+            )
+
+    def _create_keycloak(self):
+        return KeycloakClient(
+            server=self.app.config['KEYCLOAK_SERVER'],
+            resource=self.app.config['KEYCLOAK_RESOURCE'],
+            realm=self.app.config['KEYCLOAK_REALM'],
+            secret=self.app.config['KEYCLOAK_SECRET'],
+            admin_user=self.app.config['KEYCLOAK_ADMIN_USER'],
+            admin_pass=self.app.config['KEYCLOAK_ADMIN_PASS'],
+        )
