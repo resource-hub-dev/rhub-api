@@ -30,6 +30,7 @@ SQLALCHEMY_DATABASE_URI = (
         database=os.environ['DB_DATABASE'],
     )
 )
+SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 VAULT_TYPE = os.getenv('VAULT_TYPE')
 # hashicorp vault variables
