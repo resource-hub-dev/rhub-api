@@ -1,35 +1,37 @@
 import logging
 
-from cron_validator import CronValidator
-
-from rhub.api import db
-from rhub.api.utils import date_now
-from rhub.scheduler import model
+import flask
+import injector
+from flask_apscheduler import APScheduler
 
 
 logger = logging.getLogger(__name__)
 
 
-def run():
-    now = date_now()
+class SchedulerModule(injector.Module):
+    def __init__(self, app):
+        self.app = app
 
-    sched_job_query = model.SchedulerCronJob.query.filter(
-        model.SchedulerCronJob.enabled.is_(True),
-    )
-    for sched_job in sched_job_query:
-        if not CronValidator.match_datetime(sched_job.time_expr, now):
-            continue
+    def configure(self, binder):
+        binder.bind(
+            APScheduler,
+            to=self._create_scheduler(),
+            scope=injector.singleton,
+        )
 
-        logger.info(f'Executing scheduled job {sched_job.id} ({sched_job.job_name})')
-        try:
-            sched_job.job(sched_job.job_params)
-            logger.info(
-                f'Scheduled job {sched_job.id} ({sched_job.job_name}) succeeded'
-            )
-        except Exception as e:
-            logger.exception(
-                f'Scheduled job {sched_job.id} ({sched_job.job_name}) failed, {e!s}'
-            )
+    def _create_scheduler(self):
+        sched = APScheduler()
+        sched.init_app(self.app)
 
-        sched_job.last_run = now
-        db.session.commit()
+        if flask.helpers.get_debug_flag():
+            logger.warning('Not starting scheduler, Flask debug is enabled.')
+        else:
+            sched.start()
+
+        @sched.task('interval', id='rhub_scheduler', seconds=1, max_instances=1)
+        def rhub_scheduler():
+            from rhub.scheduler import worker
+            with self.app.app_context():
+                worker.run()
+
+        return sched

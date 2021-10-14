@@ -8,7 +8,6 @@ import prance
 import injector
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from flask_apscheduler import APScheduler
 from flask import current_app
 from flask.cli import with_appcontext
 from flask_injector import FlaskInjector
@@ -16,6 +15,7 @@ from flask_injector import FlaskInjector
 import rhub
 from rhub.auth.keycloak import KeycloakModule
 from rhub.api.vault import Vault, VaultModule
+from rhub.scheduler import SchedulerModule
 
 
 logger = logging.getLogger(__name__)
@@ -115,6 +115,7 @@ def create_app():
         modules=[
             KeycloakModule(flask_app),
             VaultModule(flask_app),
+            SchedulerModule(flask_app),
         ],
     )
 
@@ -136,16 +137,5 @@ def create_app():
         )
 
     flask_app.config['SCHEDULER_API_ENABLED'] = False
-
-    sched = APScheduler()
-    sched.init_app(flask_app)
-
-    @sched.task('interval', id='rhub_scheduler', seconds=60, max_instances=1)
-    def rhub_scheduler():
-        from rhub import scheduler
-        with flask_app.app_context():
-            scheduler.run()
-
-    sched.start()
 
     return flask_app
