@@ -81,6 +81,11 @@ def client(mocker, temp_dir):
         yield client
 
 
-@pytest.fixture(autouse=True)
-def scheduler_mock(mocker):
-    yield mocker.patch('rhub.api.sched')
+@pytest.fixture(autouse=True, scope='session')
+def scheduler_mock(session_mocker):
+    scheduler_mock = session_mocker.Mock(spec=Vault)
+
+    m = session_mocker.patch('rhub.scheduler.SchedulerModule._create_scheduler')
+    m.return_value = scheduler_mock
+
+    yield scheduler_mock
