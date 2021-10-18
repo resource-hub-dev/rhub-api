@@ -1,6 +1,6 @@
 import logging
 
-import retrying
+import tenacity
 
 from rhub.api import db, di
 from rhub.auth import ADMIN_USER, ADMIN_GROUP, ADMIN_ROLE
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # This function must be idempotent. In container, it may be called on every
 # start.
-@retrying.retry(stop_max_attempt_number=3, wait_fixed=5000)
+@tenacity.retry(wait=tenacity.wait_fixed(5000), stop=tenacity.stop_after_attempt(3))
 def setup():
     db.create_all()
 

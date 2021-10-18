@@ -8,7 +8,7 @@ pyyaml
 hvac
 requests
 attrs
-retrying
+tenacity
 prance
 dpath
 python-dateutil
