@@ -386,13 +386,11 @@ endpoints:
           properties:
             name:
               type: string
-              pattern: '^[\w%]+$'
               description: >
                 Name of a region. Wildcard ``%`` can be used to match zero, one,
                 or multiple characters
             location:
               type: string
-              pattern: '^[\w%]+$'
               description: >
                 Location of a region. Wildcard ``%`` can be used to match zero,
                 one, or multiple characters
