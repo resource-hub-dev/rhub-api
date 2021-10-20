@@ -211,7 +211,6 @@ model:
         nullable: true
       status:
         type: string
-        readOnly: true
         nullable: true
       hosts:
         type: array
