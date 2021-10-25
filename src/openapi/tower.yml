@@ -349,7 +349,6 @@ endpoints:
           properties:
             name:
               type: string
-              pattern: '^[\w%]+$'
               description: >
                 Name of a template. Wildcard ``%`` can be used to match zero,
                 one, or multiple characters
