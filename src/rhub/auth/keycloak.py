@@ -9,6 +9,27 @@ import injector
 logger = logging.getLogger(__name__)
 
 
+class _KeycloakAdmin(KeycloakAdmin):
+    """
+    KeycloakAdmin with fixed `refresh_token` method.
+    """
+
+    def refresh_token(self):
+        # In our case, Keycloak admin OIDC didn't return `refresh_token` in the
+        # token response so `refresh_token` from python-keycloak 0.25.0 was
+        # failing. In 0.26.1 `refresh_token` may be fixed, but that version
+        # introduces other bugs. This workaround simply creates a new token if
+        # the refresh token is not present in response from Keycloak.
+        if self.token.get('refresh_token'):
+            super().refresh_token()
+        else:
+            self.get_token()
+            self.connection.add_param_headers(
+                'Authorization',
+                'Bearer ' + self.token.get('access_token'),
+            )
+
+
 class KeycloakClient:
     """Wrapper for Keycloak OpenID and admin clients."""
 
@@ -19,13 +40,14 @@ class KeycloakClient:
             realm_name=realm,
             client_secret_key=secret,
         )
-        self.admin = KeycloakAdmin(
+        self.admin = _KeycloakAdmin(
             server_url=server,
             client_id=resource,
             realm_name=realm,
             client_secret_key=secret,
             username=admin_user,
             password=admin_pass,
+            auto_refresh_token=['get', 'put', 'post', 'delete'],
         )
 
     def login(self, username, password):
