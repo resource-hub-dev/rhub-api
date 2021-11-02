@@ -63,6 +63,10 @@ class Region(db.Model, ModelMixin):
     #: :type: list of :class:`Cluster`
     clusters = db.relationship('Cluster', back_populates='region')
 
+    #: :type: list of :class:`Product`
+    products = db.relationship('Product', back_populates='regions',
+                               secondary='lab_region_product', lazy='dynamic')
+
     _INLINE_CHILDS = ['openstack', 'satellite', 'dns_server']
 
     @property
@@ -222,6 +226,11 @@ class Cluster(db.Model, ModelMixin):
     hosts = db.relationship('ClusterHost', back_populates='cluster',
                             cascade='all,delete-orphan')
 
+    product_id = db.Column(db.Integer, db.ForeignKey('lab_product.id'),
+                           nullable=False)
+    product_params = db.Column(db.JSON, nullable=False)
+    product = db.relationship('Product', back_populates='clusters')
+
     RESERVED_NAMES = [
         'localhost',
         'all',
@@ -281,6 +290,9 @@ class Cluster(db.Model, ModelMixin):
             data['status'] = self.status.value
         else:
             data['status'] = None
+
+        data['product_name'] = self.product.name
+
         return data
 
 
@@ -372,3 +384,31 @@ class ClusterHost(db.Model, ModelMixin):
     volumes_gb = db.Column(db.Integer, nullable=True)
     #: :type: :class:`Cluster`
     cluster = db.relationship('Cluster', back_populates='hosts')
+
+
+class Product(db.Model, ModelMixin):
+    __tablename__ = 'lab_product'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True, nullable=False)
+    description = db.Column(db.Text, nullable=False, default='')
+    tower_template_name = db.Column(db.String(128), nullable=False)
+    parameters = db.Column(db.JSON, nullable=False)
+
+    #: :type: list of :class:`Region`
+    regions = db.relationship('Region', back_populates='products',
+                              secondary='lab_region_product', lazy='dynamic')
+    #: :type: list of :class:`Cluster`
+    clusters = db.relationship('Cluster', back_populates='product')
+
+
+class RegionProduct(db.Model, ModelMixin):
+    """Region-Product N-N association table."""
+    __tablename__ = 'lab_region_product'
+
+    region_id = db.Column(db.Integer,
+                          db.ForeignKey('lab_region.id', ondelete="CASCADE"),
+                          primary_key=True)
+    product_id = db.Column(db.Integer,
+                           db.ForeignKey('lab_product.id', ondelete="CASCADE"),
+                           primary_key=True)

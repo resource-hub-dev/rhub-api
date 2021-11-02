@@ -49,44 +49,28 @@ paths:
       $ref: 'lab.yml#/endpoints/region_update'
     delete:
       $ref: 'lab.yml#/endpoints/region_delete'
-  /lab/region/{region_id}/templates:
+  /lab/region/{region_id}/products:
     get:
-      $ref: 'lab.yml#/endpoints/region_list_templates'
+      $ref: 'lab.yml#/endpoints/region_list_products'
     post:
-      $ref: 'lab.yml#/endpoints/region_add_template'
+      $ref: 'lab.yml#/endpoints/region_add_product'
     delete:
-      $ref: 'lab.yml#/endpoints/region_remove_template'
-  /lab/template:
+      $ref: 'lab.yml#/endpoints/region_remove_product'
+  /lab/product:
     get:
-      $ref: 'lab.yml#/endpoints/template_list'
+      $ref: 'lab.yml#/endpoints/product_list'
     post:
-      $ref: 'lab.yml#/endpoints/template_create'
-  /lab/template/{template_id}:
+      $ref: 'lab.yml#/endpoints/product_create'
+  /lab/product/{product_id}:
     get:
-      $ref: 'lab.yml#/endpoints/template_get'
+      $ref: 'lab.yml#/endpoints/product_get'
     patch:
-      $ref: 'lab.yml#/endpoints/template_update'
+      $ref: 'lab.yml#/endpoints/product_update'
     delete:
-      $ref: 'lab.yml#/endpoints/template_delete'
-  /lab/template/{template_id}/bundles:
+      $ref: 'lab.yml#/endpoints/product_delete'
+  /lab/product/{product_id}/regions:
     get:
-      $ref: 'lab.yml#/endpoints/template_list_bundles'
-    post:
-      $ref: 'lab.yml#/endpoints/template_add_bundle'
-    delete:
-      $ref: 'lab.yml#/endpoints/template_remove_bundle'
-  /lab/bundle:
-    get:
-      $ref: 'lab.yml#/endpoints/bundle_list'
-    post:
-      $ref: 'lab.yml#/endpoints/bundle_create'
-  /lab/bundle/{bundle_id}:
-    get:
-      $ref: 'lab.yml#/endpoints/bundle_get'
-    patch:
-      $ref: 'lab.yml#/endpoints/bundle_update'
-    delete:
-      $ref: 'lab.yml#/endpoints/bundle_delete'
+      $ref: 'lab.yml#/endpoints/product_list_regions'
   /lab/cluster:
     get:
       $ref: 'lab.yml#/endpoints/cluster_list'

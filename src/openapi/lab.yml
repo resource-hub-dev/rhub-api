@@ -276,6 +276,13 @@ model:
         readOnly: true
         items:
           $ref: '#/model/ClusterHost'
+      product_id:
+        $ref: 'common.yml#/model/ID'
+      product_name:
+        type: string
+        readOnly: true
+      product_params:
+        type: object
 
   ClusterEvent:
     type: object
@@ -360,7 +367,7 @@ model:
             - type: string
               format: ipv6
 
-  Template:
+  Product:
     type: object
     properties:
       id:
@@ -369,26 +376,55 @@ model:
           - readOnly: true
       name:
         type: string
-        pattern: '^\w+$'
+        maxLength: 64
       description:
         type: string
-      enabled:
-        type: boolean
+      tower_template_name:
+        type: string
+        maxLength: 128
+      parameters:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            description:
+              type: string
+            variable:
+              type: string
+            required:
+              type: boolean
+            type:
+              type: string
+          oneOf:
+            - description: string variable
+              properties:
+                type:
+                  enum: [string]
+                default:
+                  type: string
+                  nullable: true
+            - description: integer variable
+              properties:
+                type:
+                  enum: [integer]
+                default:
+                  type: integer
+                  nullable: true
+            - description: boolean variable
+              properties:
+                type:
+                  enum: [boolean]
+                default:
+                  type: boolean
+                  nullable: true
+          required:
+            - name
+            - variable
+            - required
+            - type
 
-  Bundle:
-    type: object
-    properties:
-      id:
-        allOf:
-          - $ref: 'common.yml#/model/ID'
-          - readOnly: true
-      name:
-        type: string
-        pattern: '^\w+$'
-      description:
-        type: string
-      enabled:
-        type: boolean
 
 parameters:
 
@@ -406,17 +442,10 @@ parameters:
     required: true
     schema:
       $ref: 'common.yml#/model/ID'
-  template_id:
-    name: template_id
+  product_id:
+    name: product_id
     in: path
-    description: ID of the template
-    required: true
-    schema:
-      $ref: 'common.yml#/model/ID'
-  bundle_id:
-    name: bundle_id
-    in: path
-    description: ID of the bundle
+    description: ID of the product
     required: true
     schema:
       $ref: 'common.yml#/model/ID'
@@ -601,28 +630,30 @@ endpoints:
     security:
       - oauth2: []
 
-  region_list_templates:
-    summary: Get templates available on region
+  region_list_products:
+    summary: Get list of products that can be installed in the selected region.
     tags: [lab]
-    operationId: rhub.api.lab.region.list_region_templates
+    operationId: rhub.api.lab.region.list_region_products
     parameters:
       - $ref: '#/parameters/region_id'
     responses:
       '200':
-        description: List of Template
+        description: List of Product
         content:
           application/json:
             schema:
               type: array
               items:
-                $ref: '#/model/Template'
+                $ref: '#/model/Product'
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
-  region_add_template:
-    summary: Add template to region
+  region_add_product:
+    summary: Add product to region
     tags: [lab]
-    operationId: rhub.api.lab.region.add_region_template
+    operationId: rhub.api.lab.region.add_region_product
     parameters:
       - $ref: '#/parameters/region_id'
     requestBody:
@@ -637,15 +668,17 @@ endpoints:
               id:
                 $ref: 'common.yml#/model/ID'
     responses:
-      '200':
+      '204':
         description: Success
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
-  region_remove_template:
-    summary: Remove template from region
+  region_remove_product:
+    summary: Remove product from region
     tags: [lab]
-    operationId: rhub.api.lab.region.delete_region_template
+    operationId: rhub.api.lab.region.delete_region_product
     parameters:
       - $ref: '#/parameters/region_id'
     requestBody:
@@ -660,31 +693,66 @@ endpoints:
               id:
                 $ref: 'common.yml#/model/ID'
     responses:
-      '200':
+      '204':
         description: Success
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
-  template_list:
-    summary: Get template list
+  product_list:
+    summary: Get product list
     tags: [lab]
-    operationId: rhub.api.lab.template.list_templates
+    operationId: rhub.api.lab.product.list_products
+    parameters:
+      - name: filter
+        in: query
+        description: Filter products by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: >
+                Name of a product. Wildcard ``%`` can be used to match zero, one,
+                or multiple characters
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
     responses:
       '200':
-        description: List of Template
+        description: List of Product
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/model/Template'
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/Product'
+                total:
+                  type: integer
+                  minimum: 0
+                  description: The total number of items
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
-  template_create:
-    summary: Create template
+  product_create:
+    summary: Create product
     tags: [lab]
-    operationId: rhub.api.lab.template.create_template
+    operationId: rhub.api.lab.product.create_product
     requestBody:
       required: true
       content:
@@ -692,210 +760,103 @@ endpoints:
           schema:
             type: object
             allOf:
-              - $ref: '#/model/Template'
+              - $ref: '#/model/Product'
               - required:
                   - name
+                  - tower_template_name
+                  - parameters
     responses:
       '200':
         description: Success
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
-  template_get:
-    summary: Get template
+  product_get:
+    summary: Get product
     tags: [lab]
-    operationId: rhub.api.lab.template.get_template
+    operationId: rhub.api.lab.product.get_product
     parameters:
-      - $ref: '#/parameters/template_id'
+      - $ref: '#/parameters/product_id'
     responses:
       '200':
-        description: Template
+        description: Product
         content:
           application/json:
             schema:
-              $ref: '#/model/Template'
+              $ref: '#/model/Product'
       '404':
         description: Not found
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
-  template_update:
-    summary: Update template
+  product_update:
+    summary: Update product
     tags: [lab]
-    operationId: rhub.api.lab.template.update_template
+    operationId: rhub.api.lab.product.update_product
     parameters:
-      - $ref: '#/parameters/template_id'
+      - $ref: '#/parameters/product_id'
     requestBody:
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/model/Template'
+            $ref: '#/model/Product'
     responses:
       '200':
         description: Success
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
-  template_delete:
-    summary: Delete template
+  product_delete:
+    summary: Delete product
     tags: [lab]
-    operationId: rhub.api.lab.template.delete_template
+    operationId: rhub.api.lab.product.delete_product
     parameters:
-      - $ref: '#/parameters/template_id'
+      - $ref: '#/parameters/product_id'
     responses:
-      '200':
+      '204':
         description: Success
       default:
         $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
-  template_list_bundles:
-    summary: Get bundles available for template
+  product_list_regions:
+    summary: Get list of regions where product can be installed.
     tags: [lab]
-    operationId: rhub.api.lab.template.list_template_bundles
+    operationId: rhub.api.lab.product.list_product_regions
     parameters:
-      - $ref: '#/parameters/template_id'
+      - $ref: '#/parameters/product_id'
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
     responses:
       '200':
-        description: List of Bundle
+        description: List of Region
         content:
           application/json:
             schema:
               type: array
               items:
-                $ref: '#/model/Bundle'
+                $ref: '#/model/Region'
       default:
         $ref: 'common.yml#/responses/problem'
-
-  template_add_bundle:
-    summary: Add bundle to template
-    tags: [lab]
-    operationId: rhub.api.lab.template.add_template_bundle
-    parameters:
-      - $ref: '#/parameters/template_id'
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - id
-            properties:
-              id:
-                $ref: 'common.yml#/model/ID'
-    responses:
-      '200':
-        description: Success
-      default:
-        $ref: 'common.yml#/responses/problem'
-
-  template_remove_bundle:
-    summary: Remove bundle from template
-    tags: [lab]
-    operationId: rhub.api.lab.template.delete_template_bundle
-    parameters:
-      - $ref: '#/parameters/template_id'
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - id
-            properties:
-              id:
-                $ref: 'common.yml#/model/ID'
-    responses:
-      '200':
-        description: Success
-      default:
-        $ref: 'common.yml#/responses/problem'
-
-  bundle_list:
-    summary: Get bundle list
-    tags: [lab]
-    operationId: rhub.api.lab.bundle.list_bundles
-    responses:
-      '200':
-        description: List of Bundle
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/model/Bundle'
-      default:
-        $ref: 'common.yml#/responses/problem'
-
-  bundle_create:
-    summary: Create bundle
-    tags: [lab]
-    operationId: rhub.api.lab.bundle.create_bundle
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            allOf:
-              - $ref: '#/model/Bundle'
-              - required:
-                  - name
-    responses:
-      '200':
-        description: Success
-      default:
-        $ref: 'common.yml#/responses/problem'
-
-  bundle_get:
-    summary: Get bundle
-    tags: [lab]
-    operationId: rhub.api.lab.bundle.get_bundle
-    parameters:
-      - $ref: '#/parameters/bundle_id'
-    responses:
-      '200':
-        description: Bundle
-        content:
-          application/json:
-            schema:
-              $ref: '#/model/Bundle'
-      '404':
-        description: Not found
-      default:
-        $ref: 'common.yml#/responses/problem'
-
-  bundle_update:
-    summary: Update bundle
-    tags: [lab]
-    operationId: rhub.api.lab.bundle.update_bundle
-    parameters:
-      - $ref: '#/parameters/bundle_id'
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/model/Bundle'
-    responses:
-      '200':
-        description: Success
-      default:
-        $ref: 'common.yml#/responses/problem'
-
-  bundle_delete:
-    summary: Delete bundle
-    tags: [lab]
-    operationId: rhub.api.lab.bundle.delete_bundle
-    parameters:
-      - $ref: '#/parameters/bundle_id'
-    responses:
-      '200':
-        description: Success
-      default:
-        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
 
   cluster_list:
     summary: Get cluster list
@@ -1000,6 +961,8 @@ endpoints:
                     - name
                     - region_id
                     - reservation_expiration
+                    - product_id
+                    - product_params
       default:
         $ref: 'common.yml#/responses/problem'
     security:

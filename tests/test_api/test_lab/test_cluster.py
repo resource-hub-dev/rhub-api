@@ -58,9 +58,20 @@ def _create_test_region():
     )
 
 
+def _create_test_product():
+    return model.Product(
+        id=1,
+        name='dummy',
+        description='dummy',
+        tower_template_name='dummy',
+        parameters={},
+    )
+
+
 def test_list_clusters(client, keycloak_mock, mocker):
     user_id = '00000000-0000-0000-0000-000000000000'
     sample_region = _create_test_region()
+    sample_product = _create_test_product()
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
     model.Cluster.query.limit.return_value.offset.return_value = [
         model.Cluster(
@@ -75,6 +86,9 @@ def test_list_clusters(client, keycloak_mock, mocker):
             reservation_expiration=None,
             lifespan_expiration=None,
             status=model.ClusterStatus.ACTIVE,
+            product_id=1,
+            product_params={},
+            product=sample_product,
         ),
     ]
     mocker.patch.object(model.Cluster, 'hosts', [])
@@ -106,6 +120,9 @@ def test_list_clusters(client, keycloak_mock, mocker):
                 'group_name': None,
                 'hosts': [],
                 'quota': None,
+                'product_id': 1,
+                'product_name': 'dummy',
+                'product_params': {},
             },
         ],
         'total': 1,
@@ -115,6 +132,7 @@ def test_list_clusters(client, keycloak_mock, mocker):
 def test_get_cluster(client, keycloak_mock, mocker):
     user_id = '00000000-0000-0000-0000-000000000000'
     sample_region = _create_test_region()
+    sample_product = _create_test_product()
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
 
     model.Cluster.query.get.return_value = model.Cluster(
@@ -129,6 +147,9 @@ def test_get_cluster(client, keycloak_mock, mocker):
         reservation_expiration=None,
         lifespan_expiration=None,
         status=model.ClusterStatus.ACTIVE,
+        product_id=1,
+        product_params={},
+        product=sample_product,
     )
     mocker.patch.object(model.Cluster, 'hosts', [])
     mocker.patch.object(model.Cluster, 'quota', None)
@@ -159,19 +180,25 @@ def test_get_cluster(client, keycloak_mock, mocker):
         'group_name': None,
         'hosts': [],
         'quota': None,
+        'product_id': 1,
+        'product_name': 'dummy',
+        'product_params': {},
     }
 
 
 def test_create_cluster(client, keycloak_mock, db_session_mock, mocker):
     user_id = '00000000-0000-0000-0000-000000000000'
     model.Region.query.get.return_value = region = _create_test_region()
+    model.Product.query.get.return_value = product = _create_test_product()
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
     cluster_data = {
         'name': 'testcluster',
         'description': 'test cluster',
         'region_id': 1,
         'reservation_expiration': datetime.datetime(2100, 1, 1, 0, 0, tzinfo=tzutc()),
-        'lifespan_expiration': None
+        'lifespan_expiration': None,
+        'product_id': 1,
+        'product_params': {},
     }
 
     model.Cluster.query.filter.return_value.count.return_value = 0
@@ -179,6 +206,7 @@ def test_create_cluster(client, keycloak_mock, db_session_mock, mocker):
 
     def db_commit():
         mocker.patch.object(model.Cluster, 'region', region)
+        mocker.patch.object(model.Cluster, 'product', product)
 
     db_session_mock.commit.side_effect = db_commit
 
@@ -295,6 +323,7 @@ def test_create_cluster_set_lifespan_forbidden(client, mocker):
 
 def test_update_cluster(client, keycloak_mock, db_session_mock):
     region = _create_test_region()
+    product = _create_test_product()
     user_id = '00000000-0000-0000-0000-000000000000'
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
     keycloak_mock.group_get.return_value = {'id': None, 'name': 'None'}
@@ -310,6 +339,9 @@ def test_update_cluster(client, keycloak_mock, db_session_mock):
         reservation_expiration=None,
         lifespan_expiration=None,
         status=model.ClusterStatus.ACTIVE,
+        product_id=1,
+        product_params={},
+        product=product,
     )
     model.Cluster.query.get.return_value = cluster
 
@@ -339,6 +371,7 @@ def test_update_cluster(client, keycloak_mock, db_session_mock):
 )
 def test_update_cluster_ro_field(client, cluster_data):
     region = _create_test_region()
+    product = _create_test_product()
     cluster = model.Cluster(
         id=1,
         name='testcluster',
@@ -351,6 +384,9 @@ def test_update_cluster_ro_field(client, cluster_data):
         reservation_expiration=None,
         lifespan_expiration=None,
         status=model.ClusterStatus.ACTIVE,
+        product_id=1,
+        product_params={},
+        product=product,
     )
     model.Cluster.query.get.return_value = cluster
 
@@ -367,6 +403,7 @@ def test_update_cluster_reservation(client, keycloak_mock):
     user_id = '00000000-0000-0000-0000-000000000000'
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
     region = _create_test_region()
+    product = _create_test_product()
     cluster = model.Cluster(
         id=1,
         name='testcluster',
@@ -379,6 +416,9 @@ def test_update_cluster_reservation(client, keycloak_mock):
         reservation_expiration=None,
         lifespan_expiration=None,
         status=model.ClusterStatus.ACTIVE,
+        product_id=1,
+        product_params={},
+        product=product,
     )
     model.Cluster.query.get.return_value = cluster
 
@@ -399,6 +439,7 @@ def test_update_cluster_reservation(client, keycloak_mock):
 def test_update_cluster_exceeded_reservation(client):
     region = _create_test_region()
     region.reservation_expiration_max = 1
+    product = _create_test_product()
     cluster = model.Cluster(
         id=1,
         name='testcluster',
@@ -411,6 +452,9 @@ def test_update_cluster_exceeded_reservation(client):
         reservation_expiration=None,
         lifespan_expiration=None,
         status=model.ClusterStatus.ACTIVE,
+        product_id=1,
+        product_params={},
+        product=product,
     )
     model.Cluster.query.get.return_value = cluster
 
@@ -433,6 +477,7 @@ def test_update_cluster_set_lifespan_forbidden(client, mocker):
 
     region = _create_test_region()
     region.lifespan_length = 30
+    product = _create_test_product()
     cluster = model.Cluster(
         id=1,
         name='testcluster',
@@ -445,6 +490,9 @@ def test_update_cluster_set_lifespan_forbidden(client, mocker):
         reservation_expiration=None,
         lifespan_expiration=None,
         status=model.ClusterStatus.ACTIVE,
+        product_id=1,
+        product_params={},
+        product=product,
     )
     model.Cluster.query.get.return_value = cluster
 
