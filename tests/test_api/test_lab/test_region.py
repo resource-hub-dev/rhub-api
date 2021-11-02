@@ -828,3 +828,180 @@ def test_delete_region(client, keycloak_mock, db_session_mock):
     keycloak_mock.group_delete.assert_called_with(group_id)
 
     assert rv.status_code == 204
+
+
+def test_region_list_products(client):
+    products = [
+        model.Product(
+            id=1,
+            name='dummy',
+            description='dummy',
+            tower_template_name='dummy',
+            parameters=[],
+        ),
+    ]
+
+    model.Region.query.get.return_value = model.Region(
+        id=1,
+        name='test',
+        location='RDU',
+        description='',
+        banner='',
+        enabled=True,
+        quota_id=None,
+        lifespan_length=None,
+        reservations_enabled=True,
+        reservation_expiration_max=7,
+        owner_group='00000000-0000-0000-0000-000000000000',
+        users_group=None,
+        tower_id=1,
+        openstack_url='https://openstack.example.com:13000',
+        openstack_credentials='kv/example/openstack',
+        openstack_project='rhub',
+        openstack_domain_name='Default',
+        openstack_domain_id='default',
+        openstack_networks=['provider_net_rhub'],
+        openstack_keyname='rhub_key',
+        satellite_hostname='satellite.example.com',
+        satellite_insecure=False,
+        satellite_credentials='kv/example/satellite',
+        dns_server_hostname='ns.example.com',
+        dns_server_zone='example.com.',
+        dns_server_key='kv/example/key',
+        vault_server='https://vault.example.com/',
+        download_server='https://download.example.com',
+        products=products,
+    )
+
+    rv = client.get(
+        f'{API_BASE}/lab/region/1/products',
+        headers={'Authorization': 'Bearer foobar'},
+    )
+
+    assert rv.status_code == 200
+    assert rv.json == [
+        {
+            'id': 1,
+            'name': 'dummy',
+            'description': 'dummy',
+            'tower_template_name': 'dummy',
+            'parameters': [],
+        },
+    ]
+
+
+def test_region_add_product(client, db_session_mock):
+    model.Region.query.get.return_value = model.Region(
+        id=1,
+        name='test',
+        location='RDU',
+        description='',
+        banner='',
+        enabled=True,
+        quota_id=None,
+        lifespan_length=None,
+        reservations_enabled=True,
+        reservation_expiration_max=7,
+        owner_group='00000000-0000-0000-0000-000000000000',
+        users_group=None,
+        tower_id=1,
+        openstack_url='https://openstack.example.com:13000',
+        openstack_credentials='kv/example/openstack',
+        openstack_project='rhub',
+        openstack_domain_name='Default',
+        openstack_domain_id='default',
+        openstack_networks=['provider_net_rhub'],
+        openstack_keyname='rhub_key',
+        satellite_hostname='satellite.example.com',
+        satellite_insecure=False,
+        satellite_credentials='kv/example/satellite',
+        dns_server_hostname='ns.example.com',
+        dns_server_zone='example.com.',
+        dns_server_key='kv/example/key',
+        vault_server='https://vault.example.com/',
+        download_server='https://download.example.com',
+        products=[],
+    )
+
+    model.Product.query.get.return_value = model.Product(
+        id=10,
+        name='dummy',
+        description='dummy',
+        tower_template_name='dummy',
+        parameters=[],
+    )
+
+    model.RegionProduct.query.filter.return_value.count.return_value = 0
+
+    rv = client.post(
+        f'{API_BASE}/lab/region/1/products',
+        headers={'Authorization': 'Bearer foobar'},
+        json={'id': 10},
+    )
+
+    assert rv.status_code == 204
+
+    db_session_mock.add.assert_called()
+    db_session_mock.commit.assert_called()
+
+    region_product = db_session_mock.add.call_args.args[0]
+    assert region_product.region_id == 1
+    assert region_product.product_id == 10
+
+
+def test_region_delete_product(client, db_session_mock):
+    model.Region.query.get.return_value = model.Region(
+        id=1,
+        name='test',
+        location='RDU',
+        description='',
+        banner='',
+        enabled=True,
+        quota_id=None,
+        lifespan_length=None,
+        reservations_enabled=True,
+        reservation_expiration_max=7,
+        owner_group='00000000-0000-0000-0000-000000000000',
+        users_group=None,
+        tower_id=1,
+        openstack_url='https://openstack.example.com:13000',
+        openstack_credentials='kv/example/openstack',
+        openstack_project='rhub',
+        openstack_domain_name='Default',
+        openstack_domain_id='default',
+        openstack_networks=['provider_net_rhub'],
+        openstack_keyname='rhub_key',
+        satellite_hostname='satellite.example.com',
+        satellite_insecure=False,
+        satellite_credentials='kv/example/satellite',
+        dns_server_hostname='ns.example.com',
+        dns_server_zone='example.com.',
+        dns_server_key='kv/example/key',
+        vault_server='https://vault.example.com/',
+        download_server='https://download.example.com',
+        products=[],
+    )
+
+    model.Product.query.get.return_value = model.Product(
+        id=10,
+        name='dummy',
+        description='dummy',
+        tower_template_name='dummy',
+        parameters=[],
+    )
+
+    region_product = model.RegionProduct(region_id=1, product_id=10)
+
+    model.RegionProduct.query.filter.return_value.count.return_value = 1
+    model.RegionProduct.query.filter.return_value.all.return_value = [region_product]
+
+    rv = client.delete(
+        f'{API_BASE}/lab/region/1/products',
+        headers={'Authorization': 'Bearer foobar'},
+        json={'id': 10},
+    )
+
+    assert rv.status_code == 204
+
+    db_session_mock.delete.assert_called_with(region_product)
+    db_session_mock.commit.assert_called()

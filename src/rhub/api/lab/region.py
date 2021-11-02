@@ -2,6 +2,7 @@ import logging
 
 import sqlalchemy
 import sqlalchemy.exc
+from flask import request
 from connexion import problem
 from werkzeug.exceptions import Forbidden
 import dpath.util as dpath
@@ -218,13 +219,65 @@ def delete_region(keycloak: KeycloakClient, region_id, user):
     logger.info(f'Region {region.name} (id {region.id}) deleted by user {user}')
 
 
-def list_region_templates(region_id):
-    raise NotImplementedError
+def list_region_products(keycloak: KeycloakClient, region_id, user):
+    region = model.Region.query.get(region_id)
+    if not region:
+        return problem(404, 'Not Found', f'Region {region_id} does not exist')
+
+    if region.users_group is not None:
+        if not keycloak.user_check_role(user, ADMIN_ROLE):
+            if not keycloak.user_check_group_any(
+                    user, [region.users_group, region.owner_group]):
+                raise Forbidden("You don't have access to this region.")
+
+    return [product.to_dict() for product in region.products]
 
 
-def add_region_template(region_id, body):
-    raise NotImplementedError
+def add_region_product(keycloak: KeycloakClient, region_id, body, user):
+    region = model.Region.query.get(region_id)
+    if not region:
+        return problem(404, 'Not Found', f'Region {region_id} does not exist')
+
+    if not keycloak.user_check_role(user, ADMIN_ROLE):
+        if not keycloak.user_check_group(user, region.owner_group):
+            raise Forbidden("You don't have write access to this region.")
+
+    product = model.Product.query.get(body['id'])
+    if not product:
+        return problem(404, 'Not Found', f'Product {body["id"]} does not exist')
+
+    q = model.RegionProduct.query.filter(sqlalchemy.and_(
+        model.RegionProduct.region_id == region.id,
+        model.RegionProduct.product_id == product.id,
+    ))
+    if q.count() == 0:
+        relation = model.RegionProduct(region_id=region.id, product_id=product.id)
+        db.session.add(relation)
+        db.session.commit()
+        logger.info(
+            f'Added Product {product.name} (id {product.id}) to Region {region.name} '
+            f'(id {region.id}) by user {user}'
+        )
 
 
-def delete_region_template(region_id, body):
-    raise NotImplementedError
+def delete_region_product(keycloak: KeycloakClient, region_id, user):
+    region = model.Region.query.get(region_id)
+    if not region:
+        return problem(404, 'Not Found', f'Region {region_id} does not exist')
+
+    if not keycloak.user_check_role(user, ADMIN_ROLE):
+        if not keycloak.user_check_group(user, region.owner_group):
+            raise Forbidden("You don't have write access to this region.")
+
+    product = model.Product.query.get(request.json['id'])
+    if not product:
+        return problem(404, 'Not Found', f'Product {request.json["id"]} does not exist')
+
+    q = model.RegionProduct.query.filter(sqlalchemy.and_(
+        model.RegionProduct.region_id == region.id,
+        model.RegionProduct.product_id == product.id,
+    ))
+    if q.count() > 0:
+        for relation in q.all():
+            db.session.delete(relation)
+        db.session.commit()
