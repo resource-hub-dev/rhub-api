@@ -11,6 +11,7 @@ model:
       name:
         description: Name
         type: string
+        maxLength: 256
       department:
         description: Department Name
         type: string

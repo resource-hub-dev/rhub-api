@@ -77,6 +77,7 @@ model:
         properties:
           url:
             type: string
+            maxLength: 256
           credentials:
             oneOf:
               - description: Credentials to store in Vault
@@ -89,22 +90,28 @@ model:
                 writeOnly: true
               - description: Credentials path in Vault
                 type: string
+                maxLength: 256
           project:
             type: string
+            maxLength: 64
           domain_name:
             type: string
+            maxLength: 64
           domain_id:
             type: string
+            maxLength: 64
           networks:
             description: Network providers that can be used in the region
             type: array
             items:
               type: string
+              maxLength: 64
             minItems: 1
             uniqueItems: true
           keyname:
             description: SSH key name
             type: string
+            maxLength: 64
         example:
           url: https://openstack.example.com:13000
           credentials: kv/region/rdu2-a/openstack
@@ -118,6 +125,7 @@ model:
         properties:
           hostname:
             type: string
+            maxLength: 256
           insecure:
             type: boolean
           credentials:
@@ -132,6 +140,7 @@ model:
                 writeOnly: true
               - description: Credentials path in Vault
                 type: string
+                maxLength: 256
         example:
           hostname: satellite.example.com
           credentials: kv/region/rdu2-a/satellite
@@ -140,8 +149,10 @@ model:
         properties:
           hostname:
             type: string
+            maxLength: 256
           zone:
             type: string
+            maxLength: 256
           key:
             oneOf:
               - description: Credentials to store in Vault
@@ -154,16 +165,53 @@ model:
                 writeOnly: true
               - description: Credentials path in Vault
                 type: string
+                maxLength: 256
         example:
           hostname: ns.example.com
           zone: example.com.
           key: kv/region/rdu2-a/dns
       vault_server:
         type: string
+        maxLength: 256
         example: https://vault.example.com
       download_server:
         type: string
+        maxLength: 256
         example: https://download.example.com
+
+  ClusterStatus:
+    type: string
+    nullable: true
+    enum:
+      - Active
+      - Pre-Provisioning Queued
+      - Pre-Provisioning
+      - Pre-Provisioning Failed
+      - Provisioning Queued
+      - Provisioning
+      - Provisioning Failed
+      - Post-Provisioning Queued
+      - Post-Provisioning
+      - Post-Provisioning Failed
+      - Pre-Installation Queued
+      - Pre-Installing
+      - Pre-Installation Failed
+      - Installation Queued
+      - Installing
+      - Installation Failed
+      - Post-Installation Queued
+      - Post-Installing
+      - Post-Installation Failed
+      - Pre-Deletion Queued
+      - Pre-Deleting
+      - Pre-Deletion Failed
+      - Deletion Queued
+      - Deleting
+      - Deletion Failed
+      - Post-Deletion Queued
+      - Post-Deleting
+      - Post-Deletion Failed
+      - Deleted
 
   Cluster:
     type: object
@@ -174,7 +222,8 @@ model:
           - readOnly: true
       name:
         type: string
-        pattern: '^\w+$'
+        pattern: '^[a-z0-9]+$'
+        maxLength: 20
       description:
         type: string
       user_id:
@@ -183,6 +232,7 @@ model:
         readOnly: true
       user_name:
         type: string
+        readOnly: true
       group_id:
         type: string
         format: uuid
@@ -190,6 +240,7 @@ model:
       group_name:
         type: string
         nullable: true
+        readOnly: true
       created:
         type: string
         format: date-time
@@ -198,7 +249,7 @@ model:
         $ref: 'common.yml#/model/ID'
       region_name:
         type: string
-        nullable: true
+        readOnly: true
       reservation_expiration:
         type: string
         format: date-time
@@ -210,12 +261,19 @@ model:
         description: Hard-limit expiration.
         nullable: true
       status:
-        type: string
-        nullable: true
+        $ref: '#/model/ClusterStatus'
+      quota:
+        anyOf:
+          - $ref: '#/model/Quota'
+          - nullable: true
+        example:
+          num_vcpus: 40
+          ram_mb: 200000
+          num_volumes: 40
+          volumes_gb: 540
       hosts:
         type: array
         readOnly: true
-        nullable: true
         items:
           $ref: '#/model/ClusterHost'
 
@@ -252,7 +310,7 @@ model:
               - $ref: 'common.yml#/model/ID'
               - nullable: true
           status:
-            type: string
+            $ref: '#/model/ClusterStatus'
       - properties:
           type:
             type: string
@@ -279,6 +337,7 @@ model:
           - readOnly: true
       fqdn:
         type: string
+        maxLength: 256
         format: hostname
       num_vcpus:
         type: integer
@@ -449,6 +508,30 @@ endpoints:
               - required:
                   - name
                   - tower_id
+                  - openstack
+                  - satellite
+                  - dns_server
+                  - vault_server
+                  - download_server
+              - properties:
+                  openstack:
+                    required:
+                      - url
+                      - credentials
+                      - project
+                      - domain_name
+                      - domain_id
+                      - networks
+                      - keyname
+                  satellite:
+                    required:
+                      - hostname
+                      - credentials
+                  dns_server:
+                    required:
+                      - hostname
+                      - zone
+                      - key
     responses:
       '200':
         description: Success

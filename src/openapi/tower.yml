@@ -9,6 +9,7 @@ model:
           - readOnly: true
       name:
         type: string
+        maxLength: 32
       description:
         type: string
       enabled:
@@ -16,6 +17,7 @@ model:
       url:
         type: string
         format: url
+        maxLength: 256
       verify_ssl:
         type: boolean
         description: Option to disable SSL certificate verification.
@@ -32,6 +34,7 @@ model:
           - readOnly: true
       name:
         type: string
+        maxLength: 256
       description:
         type: string
       server_id:
@@ -71,13 +74,13 @@ model:
       started_at:
         type: string
         format: date-time
-        x-nullable: true
+        nullable: true
       finished:
         type: boolean
       finished_at:
         type: string
         format: date-time
-        x-nullable: true
+        nullable: true
       failed:
         type: boolean
 
@@ -99,43 +102,43 @@ model:
         description: Date/Time job started
         type: string
         format: date-time
-        x-nullable: true
+        nullable: true
       finished:
         description: Date/Time job finished
         type: string
         format: date-time
-        x-nullable: true
+        nullable: true
       status:
         description: Job status
         type: string
       traceback:
         description: Traceback if failed
         type: string
-        x-nullable: true
+        nullable: true
       inventory:
         description: Inventory used by Job
         type: string
-        x-nullable: true
+        nullable: true
       project:
         description: Project job belongs to
         type: string
-        x-nullable: true
+        nullable: true
       playbook:
         description: Playbook executed in Job
         type: string
-        x-nullable: true
+        nullable: true
       credential:
         description: Credential used by Job
         type: string
-        x-nullable: true
+        nullable: true
       limit:
         description: Job limit
         type: string
-        x-nullable: true
+        nullable: true
       extra_vars:
         type: string
         description: Extra variables for playbook encoded as a dictionary within a string
-        x-nullable: true
+        nullable: true
       hosts:
         type: object
         additionalProperties:
@@ -162,11 +165,11 @@ model:
                   type: integer
                 ignored:
                   type: integer
-        x-nullable: true
+        nullable: true
       body:
         type: string
         description: Enumerates all the nodes in the workflow job with a description of the job associated with each
-        x-nullable: true
+        nullable: true
 
 parameters:
 
