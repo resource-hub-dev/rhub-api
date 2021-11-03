@@ -1,10 +1,20 @@
-## Description:
-**Short summary:**
+<!--
+
 Please add a short description of the change.
 
-When applicable, link the PR to the appropriate issue
-Fixes: #number-of-GH-issue
+Before opening a PR follow the steps in CONTRIBUTING.md.
 
-## Checklist:
- - [ ] Related tests were updated
- - [ ] Related documentation was updated
+When applicable, link the PR to the appropriate issue
+
+-->
+
+### Fixes
+
+- #<number>
+
+### Checklist
+
+- [ ] Related tests were updated
+- [ ] Related documentation was updated
+- [ ] OpenAPI file was updated
+- [ ] Run `tox`, no tests failed

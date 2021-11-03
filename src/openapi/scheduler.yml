@@ -106,9 +106,9 @@ endpoints:
             allOf:
               - $ref: '#/model/CronJob'
               - required:
+                  - job_name
                   - name
                   - time_expr
-                  - job_name
     responses:
       '200':
         description: Success

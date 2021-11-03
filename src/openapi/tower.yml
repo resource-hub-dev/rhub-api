@@ -261,9 +261,9 @@ endpoints:
             allOf:
               - $ref: '#/model/Server'
               - required:
+                  - credentials
                   - name
                   - url
-                  - credentials
           example:
             name: default
             url: https://tower.example.com

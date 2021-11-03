@@ -184,34 +184,34 @@ model:
     nullable: true
     enum:
       - Active
-      - Pre-Provisioning Queued
-      - Pre-Provisioning
-      - Pre-Provisioning Failed
-      - Provisioning Queued
-      - Provisioning
-      - Provisioning Failed
-      - Post-Provisioning Queued
-      - Post-Provisioning
-      - Post-Provisioning Failed
-      - Pre-Installation Queued
-      - Pre-Installing
-      - Pre-Installation Failed
-      - Installation Queued
-      - Installing
-      - Installation Failed
-      - Post-Installation Queued
-      - Post-Installing
-      - Post-Installation Failed
-      - Pre-Deletion Queued
-      - Pre-Deleting
-      - Pre-Deletion Failed
-      - Deletion Queued
+      - Deleted
       - Deleting
       - Deletion Failed
-      - Post-Deletion Queued
+      - Deletion Queued
+      - Installation Failed
+      - Installation Queued
+      - Installing
       - Post-Deleting
       - Post-Deletion Failed
-      - Deleted
+      - Post-Deletion Queued
+      - Post-Installation Failed
+      - Post-Installation Queued
+      - Post-Installing
+      - Post-Provisioning
+      - Post-Provisioning Failed
+      - Post-Provisioning Queued
+      - Pre-Deleting
+      - Pre-Deletion Failed
+      - Pre-Deletion Queued
+      - Pre-Installation Failed
+      - Pre-Installation Queued
+      - Pre-Installing
+      - Pre-Provisioning
+      - Pre-Provisioning Failed
+      - Pre-Provisioning Queued
+      - Provisioning
+      - Provisioning Failed
+      - Provisioning Queued
 
   Cluster:
     type: object
@@ -506,32 +506,32 @@ endpoints:
             allOf:
               - $ref: '#/model/Region'
               - required:
+                  - dns_server
+                  - download_server
                   - name
-                  - tower_id
                   - openstack
                   - satellite
-                  - dns_server
+                  - tower_id
                   - vault_server
-                  - download_server
               - properties:
                   openstack:
                     required:
-                      - url
                       - credentials
-                      - project
-                      - domain_name
                       - domain_id
-                      - networks
+                      - domain_name
                       - keyname
+                      - networks
+                      - project
+                      - url
                   satellite:
                     required:
-                      - hostname
                       - credentials
+                      - hostname
                   dns_server:
                     required:
                       - hostname
-                      - zone
                       - key
+                      - zone
     responses:
       '200':
         description: Success
