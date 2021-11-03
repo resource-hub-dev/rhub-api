@@ -142,8 +142,8 @@ endpoints:
             allOf:
               - $ref: '#/model/Policy'
               - required:
-                  - name
                   - department
+                  - name
           example:
             name: Test User
             department: Test Department
