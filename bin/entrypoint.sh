@@ -13,5 +13,5 @@ fi
 
 exec dockerize \
     -wait tcp://$DB_HOST:$DB_PORT \
-    -wait ${KEYCLOAK_SERVER}realms/$KEYCLOAK_REALM -timeout 30s \
+    -wait ${KEYCLOAK_SERVER}realms/$KEYCLOAK_REALM -timeout ${KEYCLOAK_TIMEOUT:30s} \
     gunicorn --bind 0.0.0.0:8081 --log-level ${LOG_LEVEL:-info} "$RHUB_APP"
