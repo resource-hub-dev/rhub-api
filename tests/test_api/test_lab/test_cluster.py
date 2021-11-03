@@ -77,6 +77,8 @@ def test_list_clusters(client, keycloak_mock, mocker):
             status=model.ClusterStatus.ACTIVE,
         ),
     ]
+    mocker.patch.object(model.Cluster, 'hosts', [])
+    mocker.patch.object(model.Cluster, 'quota', None)
     model.Cluster.query.count.return_value = 1
 
     rv = client.get(
@@ -102,13 +104,15 @@ def test_list_clusters(client, keycloak_mock, mocker):
                 'region_name': 'test',
                 'user_name': 'test-user',
                 'group_name': None,
+                'hosts': [],
+                'quota': None,
             },
         ],
         'total': 1,
     }
 
 
-def test_get_cluster(client, keycloak_mock):
+def test_get_cluster(client, keycloak_mock, mocker):
     user_id = '00000000-0000-0000-0000-000000000000'
     sample_region = _create_test_region()
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
@@ -126,6 +130,8 @@ def test_get_cluster(client, keycloak_mock):
         lifespan_expiration=None,
         status=model.ClusterStatus.ACTIVE,
     )
+    mocker.patch.object(model.Cluster, 'hosts', [])
+    mocker.patch.object(model.Cluster, 'quota', None)
 
     rv = client.get(
         f'{API_BASE}/lab/cluster/1',
@@ -151,12 +157,14 @@ def test_get_cluster(client, keycloak_mock):
         'region_name': 'test',
         'user_name': 'test-user',
         'group_name': None,
+        'hosts': [],
+        'quota': None,
     }
 
 
-def test_create_cluster(client, keycloak_mock, db_session_mock):
+def test_create_cluster(client, keycloak_mock, db_session_mock, mocker):
     user_id = '00000000-0000-0000-0000-000000000000'
-    model.Region.query.get.return_value = _create_test_region()
+    model.Region.query.get.return_value = region = _create_test_region()
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
     cluster_data = {
         'name': 'testcluster',
@@ -168,6 +176,11 @@ def test_create_cluster(client, keycloak_mock, db_session_mock):
 
     model.Cluster.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
+
+    def db_commit():
+        mocker.patch.object(model.Cluster, 'region', region)
+
+    db_session_mock.commit.side_effect = db_commit
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',

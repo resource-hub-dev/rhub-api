@@ -9,14 +9,15 @@ model:
           - readOnly: true
       name:
         type: string
+        maxLength: 128
       description:
         type: string
-        nullable: true
       enabled:
         type: boolean
       time_expr:
         description: cron time expression
         type: string
+        maxLength: 128
       job_name:
         type: string
         enum:

@@ -11,7 +11,7 @@ class SchedulerCronJob(db.Model, ModelMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), unique=True, nullable=False)
-    description = db.Column(db.Text, nullable=True)
+    description = db.Column(db.Text, default='', nullable=False)
     enabled = db.Column(db.Boolean, default=True)
     #: cron time expression, see man 5 crontab
     time_expr = db.Column(db.String(128), nullable=False)

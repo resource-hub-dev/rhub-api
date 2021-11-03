@@ -11,7 +11,7 @@ class Server(db.Model, ModelMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(32), unique=True, nullable=False)
-    description = db.Column(db.Text, nullable=True)
+    description = db.Column(db.Text, default='', nullable=False)
     enabled = db.Column(db.Boolean, default=True)
     url = db.Column(db.String(256), nullable=False)
     verify_ssl = db.Column(db.Boolean, default=True)
@@ -43,7 +43,7 @@ class Template(db.Model, ModelMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256), unique=True, nullable=False)
-    description = db.Column(db.Text, nullable=True)
+    description = db.Column(db.Text, default='', nullable=False)
     #: Reference to Tower server (:attr:`Server.id`).
     server_id = db.Column(db.Integer, db.ForeignKey('tower_server.id'),
                           nullable=False)

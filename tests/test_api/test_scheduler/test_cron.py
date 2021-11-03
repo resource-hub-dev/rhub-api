@@ -22,7 +22,7 @@ def test_list(client):
         model.SchedulerCronJob(
             id=1,
             name='example-job',
-            description=None,
+            description='',
             enabled=True,
             time_expr='0 */2 * * *',
             job_name='example',
@@ -43,7 +43,7 @@ def test_list(client):
             {
                 'id': 1,
                 'name': 'example-job',
-                'description': None,
+                'description': '',
                 'enabled': True,
                 'time_expr': '0 */2 * * *',
                 'job_name': 'example',
@@ -110,7 +110,7 @@ def test_get(client):
     model.SchedulerCronJob.query.get.return_value = model.SchedulerCronJob(
         id=1,
         name='example-job',
-        description=None,
+        description='',
         enabled=True,
         time_expr='0 */2 * * *',
         job_name='example',
@@ -127,7 +127,7 @@ def test_get(client):
     assert rv.json == {
         'id': 1,
         'name': 'example-job',
-        'description': None,
+        'description': '',
         'enabled': True,
         'time_expr': '0 */2 * * *',
         'job_name': 'example',
@@ -140,7 +140,7 @@ def test_update(client, db_session_mock):
     cron_job = model.SchedulerCronJob(
         id=1,
         name='example-job',
-        description=None,
+        description='',
         enabled=True,
         time_expr='0 */2 * * *',
         job_name='example',
@@ -170,7 +170,7 @@ def test_update_duplicate_name(client, db_session_mock):
     cron_job = model.SchedulerCronJob(
         id=1,
         name='example',
-        description=None,
+        description='',
         enabled=True,
         time_expr='0 */2 * * *',
         job_name='example',
@@ -197,7 +197,7 @@ def test_delete(client, db_session_mock):
     cron_job = model.SchedulerCronJob(
         id=1,
         name='example-job',
-        description=None,
+        description='',
         enabled=True,
         time_expr='0 */2 * * *',
         job_name='example',

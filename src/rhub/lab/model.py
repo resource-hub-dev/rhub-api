@@ -255,18 +255,28 @@ class Cluster(db.Model, ModelMixin):
         return None
 
     def to_dict(self):
-        data = super().to_dict()
-        if self.region:
-            data['region_name'] = self.region.name
         keycloak = di.get(KeycloakClient)
-        data['user_name'] = keycloak.user_get(self.user_id)['username'] \
-            if self.user_id is not None else None
-        data['group_name'] = keycloak.group_get(self.group_id)['name'] \
-            if self.group_id is not None else None
+
+        data = super().to_dict()
+
+        data['region_name'] = self.region.name
+        data['user_name'] = keycloak.user_get(self.user_id)['username']
+
+        if self.group_id:
+            data['group_name'] = keycloak.group_get(self.group_id)['name']
+        else:
+            data['group_name'] = None
+
         if self.quota:
             data['quota'] = self.quota.to_dict()
+        else:
+            data['quota'] = None
+
         if self.hosts:
             data['hosts'] = [host.to_dict() for host in self.hosts]
+        else:
+            data['hosts'] = []
+
         if self.status:
             data['status'] = self.status.value
         else:
