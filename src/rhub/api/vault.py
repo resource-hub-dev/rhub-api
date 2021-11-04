@@ -70,7 +70,7 @@ class FileVault(Vault):
     def write(self, path, data):
         self._data[path] = data
         with open(self._datafile, 'w') as f:
-            self._data = yaml.safe_dump(self._data, f)
+            yaml.safe_dump(self._data, f)
 
 
 class VaultModule(injector.Module):
