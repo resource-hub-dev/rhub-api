@@ -28,11 +28,13 @@ def setup():
 
     if ADMIN_GROUP not in groups:
         logger.info(f'Creating admin group "{ADMIN_GROUP}"')
-        groups[ADMIN_GROUP] = keycloak.group_create({'name': ADMIN_GROUP})
+        admin_group_id = keycloak.group_create({'name': ADMIN_GROUP})
+        groups[ADMIN_GROUP] = keycloak.group_get(admin_group_id)
 
     if ADMIN_ROLE not in roles:
         logger.info(f'Creating admin role "{ADMIN_ROLE}"')
-        roles[ADMIN_ROLE] = keycloak.role_create({'name': ADMIN_ROLE})
+        admin_role_name = keycloak.role_create({'name': ADMIN_ROLE})
+        roles[ADMIN_ROLE] = keycloak.role_get(admin_role_name)
 
     if not any(role['name'] == ADMIN_ROLE
                for role in keycloak.group_role_list(groups[ADMIN_GROUP]['id'])):
