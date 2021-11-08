@@ -4,18 +4,33 @@ Resource Hub API/backend service
 
 Usage:
 
-```sh
-make init
-make install
-make start
+```bash
+# creates new configuration files for customization...
+cp -n .env.defaults .env
+cp -n config/keycloak-config.json.defaults config/keycloak-config.json
+cp -n data/vault.example.yml data/vault.yml
+
+# Build and start containers
+docker-compose build --progress=plain # creates rhub-api docker image
+docker-compose up  # starts the api
+```
+
+Additionaly, for conveniency, there is a `Makefile` with some useful commands:
+
+```bash
+$ make init           # create new customized .env and vault.yml files
+$ make build          # build docker image
+$ make build-no-cache # build docker image, ignoring the cache
+$ make start          # start the orchestration using docker-compose
+$ make stop           # stop orchestration
+$ make test           # run unit tests (needs PYTHONPATH or virtualenv set)
 ```
 
 ## Requirements
 
 The API requires other services (keycloak, database, etc) in order to function.
 Some of the configuration comes from environment variables. Docker-compose in
-this repository is configured to read variables from `.env` file that is created
-by `make init` command.
+this repository is configured to read variables from the customized `.env` file.
 
 ### Keycloak
 
@@ -38,13 +53,13 @@ Once you have configured the Keycloak, go to your client configuration, open the
 parameters that are required by the API/backed, copy-paste them to appropriate
 variables in `.env` file (see below).
 
-* `KEYCLOAK_SERVER` - .auth-server-url from OIDC JSON
-* `KEYCLOAK_RESOURCE` - .resource from OIDC JSON
-* `KEYCLOAK_REALM` - .realm from OIDC JSON
-* `KEYCLOAK_SECRET` - .credentials.secret from OIDC JSON
+* `KEYCLOAK_ADMIN_PASS` - .admin password
 * `KEYCLOAK_ADMIN_USER` - .admin username or any user that can manage users,
   groups an roles in Keycloak (has "manage-user" and "manage-realm" roles)
-* `KEYCLOAK_ADMIN_PASS` - .admin password
+* `KEYCLOAK_REALM` - .realm from OIDC JSON
+* `KEYCLOAK_RESOURCE` - .resource from OIDC JSON
+* `KEYCLOAK_SECRET` - .credentials.secret from OIDC JSON
+* `KEYCLOAK_SERVER` - .auth-server-url from OIDC JSON
 
 ### PostgreSQL
 

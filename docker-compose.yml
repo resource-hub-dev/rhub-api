@@ -1,24 +1,56 @@
 version: '3.5'
+
 networks:
   default:
     name: rhub-development
+
 services:
-  api:
-    image: registry.access.redhat.com/ubi8/python-38
+  rhub-api:
+    build:
+        context: .
+    image: quay.io/resource-hub-dev/rhub-api
     volumes:
-      - .:/opt/app-root/src:delegated
+      - .:/opt/app-root/src:delegated,z
+      - ./data/vault-data.yml:/srv/vault-data.yml:delegated,z
     environment:
-      PYTHONPATH: /opt/app-root/src/src:/opt/app-root/src/packages
+      FLASK_APP: ${FLASK_APP:-rhub.api:create_app()}
+      FLASK_ENV: ${FLASK_ENV:-development}
+      FLASK_RUN_HOST: ${FLASK_RUN_HOST:-0.0.0.0}
+      FLASK_RUN_PORT: ${FLASK_RUN_PORT:-8081}
+      HOME: /opt/app-root/home
+      PYTHONPATH: /opt/app-root/src/src:/opt/app-root/src/src/rhub:/opt/app-root/packages
       PYTHONDONTWRITEBYTECODE: please
       # don't pollute /opt/app-root/src with home crap
-      HOME: /opt/app-root/home
-      RHUB_SKIP_INIT:  # pass env var
-      FLASK_APP: rhub.api:create_app()
-      FLASK_ENV: development
-      FLASK_RUN_HOST: 0.0.0.0
-      FLASK_RUN_PORT: 8081
+      RHUB_SKIP_INIT: ${RHUB_SKIP_INIT:-False}
+      RHUB_RETURN_INITIAL_FLASK_APP: ${RHUB_RETURN_INITIAL_FLASK_APP:-False}
     env_file:
       - .env
     ports:
-      - 8081:8081
-    command: [bash, -c, python3 -m flask init && python3 -m flask run]
+      - 5000:8081
+    #command: [tail, -f, /dev/null]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:${RHUB_IMAGE_KEYCLOAK_VERSION:-15.0.2}
+    env_file:
+      - .env
+    ports:
+      - 8080:8080
+    volumes:
+        - ./config/keycloak-config.json:/srv/rhub-keycloak-config.json:delegated,z
+
+  postgres:
+    image: postgres:${RHUB_IMAGE_POSTGRES_VERSION:-13}
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+networks:
+  rhub-development:
+
+volumes:
+  postgres_data:
+  rhub-api:
+  rhub-app:

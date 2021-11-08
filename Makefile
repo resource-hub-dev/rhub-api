@@ -5,22 +5,25 @@ init:
 	-cp -n data/vault.example.yml data/vault.yml
 
 build:
-	docker build -t quay.io/resource-hub-dev/rhub-api --no-cache --force-rm .
-	@# Simple sanity check.
-	docker run --rm \
-		--env-file .env.defaults \
-		-e RHUB_SKIP_INIT=yes \
-		-e FLASK_APP='rhub.api:create_app()' \
-		quay.io/resource-hub-dev/rhub-api \
-		python3 -m flask routes
+	docker build -t quay.io/resource-hub-dev/rhub-api --progress=plain .
 
-install:
-	mkdir -p ./packages
-	chmod 777 ./packages
-	docker-compose run --rm api pip3 install --upgrade -r ./requirements.txt -t ./packages
+build-no-cache:
+	docker build -t quay.io/resource-hub-dev/rhub-api --progress=plain --no-cache .
+
+down:
+	docker-compose down -v
+
+push:
+	docker push quay.io/resource-hub-dev/rhub-api:latest
 
 start:
 	docker-compose up --force-recreate
+
+stop:
+	docker-compose down
+
+test:
+	pytest -s tests/
 
 .PHONY: docs
 docs:

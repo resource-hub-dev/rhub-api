@@ -1,18 +1,28 @@
-# https://catalog.redhat.com/software/containers/ubi8/python-38/5dde9cacbed8bd164a0af24a
-FROM registry.access.redhat.com/ubi8/python-38
+FROM registry.access.redhat.com/ubi8/python-39
 
-ENV PYTHONPATH=/opt/app-root/src/src:/opt/app-root/src/packages
+ENV PATH "$PATH:/opt/app-root/packages/bin/"
+ENV PYTHONPATH=/opt/app-root/src/src:/opt/app-root/packages
+
+COPY ./requirements.txt ./requirements.txt
+RUN pip3 install --upgrade -r ./requirements.txt -t ../packages
 COPY . .
-RUN pip3 install --upgrade -r ./requirements.txt -t ./packages
 
 USER 0
 
-ENV DOCKERIZE_VERSION v0.6.1
-RUN wget -q https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
-    && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
-    && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
+RUN chown -R 1001:0 /opt/app-root
 
 # "default" user in the ubi container
 USER 1001
 
+WORKDIR /opt/app-root/src/
+
+RUN set -a; source ./.env.defaults; set +a; \
+    export DB_TYPE='postgresql'; \
+    export FLASK_ENV='development'; \
+    export FLASK_APP='rhub.api:create_app()'; \
+    export PYTHONPATH=/opt/app-root/src/src:/opt/app-root/src/src/rhub:/opt/app-root/packages \
+    export RHUB_RETURN_INITIAL_FLASK_APP=True; \
+    python3 -m flask routes;
+
 CMD ["./bin/entrypoint.sh"]
+

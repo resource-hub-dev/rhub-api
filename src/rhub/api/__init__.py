@@ -5,14 +5,14 @@ import connexion
 import click
 import prance
 import injector
-from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
 from flask.cli import with_appcontext
+from flask_cors import CORS
 from flask_injector import FlaskInjector
+from flask_sqlalchemy import SQLAlchemy
 
 import rhub
-from rhub.auth.keycloak import KeycloakModule
 from rhub.api.vault import Vault, VaultModule
+from rhub.auth.keycloak import KeycloakModule
 from rhub.scheduler import SchedulerModule
 
 
@@ -72,6 +72,10 @@ def create_app():
         coloredlogs.install(level=flask_app.config['LOG_LEVEL'])
     except ImportError:
         logging.basicConfig(level=flask_app.config['LOG_LEVEL'])
+
+    RHUB_RETURN_INITIAL_FLASK_APP = os.getenv('RHUB_RETURN_INITIAL_FLASK_APP', 'False')
+    if str(RHUB_RETURN_INITIAL_FLASK_APP).lower() == 'true':
+        return flask_app
 
     FlaskInjector(
         app=flask_app,
