@@ -1,4 +1,7 @@
-/packages
-/.tox
-__pycache__
 /.env
+/.tox
+/packages
+__pycache__
+.coverage
+.DS_Store
+keycloak-config.json

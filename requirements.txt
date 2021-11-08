@@ -1,17 +1,19 @@
-gunicorn
-connexion[swagger-ui]
-flask-cors
-python-keycloak == 0.25.0
-flask-sqlalchemy
-psycopg2-binary
-pyyaml
-hvac
-requests
 attrs
-tenacity
-prance
-dpath
-python-dateutil
+coloredlogs
+connexion[swagger-ui]
 cron-validator
+dpath
 flask-apscheduler
+flask-cors
+flask-dotenv
+flask-sqlalchemy
 flask_injector
+gunicorn
+hvac
+prance
+psycopg2-binary
+python-dateutil
+python-keycloak == 0.25.0
+pyyaml
+requests
+tenacity

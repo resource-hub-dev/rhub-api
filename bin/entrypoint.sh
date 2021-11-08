@@ -1,17 +1,15 @@
 #!/usr/bin/env bash
 set -e
 
-export PATH="./packages/bin:$PATH"
+echo "Waiting for keycloak..."
+CURL_OPTS='--retry 10 --retry-delay 6 --retry-connrefused -sSf'
+curl $CURL_OPTS http://keycloak:8080 2>&1 > /dev/null
 
-export RHUB_APP='rhub.api:create_app()'
-
-if [[ $RHUB_SKIP_INIT != yes ]] ; then
-    FLASK_APP="$RHUB_APP" \
-        dockerize -wait tcp://$DB_HOST:$DB_PORT \
-        python3 -m flask init
+if [[ $RHUB_SKIP_INIT != "True" ]]; then
+    echo 'Calling flask initialization...'
+    flask init
+    echo 'Flask initialization finished.'
 fi
 
-exec dockerize \
-    -wait tcp://$DB_HOST:$DB_PORT \
-    -wait ${KEYCLOAK_SERVER}realms/$KEYCLOAK_REALM -timeout ${KEYCLOAK_TIMEOUT:-"30s"} \
-    gunicorn --bind 0.0.0.0:8081 --log-level ${LOG_LEVEL:-info} "$RHUB_APP"
+gunicorn -c config.py "$FLASK_APP"
+

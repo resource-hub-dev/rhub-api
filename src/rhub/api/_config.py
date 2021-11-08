@@ -15,8 +15,9 @@ WEBHOOK_VAULT_PATH = os.getenv('WEBHOOK_VAULT_PATH')
 
 # DB_TYPE can be 'postgresq', 'postgresql+psycopg', ... any postgres
 # implementation.
-if 'postgresql' not in os.environ.get('DB_TYPE', ''):
-    raise Exception('Unsupported database, only postgresql is supported')
+db_type = os.environ.get('DB_TYPE', '')
+if 'postgresql' not in db_type:
+    raise Exception(f"Unsupported database: '{db_type}', only postgresql is supported")
 
 # See https://docs.sqlalchemy.org/en/14/core/engines.html
 SQLALCHEMY_DATABASE_URI = (
