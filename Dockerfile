@@ -16,8 +16,7 @@ USER 1001
 
 WORKDIR /opt/app-root/src/
 
-RUN set -a; source ./.env.defaults; set +a; \
-    export DB_TYPE='postgresql'; \
+RUN export RHUB_DB_TYPE='postgresql'; \
     export FLASK_ENV='development'; \
     export FLASK_APP='rhub.api:create_app()'; \
     export PYTHONPATH=/opt/app-root/src/src:/opt/app-root/src/src/rhub:/opt/app-root/packages \

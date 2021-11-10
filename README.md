@@ -15,7 +15,7 @@ docker-compose build --progress=plain # creates rhub-api docker image
 docker-compose up  # starts the api
 ```
 
-Additionaly, for conveniency, there is a `Makefile` with some useful commands:
+Additionally, for convenience, there is a `Makefile` with some useful commands:
 
 ```bash
 $ make init           # create new customized .env and vault.yml files
@@ -66,12 +66,12 @@ variables in `.env` file (see below).
 In the PostgreSQL you just need to create database and user, tables and other
 object are created automatically on first start.
 
-* `DB_TYPE=postgresql`
-* `DB_HOST`
-* `DB_PORT`
-* `DB_USERNAME`
-* `DB_PASSWORD`
-* `DB_DATABASE`
+* `RHUB_DB_DATABASE`
+* `RHUB_DB_HOST`
+* `RHUB_DB_PASSWORD`
+* `RHUB_DB_PORT`
+* `RHUB_DB_TYPE`
+* `RHUB_DB_USERNAME`
 
 ### HashiCorp Vault
 
