@@ -23,7 +23,7 @@ stop:
 	docker-compose down
 
 test:
-	pytest -s tests/
+	tox
 
 .PHONY: docs
 docs:

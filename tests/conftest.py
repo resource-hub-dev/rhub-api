@@ -68,12 +68,12 @@ def db_session_mock(mocker):
 @pytest.fixture
 def client(mocker, temp_dir):
     mocker.patch.dict('os.environ', {
-        'DB_TYPE': 'postgresql',
-        'DB_HOST': 'localhost',
-        'DB_PORT': '5432',
-        'DB_USERNAME': 'test',
-        'DB_PASSWORD': 'test',
-        'DB_DATABASE': 'test',
+        'RHUB_DB_TYPE': 'postgresql',
+        'RHUB_DB_HOST': 'localhost',
+        'RHUB_DB_PORT': '5432',
+        'RHUB_DB_USERNAME': 'test',
+        'RHUB_DB_PASSWORD': 'test',
+        'RHUB_DB_DATABASE': 'test',
     })
 
     app = create_app()

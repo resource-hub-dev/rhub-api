@@ -15,7 +15,7 @@ WEBHOOK_VAULT_PATH = os.getenv('WEBHOOK_VAULT_PATH')
 
 # DB_TYPE can be 'postgresq', 'postgresql+psycopg', ... any postgres
 # implementation.
-db_type = os.environ.get('DB_TYPE', '')
+db_type = os.getenv('RHUB_DB_TYPE', '')
 if 'postgresql' not in db_type:
     raise Exception(f"Unsupported database: '{db_type}', only postgresql is supported")
 
@@ -23,12 +23,12 @@ if 'postgresql' not in db_type:
 SQLALCHEMY_DATABASE_URI = (
     '{type}://{username}:{password}@{host}:{port}/{database}'
     .format(
-        type=os.environ['DB_TYPE'],
-        host=os.environ['DB_HOST'],
-        port=os.environ['DB_PORT'],
-        username=os.environ['DB_USERNAME'],
-        password=urllib.parse.quote_plus(os.environ['DB_PASSWORD']),
-        database=os.environ['DB_DATABASE'],
+        type=os.getenv('RHUB_DB_TYPE', ''),
+        host=os.getenv('RHUB_DB_HOST', ''),
+        port=os.getenv('RHUB_DB_PORT', ''),
+        username=os.getenv('RHUB_DB_USERNAME', ''),
+        password=urllib.parse.quote_plus(os.getenv('RHUB_DB_PASSWORD', '')),
+        database=os.getenv('RHUB_DB_DATABASE', '')
     )
 )
 SQLALCHEMY_TRACK_MODIFICATIONS = False
