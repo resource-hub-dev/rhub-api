@@ -31,6 +31,7 @@ def test_list_products(client):
             id=1,
             name='dummy',
             description='dummy',
+            enabled=True,
             tower_template_name='dummy',
             parameters=[],
         ),
@@ -49,6 +50,7 @@ def test_list_products(client):
                 'id': 1,
                 'name': 'dummy',
                 'description': 'dummy',
+                'enabled': True,
                 'tower_template_name': 'dummy',
                 'parameters': [],
             },
@@ -62,6 +64,7 @@ def test_get_product(client):
         id=1,
         name='dummy',
         description='dummy',
+        enabled=True,
         tower_template_name='dummy',
         parameters=[],
     )
@@ -76,6 +79,7 @@ def test_get_product(client):
         'id': 1,
         'name': 'dummy',
         'description': 'dummy',
+        'enabled': True,
         'tower_template_name': 'dummy',
         'parameters': [],
     }
@@ -85,6 +89,7 @@ def test_create_product(client, db_session_mock):
     product_data = {
         'name': 'dummy',
         'description': 'dummy',
+        'enabled': True,
         'tower_template_name': 'dummy',
         'parameters': [],
     }
@@ -113,6 +118,7 @@ def test_update_product(client, db_session_mock):
         id=1,
         name='dummy',
         description='dummy',
+        enabled=True,
         tower_template_name='dummy',
         parameters=[],
     )
@@ -140,6 +146,7 @@ def test_delete_product(client, db_session_mock):
         id=1,
         name='dummy',
         description='dummy',
+        enabled=True,
         tower_template_name='dummy',
         parameters=[],
     )

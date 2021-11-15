@@ -379,6 +379,8 @@ model:
         maxLength: 64
       description:
         type: string
+      enabled:
+        type: boolean
       tower_template_name:
         type: string
         maxLength: 128

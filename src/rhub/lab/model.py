@@ -392,6 +392,7 @@ class Product(db.Model, ModelMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
     description = db.Column(db.Text, nullable=False, default='')
+    enabled = db.Column(db.Boolean, default=True)
     tower_template_name = db.Column(db.String(128), nullable=False)
     parameters = db.Column(db.JSON, nullable=False)
 
