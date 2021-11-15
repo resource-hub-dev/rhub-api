@@ -63,6 +63,7 @@ def _create_test_product():
         id=1,
         name='dummy',
         description='dummy',
+        enabled=True,
         tower_template_name='dummy',
         parameters={},
     )
