@@ -646,14 +646,21 @@ endpoints:
             schema:
               type: array
               items:
-                $ref: '#/model/Product'
+                type: object
+                properties:
+                  id:
+                    $ref: 'common.yml#/model/ID'
+                  enabled:
+                    type: boolean
+                  product:
+                    $ref: '#/model/Product'
       default:
         $ref: 'common.yml#/responses/problem'
     security:
       - oauth2: []
 
   region_add_product:
-    summary: Add product to region
+    summary: Add product to region or disable/enable product in region
     tags: [lab]
     operationId: rhub.api.lab.region.add_region_product
     parameters:
@@ -669,6 +676,15 @@ endpoints:
             properties:
               id:
                 $ref: 'common.yml#/model/ID'
+              enabled:
+                type: boolean
+          examples:
+            add:
+              summary: Add product to region
+              value: {"id": 1}
+            disable:
+              summary: Disable product in region
+              value: {"id": 1, "enabled": false}
     responses:
       '204':
         description: Success
@@ -854,7 +870,14 @@ endpoints:
             schema:
               type: array
               items:
-                $ref: '#/model/Region'
+                type: object
+                properties:
+                  id:
+                    $ref: 'common.yml#/model/ID'
+                  enabled:
+                    type: boolean
+                  region:
+                    $ref: '#/model/Region'
       default:
         $ref: 'common.yml#/responses/problem'
     security:

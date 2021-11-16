@@ -200,6 +200,14 @@ def delete_region(keycloak: KeycloakClient, region_id, user):
         if not keycloak.user_check_group(user, region.owner_group):
             raise Forbidden("You don't have write access to this region.")
 
+    q = model.RegionProduct.query.filter(
+        model.RegionProduct.region_id == region.id,
+    )
+    if q.count() > 0:
+        for relation in q.all():
+            db.session.delete(relation)
+        db.session.flush()
+
     db.session.delete(region)
 
     try:
@@ -230,7 +238,10 @@ def list_region_products(keycloak: KeycloakClient, region_id, user):
                     user, [region.users_group, region.owner_group]):
                 raise Forbidden("You don't have access to this region.")
 
-    return [product.to_dict() for product in region.products]
+    return [
+        {'id': r.product_id, 'product': r.product.to_dict(), 'enabled': r.enabled}
+        for r in region.products_relation
+    ]
 
 
 def add_region_product(keycloak: KeycloakClient, region_id, body, user):
@@ -251,13 +262,21 @@ def add_region_product(keycloak: KeycloakClient, region_id, body, user):
         model.RegionProduct.product_id == product.id,
     ))
     if q.count() == 0:
-        relation = model.RegionProduct(region_id=region.id, product_id=product.id)
+        relation = model.RegionProduct(
+            region_id=region.id,
+            product_id=product.id,
+            enabled=body.get('enabled', True),
+        )
         db.session.add(relation)
         db.session.commit()
         logger.info(
             f'Added Product {product.name} (id {product.id}) to Region {region.name} '
             f'(id {region.id}) by user {user}'
         )
+    elif 'enabled' in body:
+        for relation in q.all():
+            relation.enabled = body['enabled']
+        db.session.commit()
 
 
 def delete_region_product(keycloak: KeycloakClient, region_id, user):
