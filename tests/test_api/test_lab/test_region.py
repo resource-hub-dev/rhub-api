@@ -810,6 +810,7 @@ def test_delete_region(client, keycloak_mock, db_session_mock):
         tower_id=1,
     )
     model.Region.query.get.return_value = region
+    model.RegionProduct.query.filter.return_value.count.return_value = 0
 
     keycloak_mock.group_get.return_value = {
         'id': group_id,
@@ -831,14 +832,19 @@ def test_delete_region(client, keycloak_mock, db_session_mock):
 
 
 def test_region_list_products(client):
-    products = [
-        model.Product(
-            id=1,
-            name='dummy',
-            description='dummy',
+    products_relation = [
+        model.RegionProduct(
+            region_id=1,
+            product_id=1,
+            product=model.Product(
+                id=1,
+                name='dummy',
+                description='dummy',
+                enabled=True,
+                tower_template_name='dummy',
+                parameters=[],
+            ),
             enabled=True,
-            tower_template_name='dummy',
-            parameters=[],
         ),
     ]
 
@@ -871,7 +877,7 @@ def test_region_list_products(client):
         dns_server_key='kv/example/key',
         vault_server='https://vault.example.com/',
         download_server='https://download.example.com',
-        products=products,
+        products_relation=products_relation
     )
 
     rv = client.get(
@@ -883,11 +889,15 @@ def test_region_list_products(client):
     assert rv.json == [
         {
             'id': 1,
-            'name': 'dummy',
-            'description': 'dummy',
+            'product': {
+                'id': 1,
+                'name': 'dummy',
+                'description': 'dummy',
+                'enabled': True,
+                'tower_template_name': 'dummy',
+                'parameters': [],
+            },
             'enabled': True,
-            'tower_template_name': 'dummy',
-            'parameters': [],
         },
     ]
 
@@ -922,7 +932,7 @@ def test_region_add_product(client, db_session_mock):
         dns_server_key='kv/example/key',
         vault_server='https://vault.example.com/',
         download_server='https://download.example.com',
-        products=[],
+        products_relation=[],
     )
 
     model.Product.query.get.return_value = model.Product(
@@ -949,6 +959,66 @@ def test_region_add_product(client, db_session_mock):
     region_product = db_session_mock.add.call_args.args[0]
     assert region_product.region_id == 1
     assert region_product.product_id == 10
+    assert region_product.enabled is True
+
+
+def test_region_disable_product(client, db_session_mock):
+    model.Region.query.get.return_value = model.Region(
+        id=1,
+        name='test',
+        location='RDU',
+        description='',
+        banner='',
+        enabled=True,
+        quota_id=None,
+        lifespan_length=None,
+        reservations_enabled=True,
+        reservation_expiration_max=7,
+        owner_group='00000000-0000-0000-0000-000000000000',
+        users_group=None,
+        tower_id=1,
+        openstack_url='https://openstack.example.com:13000',
+        openstack_credentials='kv/example/openstack',
+        openstack_project='rhub',
+        openstack_domain_name='Default',
+        openstack_domain_id='default',
+        openstack_networks=['provider_net_rhub'],
+        openstack_keyname='rhub_key',
+        satellite_hostname='satellite.example.com',
+        satellite_insecure=False,
+        satellite_credentials='kv/example/satellite',
+        dns_server_hostname='ns.example.com',
+        dns_server_zone='example.com.',
+        dns_server_key='kv/example/key',
+        vault_server='https://vault.example.com/',
+        download_server='https://download.example.com',
+        products_relation=[],
+    )
+
+    model.Product.query.get.return_value = model.Product(
+        id=10,
+        name='dummy',
+        description='dummy',
+        tower_template_name='dummy',
+        parameters=[],
+    )
+
+    region_product = model.RegionProduct(region_id=1, product_id=10, enabled=True)
+
+    model.RegionProduct.query.filter.return_value.count.return_value = 1
+    model.RegionProduct.query.filter.return_value.all.return_value = [region_product]
+
+    rv = client.post(
+        f'{API_BASE}/lab/region/1/products',
+        headers={'Authorization': 'Bearer foobar'},
+        json={'id': 10, 'enabled': False},
+    )
+
+    assert rv.status_code == 204
+
+    db_session_mock.commit.assert_called()
+
+    assert region_product.enabled is False
 
 
 def test_region_delete_product(client, db_session_mock):
@@ -981,7 +1051,7 @@ def test_region_delete_product(client, db_session_mock):
         dns_server_key='kv/example/key',
         vault_server='https://vault.example.com/',
         download_server='https://download.example.com',
-        products=[],
+        products_relation=[],
     )
 
     model.Product.query.get.return_value = model.Product(

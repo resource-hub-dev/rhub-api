@@ -63,9 +63,9 @@ class Region(db.Model, ModelMixin):
     #: :type: list of :class:`Cluster`
     clusters = db.relationship('Cluster', back_populates='region')
 
-    #: :type: list of :class:`Product`
-    products = db.relationship('Product', back_populates='regions',
-                               secondary='lab_region_product', lazy='dynamic')
+    #: :type: list of :class:`RegionProduct`
+    products_relation = db.relationship('RegionProduct', back_populates='region',
+                                        lazy='dynamic')
 
     _INLINE_CHILDS = ['openstack', 'satellite', 'dns_server']
 
@@ -396,9 +396,9 @@ class Product(db.Model, ModelMixin):
     tower_template_name = db.Column(db.String(128), nullable=False)
     parameters = db.Column(db.JSON, nullable=False)
 
-    #: :type: list of :class:`Region`
-    regions = db.relationship('Region', back_populates='products',
-                              secondary='lab_region_product', lazy='dynamic')
+    #: :type: list of :class:`RegionProduct`
+    regions_relation = db.relationship('RegionProduct', back_populates='product',
+                                       lazy='dynamic')
     #: :type: list of :class:`Cluster`
     clusters = db.relationship('Cluster', back_populates='product')
 
@@ -407,9 +407,12 @@ class RegionProduct(db.Model, ModelMixin):
     """Region-Product N-N association table."""
     __tablename__ = 'lab_region_product'
 
-    region_id = db.Column(db.Integer,
-                          db.ForeignKey('lab_region.id', ondelete="CASCADE"),
+    region_id = db.Column(db.Integer, db.ForeignKey('lab_region.id'),
                           primary_key=True)
-    product_id = db.Column(db.Integer,
-                           db.ForeignKey('lab_product.id', ondelete="CASCADE"),
+    region = db.relationship('Region', back_populates='products_relation')
+
+    product_id = db.Column(db.Integer, db.ForeignKey('lab_product.id'),
                            primary_key=True)
+    product = db.relationship('Product', back_populates='regions_relation')
+
+    enabled = db.Column(db.Boolean, default=True)

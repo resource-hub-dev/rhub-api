@@ -151,6 +151,7 @@ def test_delete_product(client, db_session_mock):
         parameters=[],
     )
     model.Product.query.get.return_value = product
+    model.RegionProduct.query.filter.return_value.count.return_value = 0
 
     rv = client.delete(
         f'{API_BASE}/lab/product/1',

@@ -1,7 +1,6 @@
 import logging
 
 from connexion import problem
-import sqlalchemy
 
 from rhub.lab import model
 from rhub.api import db, DEFAULT_PAGE_LIMIT
@@ -80,6 +79,14 @@ def delete_product(product_id, user):
                        f"Product {product_id} can't be deleted because it is used "
                        "by existing cluster")
 
+    q = model.RegionProduct.query.filter(
+        model.RegionProduct.product_id == product.id,
+    )
+    if q.count() > 0:
+        for relation in q.all():
+            db.session.delete(relation)
+        db.session.flush()
+
     db.session.delete(product)
     db.session.commit()
 
@@ -91,13 +98,21 @@ def list_product_regions(keycloak: KeycloakClient, product_id, user,
         return problem(404, 'Not Found', f'Product {product_id} does not exist')
 
     if keycloak.user_check_role(user, ADMIN_ROLE):
-        regions = product.regions
+        def has_region_access(_):
+            return True
+
     else:
         user_groups = [group['id'] for group in keycloak.user_group_list(user)]
-        regions = product.regions.filter(sqlalchemy.or_(
-            model.Region.users_group.is_(None),
-            model.Region.users_group.in_(user_groups),
-            model.Region.owner_group.in_(user_groups),
-        ))
 
-    return [region.to_dict() for region in regions]
+        def has_region_access(region):
+            return any([
+                region.users_group is None,
+                region.users_group in user_groups,
+                region.owner_group in user_groups
+            ])
+
+    return [
+        {'id': r.region_id, 'region': r.region.to_dict(), 'enabled': r.enabled}
+        for r in product.regions_relation
+        if has_region_access(r.region)
+    ]
