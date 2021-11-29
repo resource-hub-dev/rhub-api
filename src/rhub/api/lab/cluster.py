@@ -145,6 +145,10 @@ def create_cluster(body, user):
             f'Cluster with name {body["name"]!r} already exists',
         )
 
+    product = model.Product.query.get(body['product_id'])
+    if not product:
+        return problem(404, 'Not Found', f'Product {body["product_id"]} does not exist')
+
     cluster_data = body.copy()
     cluster_data['user_id'] = user
     cluster_data['created'] = date_now()
@@ -189,12 +193,53 @@ def create_cluster(body, user):
                     ext={'reservation_expiration_max': reservation_expiration_max},
                 )
 
+    cluster_data['product_params'] = (
+        product.parameters_defaults | body['product_params']
+    )
+
     try:
         cluster = model.Cluster.from_dict(cluster_data)
+        db.session.add(cluster)
     except ValueError as e:
         return problem(400, 'Bad Request', str(e))
 
-    db.session.add(cluster)
+    try:
+        product.validate_cluster_params(cluster.product_params)
+    except Exception as e:
+        db.session.rollback()
+        return problem(400, 'Bad Request', 'Invalid product parameters.',
+                       ext={'invalid_product_params': e.args[0]})
+
+    try:
+        tower_client = region.tower.create_tower_client()
+        tower_template = tower_client.template_get(
+            template_name=product.tower_template_name_create,
+        )
+
+        logger.info(
+            f'Launching Tower template {tower_template["name"]} '
+            f'(id={tower_template["id"]}), '
+            f'extra_vars={cluster.tower_launch_extra_vars!r}'
+        )
+        tower_job = tower_client.template_launch(
+            tower_template['id'],
+            {'extra_vars': cluster.tower_launch_extra_vars},
+        )
+
+        cluster_event = model.ClusterTowerJobEvent(
+            cluster_id=cluster.id,
+            tower_id=region.tower_id,
+            tower_job_id=tower_job['id'],
+            status=model.ClusterStatus.QUEUED,
+        )
+        db.session.add(cluster_event)
+
+    except Exception as e:
+        db.session.rollback()
+        logger.exception(e)
+        return problem(500, 'Internal Server Error',
+                       'Failed to trigger cluster creation.')
+
     db.session.commit()
     logger.info(f'Cluster {cluster.name} (id {cluster.id}) created by user {user}')
 
@@ -283,6 +328,25 @@ def delete_cluster(cluster_id, user):
 
     if not _user_can_access_cluster(cluster, user):
         return problem(403, 'Forbidden', "You don't have access to this cluster.")
+
+    try:
+        tower_client = cluster.region.tower.create_tower_client()
+        tower_template = tower_client.template_get(
+            template_name=cluster.product.tower_template_name_delete,
+        )
+
+        logger.info(
+            f'Launching Tower template {tower_template["name"]} '
+            f'(id={tower_template["id"]}), '
+            f'extra_vars={cluster.tower_launch_extra_vars!r}'
+        )
+        tower_client.template_launch(
+            tower_template['id'],
+            {'extra_vars': cluster.tower_launch_extra_vars},
+        )
+
+    except Exception as e:
+        logger.exception(e)
 
     db.session.delete(cluster)
     db.session.commit()

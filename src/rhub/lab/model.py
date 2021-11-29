@@ -195,6 +195,7 @@ class ClusterStatus(str, enum.Enum):
     POST_DELETING = 'Post-Deleting'
     POST_DELETION_FAILED = 'Post-Deletion Failed'
     DELETED = 'Deleted'
+    QUEUED = 'Queued'
 
 
 class Cluster(db.Model, ModelMixin):
@@ -263,18 +264,36 @@ class Cluster(db.Model, ModelMixin):
             return self.region.quota
         return None
 
-    def to_dict(self):
-        keycloak = di.get(KeycloakClient)
+    @property
+    def user_name(self):
+        return di.get(KeycloakClient).user_get(self.user_id)['username']
 
+    @property
+    def group_name(self):
+        if self.group_id:
+            return di.get(KeycloakClient).group_get(self.group_id)['name']
+        return None
+
+    @property
+    def tower_launch_extra_vars(self):
+        rhub_extra_vars = {
+            'rhub_cluster_id': self.id,
+            'rhub_cluster_name': self.name,
+            'rhub_product_id': self.product.id,
+            'rhub_product_name': self.product.name,
+            'rhub_region_id': self.region.id,
+            'rhub_region_name': self.region.name,
+            'rhub_user_id': self.user_id,
+            'rhub_user_name': self.user_name,
+        }
+        return rhub_extra_vars | self.product_params
+
+    def to_dict(self):
         data = super().to_dict()
 
         data['region_name'] = self.region.name
-        data['user_name'] = keycloak.user_get(self.user_id)['username']
-
-        if self.group_id:
-            data['group_name'] = keycloak.group_get(self.group_id)['name']
-        else:
-            data['group_name'] = None
+        data['user_name'] = self.user_name
+        data['group_name'] = self.group_name
 
         if self.quota:
             data['quota'] = self.quota.to_dict()
@@ -393,7 +412,8 @@ class Product(db.Model, ModelMixin):
     name = db.Column(db.String(64), unique=True, nullable=False)
     description = db.Column(db.Text, nullable=False, default='')
     enabled = db.Column(db.Boolean, default=True)
-    tower_template_name = db.Column(db.String(128), nullable=False)
+    tower_template_name_create = db.Column(db.String(128), nullable=False)
+    tower_template_name_delete = db.Column(db.String(128), nullable=False)
     parameters = db.Column(db.JSON, nullable=False)
 
     #: :type: list of :class:`RegionProduct`
@@ -401,6 +421,52 @@ class Product(db.Model, ModelMixin):
                                        lazy='dynamic')
     #: :type: list of :class:`Cluster`
     clusters = db.relationship('Cluster', back_populates='product')
+
+    @property
+    def parameters_variables(self):
+        return [param['variable'] for param in self.parameters]
+
+    @property
+    def parameters_defaults(self):
+        return {
+            param['variable']: param['default']
+            for param in self.parameters
+            if 'default' in param
+        }
+
+    def validate_cluster_params(self, cluster_params):
+        invalid_params = {}
+
+        if extra_params := set(cluster_params) - set(self.parameters_variables):
+            for i in extra_params:
+                invalid_params[i] = 'not allowed'
+
+        for param_spec in self.parameters:
+            var = param_spec['variable']
+
+            if var not in cluster_params:
+                if param_spec['required']:
+                    invalid_params[var] = 'is required'
+                continue
+
+            t = param_spec['type']
+            if t == 'string' and not isinstance(cluster_params[var], str):
+                invalid_params[var] = 'must be a string'
+                continue
+            elif t == 'integer' and type(cluster_params[var]) is not int:
+                invalid_params[var] = 'must be an integer'
+                continue
+            elif t == 'boolean' and not isinstance(cluster_params[var], bool):
+                invalid_params[var] = 'must be a boolean'
+                continue
+
+            if (e := param_spec.get('enum')) is not None:
+                if cluster_params[var] not in e:
+                    invalid_params[var] = 'value not allowed'
+                    continue
+
+        if invalid_params:
+            raise ValueError(invalid_params)
 
 
 class RegionProduct(db.Model, ModelMixin):

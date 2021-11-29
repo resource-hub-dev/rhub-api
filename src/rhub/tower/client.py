@@ -53,23 +53,47 @@ class Tower:
         """Ping Tower API and get basic info about cluster."""
         return self.request('GET', '/ping').json()
 
-    def template_get(self, template_id):
+    def template_get(self, template_id=None, template_name=None):
         """
         Get job template data.
 
         :returns: dict
         :raises: TowerError
         """
-        return self.request('GET', f'/job_templates/{template_id}/').json()
+        if template_id is not None:
+            return self.request('GET', f'/job_templates/{template_id}/').json()
 
-    def workflow_get(self, workflow_id):
+        elif template_name is not None:
+            response = self.request('GET', '/job_templates/',
+                                    params={'name': template_name})
+            data = response.json()
+            if data['count'] != 1:
+                raise TowerError(f'Template with name {template_name!r} not found',
+                                 response=response)
+            return data['results'][0]
+
+        raise TypeError("Missing required argument 'template_id' or 'template_name'")
+
+    def workflow_get(self, workflow_id=None, workflow_name=None):
         """
         Get workflow job data.
 
         :returns: dict
         :raises: TowerError
         """
-        return self.request('GET', f'/workflow_job_templates/{workflow_id}/').json()
+        if workflow_id is not None:
+            return self.request('GET', f'/workflow_job_templates/{workflow_id}/').json()
+
+        elif workflow_name is not None:
+            response = self.request('GET', '/workflow_job_templates/',
+                                    params={'name': workflow_name})
+            data = response.json()
+            if data['count'] != 1:
+                raise TowerError(f'Workflow with name {workflow_name!r} not found',
+                                 response=response)
+            return data['results'][0]
+
+        raise TypeError("Missing required argument 'workflow_id' or 'workflow_name'")
 
     def template_get_survey(self, template_id):
         """

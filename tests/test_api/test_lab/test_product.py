@@ -32,7 +32,8 @@ def test_list_products(client):
             name='dummy',
             description='dummy',
             enabled=True,
-            tower_template_name='dummy',
+            tower_template_name_create='dummy',
+            tower_template_name_delete='dummy',
             parameters=[],
         ),
     ]
@@ -51,7 +52,8 @@ def test_list_products(client):
                 'name': 'dummy',
                 'description': 'dummy',
                 'enabled': True,
-                'tower_template_name': 'dummy',
+                'tower_template_name_create': 'dummy',
+                'tower_template_name_delete': 'dummy',
                 'parameters': [],
             },
         ],
@@ -65,7 +67,8 @@ def test_get_product(client):
         name='dummy',
         description='dummy',
         enabled=True,
-        tower_template_name='dummy',
+        tower_template_name_create='dummy',
+        tower_template_name_delete='dummy',
         parameters=[],
     )
 
@@ -80,7 +83,8 @@ def test_get_product(client):
         'name': 'dummy',
         'description': 'dummy',
         'enabled': True,
-        'tower_template_name': 'dummy',
+        'tower_template_name_create': 'dummy',
+        'tower_template_name_delete': 'dummy',
         'parameters': [],
     }
 
@@ -90,7 +94,8 @@ def test_create_product(client, db_session_mock):
         'name': 'dummy',
         'description': 'dummy',
         'enabled': True,
-        'tower_template_name': 'dummy',
+        'tower_template_name_create': 'dummy',
+        'tower_template_name_delete': 'dummy',
         'parameters': [],
     }
 
@@ -119,7 +124,8 @@ def test_update_product(client, db_session_mock):
         name='dummy',
         description='dummy',
         enabled=True,
-        tower_template_name='dummy',
+        tower_template_name_create='dummy',
+        tower_template_name_delete='dummy',
         parameters=[],
     )
     model.Product.query.get.return_value = product
@@ -147,7 +153,8 @@ def test_delete_product(client, db_session_mock):
         name='dummy',
         description='dummy',
         enabled=True,
-        tower_template_name='dummy',
+        tower_template_name_create='dummy',
+        tower_template_name_delete='dummy',
         parameters=[],
     )
     model.Product.query.get.return_value = product
