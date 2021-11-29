@@ -212,6 +212,7 @@ model:
       - Provisioning
       - Provisioning Failed
       - Provisioning Queued
+      - Queued
 
   Cluster:
     type: object
@@ -377,13 +378,19 @@ model:
       name:
         type: string
         maxLength: 64
+        example: OpenShift
       description:
         type: string
       enabled:
         type: boolean
-      tower_template_name:
+      tower_template_name_create:
         type: string
         maxLength: 128
+        example: rhub-openshift-create
+      tower_template_name_delete:
+        type: string
+        maxLength: 128
+        example: rhub-openshift-delete
       parameters:
         type: array
         items:
@@ -399,6 +406,14 @@ model:
               type: boolean
             type:
               type: string
+            advanced:
+              description: Option is for advanced users
+              type: boolean
+              default: false
+            condition:
+              description: Condition when to display option based on the values of other options.
+              # TODO
+              nullable: true
           oneOf:
             - description: string variable
               properties:
@@ -407,6 +422,20 @@ model:
                 default:
                   type: string
                   nullable: true
+                enum:
+                  type: array
+                  items:
+                    type: string
+                  nullable: true
+              example:
+                name: Version
+                description: OpenShift version to install.
+                variable: version
+                required: true
+                type: string
+                default: 4.8.0
+                enum: [4.8.0, 4.8.1, 4.8.2]
+                advanced: false
             - description: integer variable
               properties:
                 type:
@@ -414,6 +443,19 @@ model:
                 default:
                   type: integer
                   nullable: true
+                enum:
+                  type: array
+                  items:
+                    type: integer
+                  nullable: true
+              example:
+                name: Number of workers
+                description: Number of worker nodes in your cluster.
+                variable: num_workers
+                required: true
+                type: integer
+                default: 3
+                advanced: false
             - description: boolean variable
               properties:
                 type:
@@ -421,6 +463,13 @@ model:
                 default:
                   type: boolean
                   nullable: true
+              example:
+                name: Keep bootstrap node
+                description: Toggles if bootstrap node will be deleted in post-installation step
+                variable: keep_boostrap
+                type: boolean
+                default: false
+                advanced: true
           required:
             - name
             - variable
@@ -789,6 +838,9 @@ endpoints:
 
   product_create:
     summary: Create product
+    description: |
+      `tower_template_name_create` is the Tower template name to create the
+      cluster, and `tower_template_name_delete` to delete.
     tags: [lab]
     operationId: rhub.api.lab.product.create_product
     requestBody:
@@ -801,7 +853,8 @@ endpoints:
               - $ref: '#/model/Product'
               - required:
                   - name
-                  - tower_template_name
+                  - tower_template_name_create
+                  - tower_template_name_delete
                   - parameters
     responses:
       '200':
@@ -993,6 +1046,14 @@ endpoints:
   cluster_create:
     summary: Create cluster
     description: |
+      Create a new cluster and install selected product. If cluster provisioning
+      and product installation is successfully queued in region Tower, cluster
+      creation is considered as successful by this endpoint. Provisioning or
+      installation takes some time and can fail. Use _GET_ endpoint to get the
+      current status of cluster.
+
+      ## Reservation system
+
       When the Reservation System is enabled in a region, a new cluster in
       that region will be required to select the length of the reservation in
       `reservation_expiration` field. Reservation sets soft-limit on cluster,
@@ -1007,6 +1068,12 @@ endpoints:
       expiration, lifespan is hard-limit and this date can not be set nor
       modified once cluster is created. When lifespan expires cluster will be
       unconditionally scheduled for deletion.
+
+      ## Product
+
+      If product parameters are invalid, problem response may have extra field
+      `invalid_product_params` with a short description why parameters are not
+      valid (eg. `{"example_param": "is required"}`).
     tags: [lab]
     operationId: rhub.api.lab.cluster.create_cluster
     requestBody:

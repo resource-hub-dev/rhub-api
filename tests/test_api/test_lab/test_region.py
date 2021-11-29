@@ -841,7 +841,8 @@ def test_region_list_products(client):
                 name='dummy',
                 description='dummy',
                 enabled=True,
-                tower_template_name='dummy',
+                tower_template_name_create='dummy',
+                tower_template_name_delete='dummy',
                 parameters=[],
             ),
             enabled=True,
@@ -894,7 +895,8 @@ def test_region_list_products(client):
                 'name': 'dummy',
                 'description': 'dummy',
                 'enabled': True,
-                'tower_template_name': 'dummy',
+                'tower_template_name_create': 'dummy',
+                'tower_template_name_delete': 'dummy',
                 'parameters': [],
             },
             'enabled': True,
@@ -939,7 +941,8 @@ def test_region_add_product(client, db_session_mock):
         id=10,
         name='dummy',
         description='dummy',
-        tower_template_name='dummy',
+        tower_template_name_create='dummy',
+        tower_template_name_delete='dummy',
         parameters=[],
     )
 
@@ -999,7 +1002,8 @@ def test_region_disable_product(client, db_session_mock):
         id=10,
         name='dummy',
         description='dummy',
-        tower_template_name='dummy',
+        tower_template_name_create='dummy',
+        tower_template_name_delete='dummy',
         parameters=[],
     )
 
@@ -1058,7 +1062,8 @@ def test_region_delete_product(client, db_session_mock):
         id=10,
         name='dummy',
         description='dummy',
-        tower_template_name='dummy',
+        tower_template_name_create='dummy',
+        tower_template_name_delete='dummy',
         parameters=[],
     )
 

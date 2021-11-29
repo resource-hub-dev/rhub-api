@@ -4,6 +4,7 @@ import pytest
 from dateutil.tz import tzutc
 
 from rhub.lab import model
+from rhub.tower import model as tower_model
 from rhub.api.vault import Vault
 from rhub.auth.keycloak import KeycloakClient
 
@@ -64,7 +65,8 @@ def _create_test_product():
         name='dummy',
         description='dummy',
         enabled=True,
-        tower_template_name='dummy',
+        tower_template_name_create='dummy-create',
+        tower_template_name_delete='dummy-delete',
         parameters={},
     )
 
@@ -203,13 +205,23 @@ def test_create_cluster(client, keycloak_mock, db_session_mock, mocker):
     }
 
     model.Cluster.query.filter.return_value.count.return_value = 0
-    db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
-    def db_commit():
-        mocker.patch.object(model.Cluster, 'region', region)
-        mocker.patch.object(model.Cluster, 'product', product)
+    def db_add(row):
+        row.id = 1
+        if isinstance(row, model.Cluster):
+            mocker.patch.object(model.Cluster, 'region', region)
+            mocker.patch.object(model.Cluster, 'product', product)
 
-    db_session_mock.commit.side_effect = db_commit
+    db_session_mock.add.side_effect = db_add
+
+    mocker.patch.object(model.Region, 'tower')
+    mocker.patch.object(model.Region.tower.Server, 'create_tower_client')
+    model.Region.tower.create_tower_client.return_value = (
+        tower_client_mock := mocker.Mock()
+    )
+
+    tower_client_mock.template_get.return_value = {'id': 123, 'name': 'dummy-create'}
+    tower_client_mock.template_launch.return_value = {'id': 321}
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
@@ -217,14 +229,33 @@ def test_create_cluster(client, keycloak_mock, db_session_mock, mocker):
         json=cluster_data,
     )
 
-    assert rv.status_code == 200
+    assert rv.status_code == 200, rv.data
+
+    region.tower.create_tower_client.assert_called()
+    tower_client_mock.template_get.assert_called_with(template_name='dummy-create')
+    tower_client_mock.template_launch.assert_called_with(123, {
+        'extra_vars': {
+            'rhub_cluster_id': 1,
+            'rhub_cluster_name': 'testcluster',
+            'rhub_product_id': product.id,
+            'rhub_product_name': product.name,
+            'rhub_region_id': region.id,
+            'rhub_region_name': region.name,
+            'rhub_user_id': user_id,
+            'rhub_user_name': 'test-user',
+        },
+    })
 
     db_session_mock.add.assert_called()
     db_session_mock.commit.assert_called()
 
-    cluster = db_session_mock.add.call_args.args[0]
+    cluster = db_session_mock.add.call_args_list[0].args[0]
     for k, v in cluster_data.items():
         assert getattr(cluster, k) == v
+
+    cluster_event = db_session_mock.add.call_args_list[1].args[0]
+    assert cluster_event.cluster_id == 1
+    assert cluster_event.tower_job_id == 321
 
     assert rv.json['user_id'] == '00000000-0000-0000-0000-000000000000'
     assert rv.json['status'] is None
@@ -241,6 +272,8 @@ def test_create_cluster_in_disabled_region(client, db_session_mock):
         'name': 'testcluster',
         'region_id': 1,
         'reservation_expiration': datetime.datetime(2100, 1, 1, 0, 0, tzinfo=tzutc()),
+        'product_id': 1,
+        'product_params': {},
     }
 
     rv = client.post(
@@ -274,6 +307,8 @@ def test_create_cluster_invalid_name(client, cluster_name):
             'name': cluster_name,
             'region_id': 1,
             'reservation_expiration': datetime.datetime(2100, 1, 1, 0, 0, tzinfo=tzutc()),
+            'product_id': 1,
+            'product_params': {},
         },
     )
 
@@ -293,6 +328,8 @@ def test_create_cluster_exceeded_reservation(client):
             'name': 'testcluster',
             'region_id': 1,
             'reservation_expiration': '3000-01-01T00:00:00Z',
+            'product_id': 1,
+            'product_params': {},
         },
     )
 
@@ -316,6 +353,8 @@ def test_create_cluster_set_lifespan_forbidden(client, mocker):
             'region_id': 1,
             'reservation_expiration': '2100-01-01T00:00:00Z',
             'lifespan_expiration': '2100-01-01T00:00:00Z',
+            'product_id': 1,
+            'product_params': {},
         },
     )
 
@@ -508,8 +547,9 @@ def test_update_cluster_set_lifespan_forbidden(client, mocker):
     assert rv.status_code == 403
 
 
-def test_delete_cluster(client, db_session_mock):
+def test_delete_cluster(client, db_session_mock, keycloak_mock, mocker):
     region = _create_test_region()
+    product = _create_test_product()
     cluster = model.Cluster(
         id=1,
         name='testcluster',
@@ -522,19 +562,44 @@ def test_delete_cluster(client, db_session_mock):
         reservation_expiration=None,
         lifespan_expiration=None,
         status=model.ClusterStatus.ACTIVE,
+        product_id=product.id,
+        product_params={},
+        product=product,
     )
     model.Cluster.query.get.return_value = cluster
+
+    keycloak_mock.user_get.return_value = {'username': 'test-user'}
+
+    mocker.patch.object(cluster.region, 'tower')
+    mocker.patch.object(cluster.region.tower, 'create_tower_client')
+    cluster.region.tower.create_tower_client.return_value = (
+        tower_client_mock := mocker.Mock(name='foo')
+    )
+
+    tower_client_mock.template_get.return_value = {'id': 123, 'name': 'dummy-delete'}
+    tower_client_mock.template_launch.return_value = {'id': 321}
 
     rv = client.delete(
         f'{API_BASE}/lab/cluster/1',
         headers={'Authorization': 'Bearer foobar'},
-        json={
-            'description': 'test change',
-            'group_id': '00000001-0002-0003-0004-000000000000',
-        },
     )
 
     assert rv.status_code == 204
+
+    region.tower.create_tower_client.assert_called()
+    tower_client_mock.template_get.assert_called_with(template_name='dummy-delete')
+    tower_client_mock.template_launch.assert_called_with(123, {
+        'extra_vars': {
+            'rhub_cluster_id': 1,
+            'rhub_cluster_name': 'testcluster',
+            'rhub_product_id': product.id,
+            'rhub_product_name': product.name,
+            'rhub_region_id': region.id,
+            'rhub_region_name': region.name,
+            'rhub_user_id': cluster.user_id,
+            'rhub_user_name': 'test-user',
+        },
+    })
 
     db_session_mock.delete.assert_called_with(cluster)
     db_session_mock.commit.assert_called()
