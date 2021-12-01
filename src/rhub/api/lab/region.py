@@ -42,6 +42,14 @@ def list_regions(keycloak: KeycloakClient,
     if 'location' in filter_:
         regions = regions.filter(model.Region.location.ilike(filter_['location']))
 
+    if 'enabled' in filter_:
+        regions = regions.filter(model.Region.enabled == filter_['enabled'])
+
+    if 'reservations_enabled' in filter_:
+        regions = regions.filter(
+            model.Region.reservations_enabled == filter_['reservations_enabled']
+        )
+
     return {
         'data': [
             region.to_dict() for region in regions.limit(limit).offset(page * limit)
@@ -227,7 +235,7 @@ def delete_region(keycloak: KeycloakClient, region_id, user):
     logger.info(f'Region {region.name} (id {region.id}) deleted by user {user}')
 
 
-def list_region_products(keycloak: KeycloakClient, region_id, user):
+def list_region_products(keycloak: KeycloakClient, region_id, user, filter_):
     region = model.Region.query.get(region_id)
     if not region:
         return problem(404, 'Not Found', f'Region {region_id} does not exist')
@@ -238,9 +246,21 @@ def list_region_products(keycloak: KeycloakClient, region_id, user):
                     user, [region.users_group, region.owner_group]):
                 raise Forbidden("You don't have access to this region.")
 
+    products_relation = region.products_relation
+
+    if 'name' in filter_:
+        products_relation = products_relation.filter(
+            model.Region.name.ilike(filter_['enabled']),
+        )
+
+    if 'enabled' in filter_:
+        products_relation = products_relation.filter(
+            model.Product.enabled == filter_['enabled'],
+        )
+
     return [
         {'id': r.product_id, 'product': r.product.to_dict(), 'enabled': r.enabled}
-        for r in region.products_relation
+        for r in products_relation
     ]
 
 
