@@ -61,6 +61,8 @@ endpoints:
               description: >
                 Name of a job. Wildcard ``%`` can be used to match zero, one, or
                 multiple characters
+            enabled:
+              type: boolean
       - name: page
         in: query
         description: Page number (``0`` indexed).

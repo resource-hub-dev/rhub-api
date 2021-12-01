@@ -32,6 +32,7 @@ SQLALCHEMY_DATABASE_URI = (
     )
 )
 SQLALCHEMY_TRACK_MODIFICATIONS = False
+SQLALCHEMY_ECHO = os.getenv('SQLALCHEMY_ECHO', 'false').lower() == 'true'
 
 VAULT_TYPE = os.getenv('VAULT_TYPE')
 # hashicorp vault variables
