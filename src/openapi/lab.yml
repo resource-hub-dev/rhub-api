@@ -517,7 +517,7 @@ endpoints:
     parameters:
       - name: filter
         in: query
-        description: Filter clusters by attributes.
+        description: Filter regions by attributes.
         explode: false
         schema:
           type: object
@@ -532,6 +532,10 @@ endpoints:
               description: >
                 Location of a region. Wildcard ``%`` can be used to match zero,
                 one, or multiple characters
+            enabled:
+              type: boolean
+            reservations_enabled:
+              type: boolean
       - name: page
         in: query
         description: Page number (``0`` indexed).
@@ -687,6 +691,20 @@ endpoints:
     operationId: rhub.api.lab.region.list_region_products
     parameters:
       - $ref: '#/parameters/region_id'
+      - name: filter
+        in: query
+        description: Filter products by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: >
+                Name of a product. Wildcard ``%`` can be used to match zero,
+                one, or multiple characters
+            enabled:
+              type: boolean
     responses:
       '200':
         description: List of Product
@@ -784,6 +802,8 @@ endpoints:
               description: >
                 Name of a product. Wildcard ``%`` can be used to match zero, one,
                 or multiple characters
+            enabled:
+              type: boolean
       - name: page
         in: query
         description: Page number (``0`` indexed).
@@ -904,6 +924,27 @@ endpoints:
     operationId: rhub.api.lab.product.list_product_regions
     parameters:
       - $ref: '#/parameters/product_id'
+      - name: filter
+        in: query
+        description: Filter regions by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: >
+                Name of a region. Wildcard ``%`` can be used to match zero, one,
+                or multiple characters
+            location:
+              type: string
+              description: >
+                Location of a region. Wildcard ``%`` can be used to match zero,
+                one, or multiple characters
+            enabled:
+              type: boolean
+            reservations_enabled:
+              type: boolean
       - name: page
         in: query
         description: Page number (``0`` indexed).
