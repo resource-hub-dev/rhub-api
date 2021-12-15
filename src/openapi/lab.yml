@@ -1280,3 +1280,76 @@ endpoints:
         $ref: 'common.yml#/responses/problem'
     security:
       - oauth2: []
+
+  cluster_reboot:
+    summary: Reboot cluster hosts
+    description: |
+      **Trigger** hosts reboot in OpenStack. You can soft or hard reboot a host.
+      A soft reboot attempts a graceful shut down and restart of the host. A
+      hard reboot power cycles the host.
+
+      Only hosts that belong to the selected cluster can be rebooted, other
+      hosts are silently ignored. A list of rebooted hosts is returned in the
+      response body so you can verify which hosts will be rebooted.
+    tags: [lab]
+    operationId: rhub.api.lab.cluster.reboot_hosts
+    parameters:
+      - $ref: '#/parameters/cluster_id'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [soft, hard]
+                default: soft
+              hosts:
+                anyOf:
+                  - type: string
+                    enum: [all]
+                  - type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          $ref: 'common.yml#/model/ID'
+                        fqdn:
+                          type: string
+          examples:
+            all:
+              summary: Reboot all cluster hosts
+              value:
+                hosts: all
+            by_id:
+              summary: Reboot cluster hosts by host ID
+              value:
+                hosts:
+                  - id: 1
+                  - id: 2
+            by_fqdn:
+              summary: Reboot cluster hosts by host FQDN
+              value:
+                hosts:
+                  - fqdn: node-0.mycluster.example.com
+                  - fqdn: node-1.mycluster.example.com
+    responses:
+      '200':
+        description: List of rebooted hosts
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    $ref: 'common.yml#/model/ID'
+                  fqdn:
+                    type: string
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []

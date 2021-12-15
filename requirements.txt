@@ -17,3 +17,4 @@ python-keycloak == 0.25.0
 pyyaml
 requests
 tenacity
+openstacksdk

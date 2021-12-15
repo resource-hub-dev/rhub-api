@@ -3,6 +3,7 @@ import copy
 import enum
 import re
 
+import openstack
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import validates
 
@@ -10,6 +11,7 @@ from rhub.api import db, di
 from rhub.api.utils import ModelMixin
 from rhub.tower import model as tower_model
 from rhub.auth.keycloak import KeycloakClient
+from rhub.api.vault import Vault
 
 
 class Region(db.Model, ModelMixin):
@@ -144,6 +146,31 @@ class Region(db.Model, ModelMixin):
                 del data[i]
 
         super().update_from_dict(data)
+
+    def create_openstack_client(self, project=None):
+        """
+        Create OpenStack SDK connection (client). Optional `project` argument
+        can be used to change project, default is project from the region
+        (:attr:`Region.project`).
+
+        Returns:
+            openstack.connection.Connection
+        """
+        credentials = di.get(Vault).read(self.openstack_credentials)
+        connection = openstack.connection.Connection(
+            auth=dict(
+                auth_url=self.openstack_url,
+                username=credentials['username'],
+                password=credentials['password'],
+                project_name=project or self.openstack_project,
+                domain_name=self.openstack_domain_name,
+            ),
+            region_name="regionOne",
+            interface="public",
+            identity_api_version=3,
+        )
+        connection.authorize()
+        return connection
 
 
 class Quota(db.Model, ModelMixin):

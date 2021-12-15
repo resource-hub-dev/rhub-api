@@ -422,3 +422,50 @@ def delete_cluster_hosts(cluster_id, user):
     for host in cluster.hosts:
         db.session.delete(host)
     db.session.commit()
+
+
+def reboot_hosts(cluster_id, body, user):
+    cluster = model.Cluster.query.get(cluster_id)
+    if not cluster:
+        return problem(404, 'Not Found', f'Cluster {cluster_id} does not exist')
+
+    if not _user_can_access_cluster(cluster, user):
+        return problem(403, 'Forbidden', "You don't have access to this cluster.")
+
+    reboot_type = body.get('type', 'soft').upper()
+
+    if body['hosts'] == 'all':
+        hosts_to_reboot = {host.fqdn: host for host in cluster.hosts}
+    else:
+        hosts_to_reboot = {
+            host.fqdn: host
+            for host in model.ClusterHost.query.filter(
+                sqlalchemy.and_(
+                    model.ClusterHost.cluster_id == cluster.id,
+                    sqlalchemy.or_(
+                        model.ClusterHost.id.in_(
+                            [i['id'] for i in body['hosts'] if 'id' in i]
+                        ),
+                        model.ClusterHost.fqdn.in_(
+                            [i['fqdn'] for i in body['hosts'] if 'fqdn' in i]
+                        ),
+                    ),
+                )
+            ).all()
+        }
+
+    rebooted_hosts = []
+
+    try:
+        os_client = cluster.region.create_openstack_client(f'ql_{cluster.user_name}')
+        for server in os_client.compute.servers():
+            if server.hostname in hosts_to_reboot:
+                logger.info(f'Rebooting cluster host {server.hostname}, '
+                            f'cluster_id={cluster.id}')
+                os_client.compute.reboot_server(server, reboot_type)
+                rebooted_hosts.append(hosts_to_reboot[server.hostname])
+    except Exception as e:
+        logger.exception(f'Failed to reboot nodes, {e!s}')
+        return problem(500, 'Server Error', 'Failed to reboot nodes')
+
+    return [{'id': host.id, 'fqdn': host.fqdn} for host in rebooted_hosts]
