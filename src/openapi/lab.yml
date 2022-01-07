@@ -242,6 +242,8 @@ model:
         type: string
         nullable: true
         readOnly: true
+      shared:
+        type: boolean
       created:
         type: string
         format: date-time
@@ -1068,6 +1070,17 @@ endpoints:
       expiration, lifespan is hard-limit and this date can not be set nor
       modified once cluster is created. When lifespan expires cluster will be
       unconditionally scheduled for deletion.
+
+      ## Shared cluster
+
+      All users can use shared clusters even if they don't have permissions for
+      the cluster region or reservations in the region are disabled.
+
+      Shared clusters are created in a special group, if `shared` is set to
+      `true` when creating cluster, provided `group_id` will be ignored.
+      Reservation expiration and also lifespan expiration is disabled on shared
+      clusters, and only user with `sharedcluster` role can create shared
+      clusters.
 
       ## Product
 

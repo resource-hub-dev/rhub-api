@@ -3,7 +3,7 @@ import datetime
 import pytest
 from dateutil.tz import tzutc
 
-from rhub.lab import model
+from rhub.lab import model, SHAREDCLUSTER_USER, SHAREDCLUSTER_GROUP
 from rhub.tower import model as tower_model
 from rhub.api.vault import Vault
 from rhub.auth.keycloak import KeycloakClient
@@ -126,6 +126,7 @@ def test_list_clusters(client, keycloak_mock, mocker):
                 'product_id': 1,
                 'product_name': 'dummy',
                 'product_params': {},
+                'shared': False,
             },
         ],
         'total': 1,
@@ -186,6 +187,7 @@ def test_get_cluster(client, keycloak_mock, mocker):
         'product_id': 1,
         'product_name': 'dummy',
         'product_params': {},
+        'shared': False,
     }
 
 
@@ -193,6 +195,7 @@ def test_create_cluster(client, keycloak_mock, db_session_mock, mocker):
     user_id = '00000000-0000-0000-0000-000000000000'
     model.Region.query.get.return_value = region = _create_test_region()
     model.Product.query.get.return_value = product = _create_test_product()
+    keycloak_mock.user_list.return_value = []
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
     cluster_data = {
         'name': 'testcluster',
@@ -260,6 +263,91 @@ def test_create_cluster(client, keycloak_mock, db_session_mock, mocker):
     assert rv.json['user_id'] == '00000000-0000-0000-0000-000000000000'
     assert rv.json['status'] is None
     assert rv.json['created'] == '2021-01-01T01:00:00+00:00'
+
+
+def test_create_cluster_shared(client, keycloak_mock, db_session_mock, mocker):
+    user_id = '00000000-0000-0000-0000-000000000000'
+    group_id = '00000000-0000-0000-0000-000000000000'
+
+    model.Region.query.get.return_value = region = _create_test_region()
+    model.Product.query.get.return_value = product = _create_test_product()
+
+    keycloak_mock.user_list.return_value = []
+    keycloak_mock.user_get.return_value = {
+        'id': user_id, 'username': SHAREDCLUSTER_USER,
+    }
+
+    sharedcluster_group = {'id': group_id, 'name': SHAREDCLUSTER_GROUP}
+    keycloak_mock.group_get.return_value = sharedcluster_group
+    keycloak_mock.group_list.return_value = [sharedcluster_group]
+
+    cluster_data = {
+        'name': 'testsharedcluster',
+        'description': 'test shared cluster',
+        'region_id': 1,
+        'product_id': 1,
+        'product_params': {},
+    }
+
+    model.Cluster.query.filter.return_value.count.return_value = 0
+
+    def db_add(row):
+        row.id = 1
+        if isinstance(row, model.Cluster):
+            mocker.patch.object(model.Cluster, 'region', region)
+            mocker.patch.object(model.Cluster, 'product', product)
+
+    db_session_mock.add.side_effect = db_add
+
+    mocker.patch.object(model.Region, 'tower')
+    mocker.patch.object(model.Region.tower.Server, 'create_tower_client')
+    model.Region.tower.create_tower_client.return_value = (
+        tower_client_mock := mocker.Mock()
+    )
+
+    tower_client_mock.template_get.return_value = {'id': 123, 'name': 'dummy-create'}
+    tower_client_mock.template_launch.return_value = {'id': 321}
+
+    rv = client.post(
+        f'{API_BASE}/lab/cluster',
+        headers={'Authorization': 'Bearer foobar'},
+        json=cluster_data | {'shared': True},
+    )
+
+    assert rv.status_code == 200, rv.data
+
+    region.tower.create_tower_client.assert_called()
+    tower_client_mock.template_get.assert_called_with(template_name='dummy-create')
+    tower_client_mock.template_launch.assert_called_with(123, {
+        'extra_vars': {
+            'rhub_cluster_id': 1,
+            'rhub_cluster_name': 'testsharedcluster',
+            'rhub_product_id': product.id,
+            'rhub_product_name': product.name,
+            'rhub_region_id': region.id,
+            'rhub_region_name': region.name,
+            'rhub_user_id': user_id,
+            'rhub_user_name': SHAREDCLUSTER_USER,
+        },
+    })
+
+    db_session_mock.add.assert_called()
+    db_session_mock.commit.assert_called()
+
+    cluster = db_session_mock.add.call_args_list[0].args[0]
+    for k, v in cluster_data.items():
+        assert getattr(cluster, k) == v
+
+    cluster_event = db_session_mock.add.call_args_list[1].args[0]
+    assert cluster_event.cluster_id == 1
+    assert cluster_event.tower_job_id == 321
+
+    assert rv.json['user_id'] == user_id
+    assert rv.json['group_id'] == user_id
+
+    assert rv.json['shared'] is True
+    assert rv.json['reservation_expiration'] is None
+    assert rv.json['lifespan_expiration'] is None
 
 
 def test_create_cluster_in_disabled_region(client, db_session_mock):

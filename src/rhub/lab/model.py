@@ -12,6 +12,7 @@ from rhub.api.utils import ModelMixin
 from rhub.tower import model as tower_model
 from rhub.auth.keycloak import KeycloakClient
 from rhub.api.vault import Vault
+from rhub.lab import SHAREDCLUSTER_GROUP
 
 
 class Region(db.Model, ModelMixin):
@@ -302,6 +303,10 @@ class Cluster(db.Model, ModelMixin):
         return None
 
     @property
+    def shared(self):
+        return self.group_name == SHAREDCLUSTER_GROUP
+
+    @property
     def tower_launch_extra_vars(self):
         rhub_extra_vars = {
             'rhub_cluster_id': self.id,
@@ -321,6 +326,7 @@ class Cluster(db.Model, ModelMixin):
         data['region_name'] = self.region.name
         data['user_name'] = self.user_name
         data['group_name'] = self.group_name
+        data['shared'] = self.shared
 
         if self.quota:
             data['quota'] = self.quota.to_dict()

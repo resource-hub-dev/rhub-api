@@ -6,7 +6,7 @@ from rhub.api import db, di
 from rhub.auth import ADMIN_USER, ADMIN_GROUP, ADMIN_ROLE
 from rhub.auth.keycloak import KeycloakClient
 from rhub.tower import model as tower_model  # noqa: F401
-from rhub.lab import SHAREDCLUSTER_USER
+from rhub.lab import SHAREDCLUSTER_USER, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_ROLE
 from rhub.lab import model as lab_model  # noqa: F401
 from rhub.policies import model as policies_model  # noqa: F401
 from rhub.scheduler import model as scheduler_model  # noqa: F401
@@ -61,6 +61,22 @@ def setup():
             logger.info(f'Creating "{i}" role')
             roles[i] = keycloak.role_create({'name': i})
 
+    if SHAREDCLUSTER_GROUP not in groups:
+        logger.info(f'Creating sharedcluster group "{SHAREDCLUSTER_GROUP}"')
+        group_id = keycloak.group_create({'name': SHAREDCLUSTER_GROUP})
+        groups[SHAREDCLUSTER_GROUP] = keycloak.group_get(group_id)
+
+    if SHAREDCLUSTER_ROLE not in roles:
+        logger.info(f'Creating sharedcluster role "{SHAREDCLUSTER_ROLE}"')
+        role_name = keycloak.role_create({'name': SHAREDCLUSTER_ROLE})
+        roles[SHAREDCLUSTER_ROLE] = keycloak.role_get(role_name)
+
+    if not any(role['name'] == SHAREDCLUSTER_ROLE
+               for role in keycloak.group_role_list(groups[SHAREDCLUSTER_GROUP]['id'])):
+        logger.info(f'Adding sharedcluster role "{SHAREDCLUSTER_ROLE}" '
+                    f'to sharedcluster group "{SHAREDCLUSTER_GROUP}"')
+        keycloak.group_role_add(SHAREDCLUSTER_ROLE, groups[SHAREDCLUSTER_GROUP]['id'])
+
     if not keycloak.user_list({'username': SHAREDCLUSTER_USER}):
         logger.info(f'Creating sharedclusters account "{SHAREDCLUSTER_USER}"')
         keycloak.user_create({
@@ -69,3 +85,11 @@ def setup():
             'firstName': 'Shared Cluster',
             'lastName': 'RHub',
         })
+
+    sharedcluster_user = keycloak.user_list({'username': SHAREDCLUSTER_USER})[0]
+    if not any(group['name'] == SHAREDCLUSTER_GROUP
+               for group in keycloak.user_group_list(sharedcluster_user['id'])):
+        logger.info(f'Adding sharedcluster user "{SHAREDCLUSTER_USER}" '
+                    f'to sharedcluster group "{SHAREDCLUSTER_GROUP}"')
+        keycloak.group_user_add(sharedcluster_user['id'],
+                                groups[SHAREDCLUSTER_GROUP]['id'])
