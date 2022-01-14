@@ -27,13 +27,15 @@ def test_to_dict():
         description='desc',
         banner='ban',
         enabled=True,
-        quota_id=1,
-        quota=model.Quota(
+        user_quota_id=1,
+        user_quota=model.Quota(
             num_vcpus=40,
             ram_mb=200000,
             num_volumes=40,
             volumes_gb=540,
         ),
+        total_quota_id=None,
+        total_quota=None,
         lifespan_length=None,
         reservations_enabled=True,
         reservation_expiration_max=7,
@@ -64,12 +66,13 @@ def test_to_dict():
         'description': 'desc',
         'banner':'ban',
         'enabled': True,
-        'quota': {
+        'user_quota': {
             'num_vcpus': 40,
             'ram_mb': 200000,
             'num_volumes': 40,
             'volumes_gb': 540,
         },
+        'total_quota': None,
         'lifespan_length': None,
         'reservations_enabled': True,
         'reservation_expiration_max': 7,
@@ -109,7 +112,8 @@ def test_list_regions(client):
             description='',
             banner='',
             enabled=True,
-            quota_id=None,
+            user_quota_id=None,
+            total_quota_id=None,
             lifespan_length=None,
             reservations_enabled=True,
             reservation_expiration_max=7,
@@ -150,7 +154,8 @@ def test_list_regions(client):
                 'description': '',
                 'banner': '',
                 'enabled': True,
-                'quota': None,
+                'user_quota': None,
+                'total_quota': None,
                 'lifespan_length': None,
                 'reservations_enabled': True,
                 'reservation_expiration_max': 7,
@@ -192,7 +197,8 @@ def test_get_region(client):
         description='',
         banner='',
         enabled=True,
-        quota_id=None,
+        user_quota_id=None,
+        total_quota_id=None,
         lifespan_length=None,
         reservations_enabled=True,
         reservation_expiration_max=7,
@@ -231,7 +237,8 @@ def test_get_region(client):
         'description': '',
         'banner': '',
         'enabled': True,
-        'quota': None,
+        'user_quota': None,
+        'total_quota': None,
         'lifespan_length': None,
         'reservations_enabled': True,
         'reservation_expiration_max': 7,
@@ -315,7 +322,7 @@ def test_create_region(client, db_session_mock, keycloak_mock, mocker):
             assert getattr(region, k) == v
 
     assert rv.status_code == 200
-    assert rv.json['quota'] is None
+    assert rv.json['user_quota'] is None
     assert rv.json['owner_group'] == group_id
     assert rv.json['users_group'] is None
 
@@ -404,7 +411,8 @@ def test_create_region_with_quota(client, db_session_mock, keycloak_mock, mocker
         'name': 'test',
         'location': 'RDU',
         'tower_id': 1,
-        'quota': quota_data,
+        'user_quota': quota_data,
+        'total_quota': None,
         'openstack': {
             'url': 'https://openstack.example.com:13000',
             'credentials': 'kv/example/openstack',
@@ -446,7 +454,7 @@ def test_create_region_with_quota(client, db_session_mock, keycloak_mock, mocker
 
     region = db_session_mock.add.call_args.args[0]
     for k, v in region_data.items():
-        if k == 'quota':
+        if k in ['user_quota', 'total_quota']:
             continue
         if isinstance(v, dict):
             for k2, v2 in v.items():
@@ -454,12 +462,12 @@ def test_create_region_with_quota(client, db_session_mock, keycloak_mock, mocker
         else:
             assert getattr(region, k) == v
 
-    assert region.quota is not None
+    assert region.user_quota is not None
     for k, v in quota_data.items():
-        assert getattr(region.quota, k) == v
+        assert getattr(region.user_quota, k) == v
 
     assert rv.status_code == 200
-    assert rv.json['quota'] == quota_data
+    assert rv.json['user_quota'] == quota_data
     assert rv.json['owner_group'] == group_id
     assert rv.json['users_group'] is None
 
@@ -522,7 +530,8 @@ def test_update_region(client):
         description='',
         banner='',
         enabled=True,
-        quota_id=None,
+        user_quota_id=None,
+        total_quota_id=None,
         lifespan_length=None,
         reservations_enabled=True,
         reservation_expiration_max=7,
@@ -572,7 +581,8 @@ def test_update_region_credentials(client, vault_mock):
         description='',
         banner='',
         enabled=True,
-        quota_id=None,
+        user_quota_id=None,
+        total_quota_id=None,
         lifespan_length=None,
         reservations_enabled=True,
         reservation_expiration_max=7,
@@ -674,7 +684,8 @@ def test_update_region_quota(client, keycloak_mock, quota_data):
         description='',
         banner='',
         enabled=True,
-        quota_id=None,
+        user_quota_id=None,
+        total_quota_id=None,
         lifespan_length=None,
         reservations_enabled=True,
         reservation_expiration_max=7,
@@ -702,13 +713,13 @@ def test_update_region_quota(client, keycloak_mock, quota_data):
     rv = client.patch(
         f'{API_BASE}/lab/region/1',
         headers={'Authorization': 'Bearer foobar'},
-        json={'quota': quota_data},
+        json={'user_quota': quota_data},
     )
 
     model.Region.query.get.assert_called_with(1)
 
     assert rv.status_code == 200
-    assert rv.json['quota'] == quota_data
+    assert rv.json['user_quota'] == quota_data
 
 
 
@@ -751,7 +762,8 @@ def test_update_region_nested_data(client, update_data):
         description='',
         banner='',
         enabled=True,
-        quota_id=None,
+        user_quota_id=None,
+        total_quota_id=None,
         lifespan_length=None,
         reservations_enabled=True,
         reservation_expiration_max=7,
@@ -801,7 +813,8 @@ def test_delete_region(client, keycloak_mock, db_session_mock):
         description='',
         banner='',
         enabled=True,
-        quota_id=None,
+        user_quota_id=None,
+        total_quota_id=None,
         lifespan_length=None,
         reservations_enabled=True,
         reservation_expiration_max=7,
@@ -856,7 +869,8 @@ def test_region_list_products(client):
         description='',
         banner='',
         enabled=True,
-        quota_id=None,
+        user_quota_id=None,
+        total_quota_id=None,
         lifespan_length=None,
         reservations_enabled=True,
         reservation_expiration_max=7,
@@ -912,7 +926,8 @@ def test_region_add_product(client, db_session_mock):
         description='',
         banner='',
         enabled=True,
-        quota_id=None,
+        user_quota_id=None,
+        total_quota_id=None,
         lifespan_length=None,
         reservations_enabled=True,
         reservation_expiration_max=7,
@@ -973,7 +988,8 @@ def test_region_disable_product(client, db_session_mock):
         description='',
         banner='',
         enabled=True,
-        quota_id=None,
+        user_quota_id=None,
+        total_quota_id=None,
         lifespan_length=None,
         reservations_enabled=True,
         reservation_expiration_max=7,
@@ -1033,7 +1049,8 @@ def test_region_delete_product(client, db_session_mock):
         description='',
         banner='',
         enabled=True,
-        quota_id=None,
+        user_quota_id=None,
+        total_quota_id=None,
         lifespan_length=None,
         reservations_enabled=True,
         reservation_expiration_max=7,

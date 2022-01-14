@@ -56,6 +56,9 @@ paths:
       $ref: 'lab.yml#/endpoints/region_add_product'
     delete:
       $ref: 'lab.yml#/endpoints/region_remove_product'
+  /lab/region/{region_id}/usage:
+    get:
+      $ref: 'lab.yml#/endpoints/region_get_usage'
   /lab/product:
     get:
       $ref: 'lab.yml#/endpoints/product_list'

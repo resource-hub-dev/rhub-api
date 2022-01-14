@@ -489,7 +489,8 @@ def reboot_hosts(cluster_id, body, user):
     rebooted_hosts = []
 
     try:
-        os_client = cluster.region.create_openstack_client(f'ql_{cluster.user_name}')
+        os_project_name = cluster.region.get_user_project_name(cluster.user_id)
+        os_client = cluster.region.create_openstack_client(os_project_name)
         for server in os_client.compute.servers():
             if server.hostname in hosts_to_reboot:
                 logger.info(f'Rebooting cluster host {server.hostname}, '
