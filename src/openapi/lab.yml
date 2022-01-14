@@ -5,19 +5,19 @@ model:
     properties:
       num_vcpus:
         type: integer
-        minimum: 1
+        minimum: 0
         nullable: true
       ram_mb:
         type: integer
-        minimum: 1
+        minimum: 0
         nullable: true
       num_volumes:
         type: integer
-        minimum: 1
+        minimum: 0
         nullable: true
       volumes_gb:
         type: integer
-        minimum: 1
+        minimum: 0
         nullable: true
 
   Region:
@@ -52,7 +52,7 @@ model:
         type: integer
         minimum: 1
         nullable: true
-      quota:
+      user_quota:
         anyOf:
           - $ref: '#/model/Quota'
           - nullable: true
@@ -61,6 +61,15 @@ model:
           ram_mb: 200000
           num_volumes: 40
           volumes_gb: 540
+      total_quota:
+        anyOf:
+          - $ref: '#/model/Quota'
+          - nullable: true
+        example:
+          num_vcpus: 40000
+          ram_mb: 200000000
+          num_volumes: 40000
+          volumes_gb: 540000
       owner_group:
         type: string
         format: uuid
@@ -274,6 +283,15 @@ model:
           ram_mb: 200000
           num_volumes: 40
           volumes_gb: 540
+      quota_usage:
+        anyOf:
+          - $ref: '#/model/Quota'
+          - nullable: true
+        example:
+          num_vcpus: 16
+          ram_mb: 64000
+          num_volumes: 2
+          volumes_gb: 256
       hosts:
         type: array
         readOnly: true
@@ -782,6 +800,58 @@ endpoints:
     responses:
       '204':
         description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  region_get_usage:
+    summary: Get region usage
+    description: |
+      `user_quota`,`user_quota_usage`, `total_quota` and `total_quota_usage` are
+      values calculated from the data we store about clusters. In other words,
+      it's how many resources Resource Hub can use (quota), and how many it
+      currently uses (quota usage). It does not count resources that are not
+      managed by Resource Hub.
+
+      User quota and its usage is scoped to the currently logged in user. Total
+      quota is overall quota and usage of the region.
+
+      If query parameter `with_openstack_limits` is set to `true` response will
+      also contain `openstack_limit`, which are real OpenStack limits that are
+      applied to the project's account in the region. It is retrieved from the
+      OpenStack API.
+    tags: [lab]
+    operationId: rhub.api.lab.region.get_usage
+    parameters:
+      - $ref: '#/parameters/region_id'
+      - name: with_openstack_limits
+        in: query
+        schema:
+          type: boolean
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                openstack_limits:
+                  type: object
+                  description: OpenStack limits RAW value from the API.
+                user_quota:
+                  anyOf:
+                    - $ref: '#/model/Quota'
+                    - nullable: true
+                user_quota_usage:
+                  $ref: '#/model/Quota'
+                total_quota:
+                  anyOf:
+                    - $ref: '#/model/Quota'
+                    - nullable: true
+                total_quota_usage:
+                  $ref: '#/model/Quota'
       default:
         $ref: 'common.yml#/responses/problem'
     security:

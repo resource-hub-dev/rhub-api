@@ -34,7 +34,8 @@ def _create_test_region():
         description='',
         banner='',
         enabled=True,
-        quota_id=None,
+        user_quota_id=None,
+        total_quota_id=None,
         lifespan_length=None,
         reservations_enabled=True,
         reservation_expiration_max=None,
@@ -123,6 +124,7 @@ def test_list_clusters(client, keycloak_mock, mocker):
                 'group_name': None,
                 'hosts': [],
                 'quota': None,
+                'quota_usage': None,
                 'product_id': 1,
                 'product_name': 'dummy',
                 'product_params': {},
@@ -155,8 +157,35 @@ def test_get_cluster(client, keycloak_mock, mocker):
         product_params={},
         product=sample_product,
     )
-    mocker.patch.object(model.Cluster, 'hosts', [])
-    mocker.patch.object(model.Cluster, 'quota', None)
+    mocker.patch.object(model.Cluster, 'hosts', [
+        model.ClusterHost(
+            id=1,
+            cluster_id=1,
+            fqdn='test0.localhost',
+            ipaddr=['127.0.0.1', '::1'],
+            num_vcpus=2,
+            ram_mb=4096,
+            num_volumes=1,
+            volumes_gb=20,
+        ),
+        model.ClusterHost(
+            id=2,
+            cluster_id=1,
+            fqdn='test1.localhost',
+            ipaddr=['127.0.0.1', '::1'],
+            num_vcpus=2,
+            ram_mb=4096,
+            num_volumes=1,
+            volumes_gb=20,
+        ),
+    ])
+    mocker.patch.object(model.Cluster, 'quota', model.Quota(
+        id=1,
+        num_vcpus=20,
+        ram_mb=20000,
+        num_volumes=2,
+        volumes_gb=200,
+    ))
 
     rv = client.get(
         f'{API_BASE}/lab/cluster/1',
@@ -182,8 +211,40 @@ def test_get_cluster(client, keycloak_mock, mocker):
         'region_name': 'test',
         'user_name': 'test-user',
         'group_name': None,
-        'hosts': [],
-        'quota': None,
+        'hosts': [
+            {
+                'id': 1,
+                'cluster_id': 1,
+                'fqdn': 'test0.localhost',
+                'ipaddr': ['127.0.0.1', '::1'],
+                'num_vcpus': 2,
+                'ram_mb': 4096,
+                'num_volumes': 1,
+                'volumes_gb': 20,
+            },
+            {
+                'id': 2,
+                'cluster_id': 1,
+                'fqdn': 'test1.localhost',
+                'ipaddr': ['127.0.0.1', '::1'],
+                'num_vcpus': 2,
+                'ram_mb': 4096,
+                'num_volumes': 1,
+                'volumes_gb': 20,
+            }
+        ],
+        'quota': {
+            'num_vcpus': 20,
+            'ram_mb': 20000,
+            'num_volumes': 2,
+            'volumes_gb': 200,
+        },
+        'quota_usage': {
+            'num_vcpus': 4,
+            'ram_mb': 8192,
+            'num_volumes': 2,
+            'volumes_gb': 40,
+        },
         'product_id': 1,
         'product_name': 'dummy',
         'product_params': {},
