@@ -322,7 +322,7 @@ def test_create_cluster(client, keycloak_mock, db_session_mock, mocker):
     assert cluster_event.tower_job_id == 321
 
     assert rv.json['user_id'] == '00000000-0000-0000-0000-000000000000'
-    assert rv.json['status'] is None
+    assert rv.json['status'] == model.ClusterStatus.QUEUED
     assert rv.json['created'] == '2021-01-01T01:00:00+00:00'
 
 
@@ -588,11 +588,15 @@ def test_update_cluster_ro_field(client, cluster_data):
     assert rv.status_code == 400
 
 
-def test_update_cluster_reservation(client, keycloak_mock):
+def test_update_cluster_reservation(client, keycloak_mock, db_session_mock):
     user_id = '00000000-0000-0000-0000-000000000000'
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
     region = _create_test_region()
     product = _create_test_product()
+
+    old_expiration = datetime.datetime(2100, 1, 1, 0, 0, tzinfo=tzutc())
+    new_expiration = datetime.datetime(2100, 1, 2, 0, 0, tzinfo=tzutc())
+
     cluster = model.Cluster(
         id=1,
         name='testcluster',
@@ -602,7 +606,7 @@ def test_update_cluster_reservation(client, keycloak_mock):
         created=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
         region_id=region.id,
         region=region,
-        reservation_expiration=None,
+        reservation_expiration=old_expiration,
         lifespan_expiration=None,
         status=model.ClusterStatus.ACTIVE,
         product_id=1,
@@ -610,8 +614,6 @@ def test_update_cluster_reservation(client, keycloak_mock):
         product=product,
     )
     model.Cluster.query.get.return_value = cluster
-
-    new_expiration = datetime.datetime(2100, 1, 1, 0, 0, tzinfo=tzutc())
 
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
@@ -623,6 +625,11 @@ def test_update_cluster_reservation(client, keycloak_mock):
 
     assert rv.status_code == 200
     assert cluster.reservation_expiration == new_expiration
+
+    event = db_session_mock.add.call_args_list[0].args[0]
+    assert event.type == model.ClusterEventType.RESERVATION_CHANGE
+    assert event.old_value == old_expiration
+    assert event.new_value == new_expiration
 
 
 def test_update_cluster_exceeded_reservation(client):
@@ -805,6 +812,7 @@ def test_get_cluster_events(client):
             'cluster_id': 1,
             'date': '2021-01-01T01:00:00+00:00',
             'user_id': '00000000-0000-0000-0000-000000000000',
+            'user_name': 'test-user',
             'tower_id': 1,
             'tower_job_id': 1,
             'status': model.ClusterStatus.POST_PROVISIONING.value,
@@ -815,6 +823,7 @@ def test_get_cluster_events(client):
             'cluster_id': 1,
             'date': '2021-01-01T02:00:00+00:00',
             'user_id': '00000000-0000-0000-0000-000000000000',
+            'user_name': 'test-user',
             'old_value': None,
             'new_value': '2021-02-01T00:00:00+00:00',
         },

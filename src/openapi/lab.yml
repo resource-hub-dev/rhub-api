@@ -320,6 +320,10 @@ model:
         type: string
         format: uuid
         nullable: true
+      user_name:
+        type: string
+        nullable: true
+        readOnly: true
       cluster_id:
         allOf:
           - $ref: 'common.yml#/model/ID'
@@ -339,6 +343,20 @@ model:
               - nullable: true
           status:
             $ref: '#/model/ClusterStatus'
+      - properties:
+          type:
+            type: string
+            enum: [status_change]
+          old_value:
+            anyOf:
+              - $ref: '#/model/ClusterStatus'
+              - nullable: true
+            example: Queued
+          new_value:
+            anyOf:
+              - $ref: '#/model/ClusterStatus'
+              - nullable: true
+            example: Active
       - properties:
           type:
             type: string
