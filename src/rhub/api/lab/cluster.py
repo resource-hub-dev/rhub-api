@@ -232,6 +232,7 @@ def create_cluster(keycloak: KeycloakClient, body, user):
     try:
         cluster = model.Cluster.from_dict(cluster_data)
         db.session.add(cluster)
+        db.session.flush()
     except ValueError as e:
         return problem(400, 'Bad Request', str(e))
 
@@ -260,11 +261,15 @@ def create_cluster(keycloak: KeycloakClient, body, user):
 
         cluster_event = model.ClusterTowerJobEvent(
             cluster_id=cluster.id,
+            user_id=user,
+            date=date_now(),
             tower_id=region.tower_id,
             tower_job_id=tower_job['id'],
             status=model.ClusterStatus.QUEUED,
         )
         db.session.add(cluster_event)
+
+        cluster.status = model.ClusterStatus.QUEUED
 
     except Exception as e:
         db.session.rollback()
@@ -320,6 +325,15 @@ def update_cluster(cluster_id, body, user):
         else:
             del cluster_data['lifespan_expiration']
 
+        cluster_event = model.ClusterLifespanChangeEvent(
+            cluster_id=cluster.id,
+            user_id=user,
+            date=date_now(),
+            old_value=cluster.lifespan_expiration,
+            new_value=cluster_data['lifespan_expiration']
+        )
+        db.session.add(cluster_event)
+
     if 'reservation_expiration' in cluster_data:
         if cluster_data['reservation_expiration'] is None:
             if not _user_can_disable_expiration(cluster.region, user):
@@ -344,6 +358,25 @@ def update_cluster(cluster_id, body, user):
                         403, 'Forbidden', 'Exceeded maximal reservation time.',
                         ext={'reservation_expiration_max': reservation_expiration_max},
                     )
+
+        cluster_event = model.ClusterReservationChangeEvent(
+            cluster_id=cluster.id,
+            user_id=user,
+            date=date_now(),
+            old_value=cluster.reservation_expiration,
+            new_value=cluster_data['reservation_expiration']
+        )
+        db.session.add(cluster_event)
+
+    if 'status' in cluster_data:
+        cluster_event = model.ClusterStatusChangeEvent(
+            cluster_id=cluster.id,
+            user_id=user,
+            date=date_now(),
+            old_value=cluster.status,
+            new_value=cluster_data['status']
+        )
+        db.session.add(cluster_event)
 
     cluster.update_from_dict(cluster_data)
 

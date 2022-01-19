@@ -420,6 +420,7 @@ class Cluster(db.Model, ModelMixin):
 
 class ClusterEventType(str, enum.Enum):
     TOWER_JOB = 'tower_job'
+    STATUS_CHANGE = 'status_change'
     RESERVATION_CHANGE = 'reservation_change'
     LIFESPAN_CHANGE = 'lifespan_change'
 
@@ -440,11 +441,25 @@ class ClusterEvent(db.Model, ModelMixin):
     #: :type: :class:`Cluster`
     cluster = db.relationship('Cluster', back_populates='events')
 
+    @property
+    def user_name(self):
+        if self.user_id:
+            return di.get(KeycloakClient).user_get(self.user_id)['username']
+        return None
+
     def to_dict(self):
         data = {}
         for column in self.__table__.columns:
             if hasattr(self, column.name):
                 data[column.name] = getattr(self, column.name)
+
+        # These attributes have different column names, see subclasses below.
+        for i in ['old_value', 'new_value']:
+            if hasattr(self, i):
+                data[i] = getattr(self, i)
+
+        data['user_name'] = self.user_name
+
         return data
 
 
@@ -477,16 +492,25 @@ class ClusterTowerJobEvent(ClusterEvent):
         return tower_client.template_job_stdout(self.tower_job_id, output_format='txt')
 
 
+class ClusterStatusChangeEvent(ClusterEvent):
+    __mapper_args__ = {
+        'polymorphic_identity': ClusterEventType.STATUS_CHANGE,
+    }
+
+    old_value = db.Column('status_old', db.Enum(ClusterStatus))
+    new_value = db.Column('status_new', db.Enum(ClusterStatus))
+
+
 class ClusterReservationChangeEvent(ClusterEvent):
     __mapper_args__ = {
         'polymorphic_identity': ClusterEventType.RESERVATION_CHANGE,
     }
 
-    old_value = db.Column(db.DateTime(timezone=True), nullable=True)
-    new_value = db.Column(db.DateTime(timezone=True), nullable=True)
+    old_value = db.Column('expiration_old', db.DateTime(timezone=True), nullable=True)
+    new_value = db.Column('expiration_new', db.DateTime(timezone=True), nullable=True)
 
 
-class ClusterLifespanChangeEvent(ClusterEvent):
+class ClusterLifespanChangeEvent(ClusterReservationChangeEvent):
     __mapper_args__ = {
         'polymorphic_identity': ClusterEventType.LIFESPAN_CHANGE,
     }
