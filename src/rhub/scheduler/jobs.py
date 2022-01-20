@@ -1,6 +1,9 @@
 import logging
 
 import rhub.tower.model
+import rhub.lab.model
+from rhub.api import db
+from rhub.api.utils import date_now
 
 
 logger = logging.getLogger(__name__)
@@ -74,3 +77,56 @@ def tower_launch(params):
         f'Launched {template_type} {template_id} in Tower {server.name} '
         f'(ID: {server.id}), job ID in Tower: {job_data["id"]}'
     )
+
+
+@CronJob
+def delete_expired_clusters(params):
+    """
+    Delete expired clusters.
+
+    params:
+        None
+    """
+    now = date_now()
+
+    expired_clusters = rhub.lab.model.Cluster.query.filter(
+        db.or_(
+            db.and_(
+                ~rhub.lab.model.Cluster.reservation_expiration.is_(None),
+                rhub.lab.model.Cluster.reservation_expiration <= now,
+            ),
+            db.and_(
+                ~rhub.lab.model.Cluster.lifespan_expiration.is_(None),
+                rhub.lab.model.Cluster.lifespan_expiration <= now,
+            ),
+        )
+    )
+
+    for cluster in expired_clusters.all():
+        logger.info(
+            f'Deleting expired cluster "{cluster.name}" ({cluster.id=}, '
+            f'{cluster.reservation_expiration=}, {cluster.lifespan_expiration=})',
+            extra={'cluster': cluster.to_dict(), 'region': cluster.region.to_dict()},
+        )
+
+        try:
+            tower_client = cluster.region.tower.create_tower_client()
+            tower_template = tower_client.template_get(
+                template_name=cluster.product.tower_template_name_delete,
+            )
+
+            logger.info(
+                f'Launching Tower template {tower_template["name"]} '
+                f'(id={tower_template["id"]}), '
+                f'extra_vars={cluster.tower_launch_extra_vars!r}'
+            )
+            tower_client.template_launch(
+                tower_template['id'],
+                {'extra_vars': cluster.tower_launch_extra_vars},
+            )
+
+            db.session.delete(cluster)
+            db.session.commit()
+
+        except Exception as e:
+            logger.exception(e)

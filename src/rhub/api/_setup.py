@@ -10,6 +10,7 @@ from rhub.lab import SHAREDCLUSTER_USER, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_ROLE
 from rhub.lab import model as lab_model  # noqa: F401
 from rhub.policies import model as policies_model  # noqa: F401
 from rhub.scheduler import model as scheduler_model  # noqa: F401
+from rhub.scheduler import jobs as scheduler_jobs
 
 
 logger = logging.getLogger(__name__)
@@ -93,3 +94,23 @@ def setup():
                     f'to sharedcluster group "{SHAREDCLUSTER_GROUP}"')
         keycloak.group_user_add(sharedcluster_user['id'],
                                 groups[SHAREDCLUSTER_GROUP]['id'])
+
+    query = scheduler_model.SchedulerCronJob.query.filter(
+        scheduler_model.SchedulerCronJob.job_name
+        == scheduler_jobs.delete_expired_clusters.name
+    )
+    if query.count() < 1:
+        logger.info('Creating default delete_expired_clusters cron job.')
+        row = scheduler_model.SchedulerCronJob(
+            name='Delete expired clusters',
+            description=(
+                'Deletes clusters with expired `reservation_expiration` '
+                'or `lifespan_expiration` in all regions.'
+            ),
+            enabled=True,
+            time_expr='0 1 * * *',  # daily, 1 AM
+            job_name=scheduler_jobs.delete_expired_clusters.name,
+            job_params=None,
+        )
+        db.session.add(row)
+        db.session.commit()
