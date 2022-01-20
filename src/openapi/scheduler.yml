@@ -23,6 +23,7 @@ model:
         enum:
           - example
           - tower_launch
+          - delete_expired_clusters
       job_params:
         type: object
         nullable: true
