@@ -518,6 +518,7 @@ class Product(db.Model, ModelMixin):
     tower_template_name_create = db.Column(db.String(128), nullable=False)
     tower_template_name_delete = db.Column(db.String(128), nullable=False)
     parameters = db.Column(db.JSON, nullable=False)
+    flavors = db.Column(db.JSON, nullable=True)
 
     #: :type: list of :class:`RegionProduct`
     regions_relation = db.relationship('RegionProduct', back_populates='product',

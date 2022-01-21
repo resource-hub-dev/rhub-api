@@ -35,6 +35,7 @@ def test_list_products(client):
             tower_template_name_create='dummy',
             tower_template_name_delete='dummy',
             parameters=[],
+            flavors={},
         ),
     ]
     model.Product.query.count.return_value = 1
@@ -55,6 +56,7 @@ def test_list_products(client):
                 'tower_template_name_create': 'dummy',
                 'tower_template_name_delete': 'dummy',
                 'parameters': [],
+                'flavors': {},
             },
         ],
         'total': 1,
@@ -70,6 +72,7 @@ def test_get_product(client):
         tower_template_name_create='dummy',
         tower_template_name_delete='dummy',
         parameters=[],
+        flavors={},
     )
 
     rv = client.get(
@@ -86,6 +89,7 @@ def test_get_product(client):
         'tower_template_name_create': 'dummy',
         'tower_template_name_delete': 'dummy',
         'parameters': [],
+        'flavors': {},
     }
 
 
@@ -97,6 +101,7 @@ def test_create_product(client, db_session_mock):
         'tower_template_name_create': 'dummy',
         'tower_template_name_delete': 'dummy',
         'parameters': [],
+        'flavors': {},
     }
 
     model.Product.query.filter.return_value.count.return_value = 0

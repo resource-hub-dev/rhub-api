@@ -411,6 +411,11 @@ model:
         type: string
         maxLength: 128
         example: rhub-openshift-delete
+      flavors:
+        type: object
+        additionalProperties:
+          $ref: '#/model/Quota'
+        nullable: true
       parameters:
         type: array
         items:
