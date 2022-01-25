@@ -11,6 +11,7 @@ from rhub.lab import model
 from rhub.tower import model as tower_model
 from rhub.api import db, DEFAULT_PAGE_LIMIT
 from rhub.api.vault import Vault
+from rhub.api.lab.cluster import _user_can_access_region
 from rhub.auth import ADMIN_ROLE
 from rhub.auth.keycloak import (
     KeycloakClient, KeycloakGetError, problem_from_keycloak_error,
@@ -320,3 +321,25 @@ def delete_region_product(keycloak: KeycloakClient, region_id, user):
         for relation in q.all():
             db.session.delete(relation)
         db.session.commit()
+
+
+def get_usage(region_id, user, with_openstack_limits=None):
+    region = model.Region.query.get(region_id)
+    if not region:
+        return problem(404, 'Not Found', f'Region {region_id} does not exist')
+
+    if not _user_can_access_region(region, user):
+        raise Forbidden("You don't have access to this region.")
+
+    data = {
+        'user_quota': region.user_quota.to_dict(),
+        'user_quota_usage': region.get_user_quota_usage(user),
+        'total_quota': region.total_quota.to_dict(),
+        'total_quota_usage': region.get_total_quota_usage(),
+    }
+
+    if with_openstack_limits:
+        os_project = region.get_user_project_name(user)
+        data['openstack_limits'] = region.get_openstack_limits(os_project)
+
+    return data

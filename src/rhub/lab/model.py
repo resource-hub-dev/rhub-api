@@ -12,6 +12,7 @@ from rhub.api.utils import ModelMixin
 from rhub.tower import model as tower_model
 from rhub.auth.keycloak import KeycloakClient
 from rhub.api.vault import Vault
+from rhub.lab import SHAREDCLUSTER_GROUP
 
 
 class Region(db.Model, ModelMixin):
@@ -23,10 +24,16 @@ class Region(db.Model, ModelMixin):
     description = db.Column(db.Text, nullable=False, default='')
     banner = db.Column(db.Text, nullable=False, default='')
     enabled = db.Column(db.Boolean, default=True)
-    quota_id = db.Column(db.Integer, db.ForeignKey('lab_quota.id'),
-                         nullable=True)
-    #: :type: :class:`Quota`
-    quota = db.relationship('Quota', uselist=False, back_populates='region')
+    user_quota_id = db.Column(db.Integer, db.ForeignKey('lab_quota.id'),
+                              nullable=True)
+    #: :type: :class:`Quota` resources limit that single user can use, if
+    #: exceeded the user should not be able to create new reservations
+    user_quota = db.relationship('Quota', uselist=False, foreign_keys=[user_quota_id])
+    total_quota_id = db.Column(db.Integer, db.ForeignKey('lab_quota.id'),
+                               nullable=True)
+    #: :type: :class:`Quota` total region resources limits, if exceeded no user
+    #: should be able to create new reservations
+    total_quota = db.relationship('Quota', uselist=False, foreign_keys=[total_quota_id])
     lifespan_length = db.Column(db.Integer, nullable=True)
     reservations_enabled = db.Column(db.Boolean, default=True)
     reservation_expiration_max = db.Column(db.Integer, nullable=True)
@@ -93,7 +100,7 @@ class Region(db.Model, ModelMixin):
         data = {}
 
         for column in self.__table__.columns:
-            if column.name == 'quota_id':
+            if column.name.endswith('_quota_id'):
                 continue
             for i in self._INLINE_CHILDS:
                 if column.name.startswith(f'{i}_'):
@@ -104,10 +111,8 @@ class Region(db.Model, ModelMixin):
             else:
                 data[column.name] = getattr(self, column.name)
 
-        if self.quota:
-            data['quota'] = self.quota.to_dict()
-        else:
-            data['quota'] = None
+        for k in ['user_quota', 'total_quota']:
+            data[k] = getattr(self, k).to_dict() if getattr(self, k) else None
 
         return data
 
@@ -115,9 +120,10 @@ class Region(db.Model, ModelMixin):
     def from_dict(cls, data):
         data = copy.deepcopy(data)
 
-        quota_data = data.pop('quota', None)
-        if quota_data:
-            data['quota'] = Quota.from_dict(quota_data)
+        for k in ['user_quota', 'total_quota']:
+            quota_data = data.pop(k, None)
+            if quota_data:
+                data[k] = Quota.from_dict(quota_data)
 
         for i in cls._INLINE_CHILDS:
             for k, v in data[i].items():
@@ -129,15 +135,16 @@ class Region(db.Model, ModelMixin):
     def update_from_dict(self, data):
         data = copy.deepcopy(data)
 
-        if 'quota' in data:
-            if data['quota']:
-                if self.quota is None:
-                    self.quota = Quota.from_dict(data['quota'])
+        for k in ['user_quota', 'total_quota']:
+            if k in data:
+                if data[k]:
+                    if getattr(self, k) is None:
+                        setattr(self, k, Quota.from_dict(data[k]))
+                    else:
+                        setattr(self, k).update_from_dict(data[k])
                 else:
-                    self.quota.update_from_dict(data['quota'])
-            else:
-                self.quota = None
-            del data['quota']
+                    setattr(self, k, None)
+                del data[k]
 
         for i in self._INLINE_CHILDS:
             if i in data:
@@ -172,6 +179,55 @@ class Region(db.Model, ModelMixin):
         connection.authorize()
         return connection
 
+    def get_user_project_name(self, user_id):
+        user_name = di.get(KeycloakClient).user_get(user_id)['username']
+        return f'ql_{user_name}'
+
+    def get_user_quota_usage(self, user_id):
+        query = (
+            db.session.query(
+                db.func.coalesce(db.func.sum(ClusterHost.num_vcpus), 0),
+                db.func.coalesce(db.func.sum(ClusterHost.ram_mb), 0),
+                db.func.coalesce(db.func.sum(ClusterHost.num_volumes), 0),
+                db.func.coalesce(db.func.sum(ClusterHost.volumes_gb), 0),
+            )
+            .join(
+                ClusterHost.cluster,
+            )
+            .where(
+                db.and_(
+                    Cluster.region_id == self.id,
+                    Cluster.user_id == user_id,
+                )
+            )
+        )
+        result = query.first()
+
+        return dict(zip(['num_vcpus', 'ram_mb', 'num_volumes', 'volumes_gb'], result))
+
+    def get_total_quota_usage(self):
+        query = (
+            db.session.query(
+                db.func.coalesce(db.func.sum(ClusterHost.num_vcpus), 0),
+                db.func.coalesce(db.func.sum(ClusterHost.ram_mb), 0),
+                db.func.coalesce(db.func.sum(ClusterHost.num_volumes), 0),
+                db.func.coalesce(db.func.sum(ClusterHost.volumes_gb), 0),
+            )
+            .join(
+                ClusterHost.cluster,
+            )
+            .where(
+                Cluster.region_id == self.id,
+            )
+        )
+        result = query.first()
+
+        return dict(zip(['num_vcpus', 'ram_mb', 'num_volumes', 'volumes_gb'], result))
+
+    def get_openstack_limits(self, project):
+        os_client = self.create_openstack_client(project)
+        return os_client.compute.get_limits()
+
 
 class Quota(db.Model, ModelMixin):
     __tablename__ = 'lab_quota'
@@ -181,10 +237,6 @@ class Quota(db.Model, ModelMixin):
     ram_mb = db.Column(db.Integer, nullable=True)
     num_volumes = db.Column(db.Integer, nullable=True)
     volumes_gb = db.Column(db.Integer, nullable=True)
-
-    #: :type: :class:`Region`
-    region = db.relationship('Region', back_populates='quota',
-                             cascade='all,delete-orphan')
 
     def to_dict(self):
         data = super().to_dict()
@@ -286,10 +338,27 @@ class Cluster(db.Model, ModelMixin):
 
     @property
     def quota(self):
-        """:type: :class:`Quota` or `None`"""
+        """
+        User quota.
+
+        :type: :class:`Quota` or `None`
+        """
         if self.region:
-            return self.region.quota
+            return self.region.user_quota
         return None
+
+    @property
+    def quota_usage(self):
+        """
+        User quota usage.
+
+        :type: dict or `None`
+        """
+        usage = dict.fromkeys(['num_vcpus', 'ram_mb', 'num_volumes', 'volumes_gb'], 0)
+        for host in self.hosts:
+            for k in usage:
+                usage[k] += getattr(host, k)
+        return usage
 
     @property
     def user_name(self):
@@ -300,6 +369,10 @@ class Cluster(db.Model, ModelMixin):
         if self.group_id:
             return di.get(KeycloakClient).group_get(self.group_id)['name']
         return None
+
+    @property
+    def shared(self):
+        return self.group_name == SHAREDCLUSTER_GROUP
 
     @property
     def tower_launch_extra_vars(self):
@@ -321,16 +394,19 @@ class Cluster(db.Model, ModelMixin):
         data['region_name'] = self.region.name
         data['user_name'] = self.user_name
         data['group_name'] = self.group_name
-
-        if self.quota:
-            data['quota'] = self.quota.to_dict()
-        else:
-            data['quota'] = None
+        data['shared'] = self.shared
 
         if self.hosts:
             data['hosts'] = [host.to_dict() for host in self.hosts]
         else:
             data['hosts'] = []
+
+        if self.quota:
+            data['quota'] = self.quota.to_dict()
+            data['quota_usage'] = self.quota_usage
+        else:
+            data['quota'] = None
+            data['quota_usage'] = None
 
         if self.status:
             data['status'] = self.status.value
@@ -344,6 +420,7 @@ class Cluster(db.Model, ModelMixin):
 
 class ClusterEventType(str, enum.Enum):
     TOWER_JOB = 'tower_job'
+    STATUS_CHANGE = 'status_change'
     RESERVATION_CHANGE = 'reservation_change'
     LIFESPAN_CHANGE = 'lifespan_change'
 
@@ -364,11 +441,25 @@ class ClusterEvent(db.Model, ModelMixin):
     #: :type: :class:`Cluster`
     cluster = db.relationship('Cluster', back_populates='events')
 
+    @property
+    def user_name(self):
+        if self.user_id:
+            return di.get(KeycloakClient).user_get(self.user_id)['username']
+        return None
+
     def to_dict(self):
         data = {}
         for column in self.__table__.columns:
             if hasattr(self, column.name):
                 data[column.name] = getattr(self, column.name)
+
+        # These attributes have different column names, see subclasses below.
+        for i in ['old_value', 'new_value']:
+            if hasattr(self, i):
+                data[i] = getattr(self, i)
+
+        data['user_name'] = self.user_name
+
         return data
 
 
@@ -401,16 +492,25 @@ class ClusterTowerJobEvent(ClusterEvent):
         return tower_client.template_job_stdout(self.tower_job_id, output_format='txt')
 
 
+class ClusterStatusChangeEvent(ClusterEvent):
+    __mapper_args__ = {
+        'polymorphic_identity': ClusterEventType.STATUS_CHANGE,
+    }
+
+    old_value = db.Column('status_old', db.Enum(ClusterStatus))
+    new_value = db.Column('status_new', db.Enum(ClusterStatus))
+
+
 class ClusterReservationChangeEvent(ClusterEvent):
     __mapper_args__ = {
         'polymorphic_identity': ClusterEventType.RESERVATION_CHANGE,
     }
 
-    old_value = db.Column(db.DateTime(timezone=True), nullable=True)
-    new_value = db.Column(db.DateTime(timezone=True), nullable=True)
+    old_value = db.Column('expiration_old', db.DateTime(timezone=True), nullable=True)
+    new_value = db.Column('expiration_new', db.DateTime(timezone=True), nullable=True)
 
 
-class ClusterLifespanChangeEvent(ClusterEvent):
+class ClusterLifespanChangeEvent(ClusterReservationChangeEvent):
     __mapper_args__ = {
         'polymorphic_identity': ClusterEventType.LIFESPAN_CHANGE,
     }

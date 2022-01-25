@@ -3,7 +3,7 @@ import datetime
 import pytest
 from dateutil.tz import tzutc
 
-from rhub.lab import model
+from rhub.lab import model, SHAREDCLUSTER_USER, SHAREDCLUSTER_GROUP
 from rhub.tower import model as tower_model
 from rhub.api.vault import Vault
 from rhub.auth.keycloak import KeycloakClient
@@ -34,7 +34,8 @@ def _create_test_region():
         description='',
         banner='',
         enabled=True,
-        quota_id=None,
+        user_quota_id=None,
+        total_quota_id=None,
         lifespan_length=None,
         reservations_enabled=True,
         reservation_expiration_max=None,
@@ -123,9 +124,11 @@ def test_list_clusters(client, keycloak_mock, mocker):
                 'group_name': None,
                 'hosts': [],
                 'quota': None,
+                'quota_usage': None,
                 'product_id': 1,
                 'product_name': 'dummy',
                 'product_params': {},
+                'shared': False,
             },
         ],
         'total': 1,
@@ -154,8 +157,35 @@ def test_get_cluster(client, keycloak_mock, mocker):
         product_params={},
         product=sample_product,
     )
-    mocker.patch.object(model.Cluster, 'hosts', [])
-    mocker.patch.object(model.Cluster, 'quota', None)
+    mocker.patch.object(model.Cluster, 'hosts', [
+        model.ClusterHost(
+            id=1,
+            cluster_id=1,
+            fqdn='test0.localhost',
+            ipaddr=['127.0.0.1', '::1'],
+            num_vcpus=2,
+            ram_mb=4096,
+            num_volumes=1,
+            volumes_gb=20,
+        ),
+        model.ClusterHost(
+            id=2,
+            cluster_id=1,
+            fqdn='test1.localhost',
+            ipaddr=['127.0.0.1', '::1'],
+            num_vcpus=2,
+            ram_mb=4096,
+            num_volumes=1,
+            volumes_gb=20,
+        ),
+    ])
+    mocker.patch.object(model.Cluster, 'quota', model.Quota(
+        id=1,
+        num_vcpus=20,
+        ram_mb=20000,
+        num_volumes=2,
+        volumes_gb=200,
+    ))
 
     rv = client.get(
         f'{API_BASE}/lab/cluster/1',
@@ -181,11 +211,44 @@ def test_get_cluster(client, keycloak_mock, mocker):
         'region_name': 'test',
         'user_name': 'test-user',
         'group_name': None,
-        'hosts': [],
-        'quota': None,
+        'hosts': [
+            {
+                'id': 1,
+                'cluster_id': 1,
+                'fqdn': 'test0.localhost',
+                'ipaddr': ['127.0.0.1', '::1'],
+                'num_vcpus': 2,
+                'ram_mb': 4096,
+                'num_volumes': 1,
+                'volumes_gb': 20,
+            },
+            {
+                'id': 2,
+                'cluster_id': 1,
+                'fqdn': 'test1.localhost',
+                'ipaddr': ['127.0.0.1', '::1'],
+                'num_vcpus': 2,
+                'ram_mb': 4096,
+                'num_volumes': 1,
+                'volumes_gb': 20,
+            }
+        ],
+        'quota': {
+            'num_vcpus': 20,
+            'ram_mb': 20000,
+            'num_volumes': 2,
+            'volumes_gb': 200,
+        },
+        'quota_usage': {
+            'num_vcpus': 4,
+            'ram_mb': 8192,
+            'num_volumes': 2,
+            'volumes_gb': 40,
+        },
         'product_id': 1,
         'product_name': 'dummy',
         'product_params': {},
+        'shared': False,
     }
 
 
@@ -193,6 +256,7 @@ def test_create_cluster(client, keycloak_mock, db_session_mock, mocker):
     user_id = '00000000-0000-0000-0000-000000000000'
     model.Region.query.get.return_value = region = _create_test_region()
     model.Product.query.get.return_value = product = _create_test_product()
+    keycloak_mock.user_list.return_value = []
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
     cluster_data = {
         'name': 'testcluster',
@@ -258,8 +322,93 @@ def test_create_cluster(client, keycloak_mock, db_session_mock, mocker):
     assert cluster_event.tower_job_id == 321
 
     assert rv.json['user_id'] == '00000000-0000-0000-0000-000000000000'
-    assert rv.json['status'] is None
+    assert rv.json['status'] == model.ClusterStatus.QUEUED
     assert rv.json['created'] == '2021-01-01T01:00:00+00:00'
+
+
+def test_create_cluster_shared(client, keycloak_mock, db_session_mock, mocker):
+    user_id = '00000000-0000-0000-0000-000000000000'
+    group_id = '00000000-0000-0000-0000-000000000000'
+
+    model.Region.query.get.return_value = region = _create_test_region()
+    model.Product.query.get.return_value = product = _create_test_product()
+
+    keycloak_mock.user_list.return_value = []
+    keycloak_mock.user_get.return_value = {
+        'id': user_id, 'username': SHAREDCLUSTER_USER,
+    }
+
+    sharedcluster_group = {'id': group_id, 'name': SHAREDCLUSTER_GROUP}
+    keycloak_mock.group_get.return_value = sharedcluster_group
+    keycloak_mock.group_list.return_value = [sharedcluster_group]
+
+    cluster_data = {
+        'name': 'testsharedcluster',
+        'description': 'test shared cluster',
+        'region_id': 1,
+        'product_id': 1,
+        'product_params': {},
+    }
+
+    model.Cluster.query.filter.return_value.count.return_value = 0
+
+    def db_add(row):
+        row.id = 1
+        if isinstance(row, model.Cluster):
+            mocker.patch.object(model.Cluster, 'region', region)
+            mocker.patch.object(model.Cluster, 'product', product)
+
+    db_session_mock.add.side_effect = db_add
+
+    mocker.patch.object(model.Region, 'tower')
+    mocker.patch.object(model.Region.tower.Server, 'create_tower_client')
+    model.Region.tower.create_tower_client.return_value = (
+        tower_client_mock := mocker.Mock()
+    )
+
+    tower_client_mock.template_get.return_value = {'id': 123, 'name': 'dummy-create'}
+    tower_client_mock.template_launch.return_value = {'id': 321}
+
+    rv = client.post(
+        f'{API_BASE}/lab/cluster',
+        headers={'Authorization': 'Bearer foobar'},
+        json=cluster_data | {'shared': True},
+    )
+
+    assert rv.status_code == 200, rv.data
+
+    region.tower.create_tower_client.assert_called()
+    tower_client_mock.template_get.assert_called_with(template_name='dummy-create')
+    tower_client_mock.template_launch.assert_called_with(123, {
+        'extra_vars': {
+            'rhub_cluster_id': 1,
+            'rhub_cluster_name': 'testsharedcluster',
+            'rhub_product_id': product.id,
+            'rhub_product_name': product.name,
+            'rhub_region_id': region.id,
+            'rhub_region_name': region.name,
+            'rhub_user_id': user_id,
+            'rhub_user_name': SHAREDCLUSTER_USER,
+        },
+    })
+
+    db_session_mock.add.assert_called()
+    db_session_mock.commit.assert_called()
+
+    cluster = db_session_mock.add.call_args_list[0].args[0]
+    for k, v in cluster_data.items():
+        assert getattr(cluster, k) == v
+
+    cluster_event = db_session_mock.add.call_args_list[1].args[0]
+    assert cluster_event.cluster_id == 1
+    assert cluster_event.tower_job_id == 321
+
+    assert rv.json['user_id'] == user_id
+    assert rv.json['group_id'] == user_id
+
+    assert rv.json['shared'] is True
+    assert rv.json['reservation_expiration'] is None
+    assert rv.json['lifespan_expiration'] is None
 
 
 def test_create_cluster_in_disabled_region(client, db_session_mock):
@@ -439,11 +588,15 @@ def test_update_cluster_ro_field(client, cluster_data):
     assert rv.status_code == 400
 
 
-def test_update_cluster_reservation(client, keycloak_mock):
+def test_update_cluster_reservation(client, keycloak_mock, db_session_mock):
     user_id = '00000000-0000-0000-0000-000000000000'
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
     region = _create_test_region()
     product = _create_test_product()
+
+    old_expiration = datetime.datetime(2100, 1, 1, 0, 0, tzinfo=tzutc())
+    new_expiration = datetime.datetime(2100, 1, 2, 0, 0, tzinfo=tzutc())
+
     cluster = model.Cluster(
         id=1,
         name='testcluster',
@@ -453,7 +606,7 @@ def test_update_cluster_reservation(client, keycloak_mock):
         created=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
         region_id=region.id,
         region=region,
-        reservation_expiration=None,
+        reservation_expiration=old_expiration,
         lifespan_expiration=None,
         status=model.ClusterStatus.ACTIVE,
         product_id=1,
@@ -461,8 +614,6 @@ def test_update_cluster_reservation(client, keycloak_mock):
         product=product,
     )
     model.Cluster.query.get.return_value = cluster
-
-    new_expiration = datetime.datetime(2100, 1, 1, 0, 0, tzinfo=tzutc())
 
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
@@ -474,6 +625,11 @@ def test_update_cluster_reservation(client, keycloak_mock):
 
     assert rv.status_code == 200
     assert cluster.reservation_expiration == new_expiration
+
+    event = db_session_mock.add.call_args_list[0].args[0]
+    assert event.type == model.ClusterEventType.RESERVATION_CHANGE
+    assert event.old_value == old_expiration
+    assert event.new_value == new_expiration
 
 
 def test_update_cluster_exceeded_reservation(client):
@@ -656,6 +812,7 @@ def test_get_cluster_events(client):
             'cluster_id': 1,
             'date': '2021-01-01T01:00:00+00:00',
             'user_id': '00000000-0000-0000-0000-000000000000',
+            'user_name': 'test-user',
             'tower_id': 1,
             'tower_job_id': 1,
             'status': model.ClusterStatus.POST_PROVISIONING.value,
@@ -666,6 +823,7 @@ def test_get_cluster_events(client):
             'cluster_id': 1,
             'date': '2021-01-01T02:00:00+00:00',
             'user_id': '00000000-0000-0000-0000-000000000000',
+            'user_name': 'test-user',
             'old_value': None,
             'new_value': '2021-02-01T00:00:00+00:00',
         },
