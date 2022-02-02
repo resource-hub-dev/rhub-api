@@ -1,4 +1,5 @@
 import base64
+from unittest.mock import ANY
 
 import pytest
 
@@ -26,7 +27,10 @@ def test_token_create(client, keycloak_mock):
 
 
 def test_me(client, keycloak_mock):
-    keycloak_mock.user_get.return_value = {'username': 'user'}
+    keycloak_mock.user_get.return_value = {
+        'id': '00000000-0000-0000-0000-000000000000',
+        'username': 'user',
+    }
 
     rv = client.get(
         f'{API_BASE}/me',
@@ -34,11 +38,18 @@ def test_me(client, keycloak_mock):
     )
 
     assert rv.status_code == 200
-    assert rv.json == {'username': 'user'}
+    assert rv.json == {
+        'id': '00000000-0000-0000-0000-000000000000',
+        'username': 'user',
+        '_href': ANY,
+    }
 
 
 def test_list_users(client, keycloak_mock):
-    keycloak_mock.user_list.return_value = [{'username': 'user'}]
+    keycloak_mock.user_list.return_value = [{
+        'id': '00000000-0000-0000-0000-000000000000',
+        'username': 'user',
+    }]
 
     rv = client.get(
         f'{API_BASE}/auth/user',
@@ -48,15 +59,19 @@ def test_list_users(client, keycloak_mock):
     keycloak_mock.user_list.assert_called_with({'first': 0, 'max': DEFAULT_PAGE_LIMIT})
 
     assert rv.status_code == 200
-    assert rv.json == [{'username': 'user'}]
+    assert rv.json == [{
+        'id': '00000000-0000-0000-0000-000000000000',
+        'username': 'user',
+        '_href': ANY,
+    }]
 
 
 def test_create_user(client, keycloak_mock):
-    user_id = 'uuid'
+    user_id = '00000000-0000-0000-0000-000000000000'
     user_data = {'username': 'user', 'email': 'user@example.com'}
 
     keycloak_mock.user_create.return_value = user_id
-    keycloak_mock.user_get.return_value = user_data
+    keycloak_mock.user_get.return_value = user_data | {'id': user_id}
 
     rv = client.post(
         f'{API_BASE}/auth/user',
@@ -68,14 +83,14 @@ def test_create_user(client, keycloak_mock):
     keycloak_mock.user_get.assert_called_with(user_id)
 
     assert rv.status_code == 200
-    assert rv.json == user_data
+    assert rv.json == user_data | {'id': user_id, '_href': ANY}
 
 
 def test_get_user(client, keycloak_mock):
-    user_id = 'uuid'
+    user_id = '00000000-0000-0000-0000-000000000000'
     user_data = {'username': 'user', 'email': 'user@example.com'}
 
-    keycloak_mock.user_get.return_value = user_data
+    keycloak_mock.user_get.return_value = user_data | {'id': user_id}
 
     rv = client.get(
         f'{API_BASE}/auth/user/{user_id}',
@@ -85,15 +100,15 @@ def test_get_user(client, keycloak_mock):
     keycloak_mock.user_get.assert_called_with(user_id)
 
     assert rv.status_code == 200
-    assert rv.json == user_data
+    assert rv.json == user_data | {'id': user_id, '_href': ANY}
 
 
 def test_update_user(client, keycloak_mock):
-    user_id = 'uuid'
+    user_id = '00000000-0000-0000-0000-000000000000'
     user_data = {'username': 'user', 'email': 'new-user@example.com'}
 
     keycloak_mock.user_update.return_value = user_id
-    keycloak_mock.user_get.return_value = user_data
+    keycloak_mock.user_get.return_value = user_data | {'id': user_id}
 
     rv = client.patch(
         f'{API_BASE}/auth/user/{user_id}',
@@ -105,11 +120,11 @@ def test_update_user(client, keycloak_mock):
     keycloak_mock.user_get.assert_called_with(user_id)
 
     assert rv.status_code == 200
-    assert rv.json == user_data
+    assert rv.json == user_data | {'id': user_id, '_href': ANY}
 
 
 def test_delete_user(client, keycloak_mock):
-    user_id = 'uuid'
+    user_id = '00000000-0000-0000-0000-000000000000'
 
     keycloak_mock.user_delete.return_value = None
 
@@ -124,9 +139,9 @@ def test_delete_user(client, keycloak_mock):
     assert rv.json == {}
 
 def test_list_user_groups(client, keycloak_mock):
-    user_id = 'uuid'
+    user_id = '00000000-0000-0000-0000-000000000000'
 
-    keycloak_mock.user_group_list.return_value = [{'name': 'admin'}]
+    keycloak_mock.user_group_list.return_value = [{'id': user_id, 'name': 'admin'}]
 
     rv = client.get(
         f'{API_BASE}/auth/user/{user_id}/groups',
@@ -136,12 +151,12 @@ def test_list_user_groups(client, keycloak_mock):
     keycloak_mock.user_group_list.assert_called_with(user_id)
 
     assert rv.status_code == 200
-    assert rv.json == [{'name': 'admin'}]
+    assert rv.json == [{'id': user_id, 'name': 'admin', '_href': ANY}]
 
 
 def test_add_user_group(client, keycloak_mock):
-    user_id = 'uuid'
-    group_id = 'ugid'
+    user_id = '00000000-0000-0000-0000-000000000000'
+    group_id = '00000000-0004-0003-0002-000000000001'
 
     keycloak_mock.group_user_add.return_value = None
 
@@ -158,8 +173,8 @@ def test_add_user_group(client, keycloak_mock):
 
 
 def test_delete_user_group(client, keycloak_mock):
-    user_id = 'uuid'
-    group_id = 'ugid'
+    user_id = '00000000-0000-0000-0000-000000000000'
+    group_id = '00000000-0004-0003-0002-000000000001'
 
     keycloak_mock.group_user_remove.return_value = None
 
@@ -176,7 +191,10 @@ def test_delete_user_group(client, keycloak_mock):
 
 
 def test_list_groups(client, keycloak_mock):
-    keycloak_mock.group_list.return_value = [{'name': 'admin'}]
+    keycloak_mock.group_list.return_value = [{
+        'id': '00000000-0000-0000-0000-000000000000',
+        'name': 'admin',
+    }]
 
     rv = client.get(
         f'{API_BASE}/auth/group',
@@ -184,15 +202,19 @@ def test_list_groups(client, keycloak_mock):
     )
 
     assert rv.status_code == 200
-    assert rv.json == [{'name': 'admin'}]
+    assert rv.json == [{
+        'id': '00000000-0000-0000-0000-000000000000',
+        'name': 'admin',
+        '_href': ANY,
+    }]
 
 
 def test_create_group(client, keycloak_mock):
-    group_id = 'uuid'
+    group_id = '00000000-0004-0003-0002-000000000001'
     group_data = {'name': 'admin'}
 
     keycloak_mock.group_create.return_value = group_id
-    keycloak_mock.group_get.return_value = group_data
+    keycloak_mock.group_get.return_value = group_data | {'id': group_id}
 
     rv = client.post(
         f'{API_BASE}/auth/group',
@@ -204,14 +226,14 @@ def test_create_group(client, keycloak_mock):
     keycloak_mock.group_get.assert_called_with(group_id)
 
     assert rv.status_code == 200
-    assert rv.json == group_data
+    assert rv.json == group_data | {'id': group_id, '_href': ANY}
 
 
 def test_get_group(client, keycloak_mock):
-    group_id = 'uuid'
+    group_id = '00000000-0004-0003-0002-000000000001'
     group_data = {'name': 'admin'}
 
-    keycloak_mock.group_get.return_value = group_data
+    keycloak_mock.group_get.return_value = group_data | {'id': group_id}
 
     rv = client.get(
         f'{API_BASE}/auth/group/{group_id}',
@@ -221,15 +243,15 @@ def test_get_group(client, keycloak_mock):
     keycloak_mock.group_get.assert_called_with(group_id)
 
     assert rv.status_code == 200
-    assert rv.json == group_data
+    assert rv.json == group_data | {'id': group_id, '_href': ANY}
 
 
 def test_update_group(client, keycloak_mock):
-    group_id = 'uuid'
+    group_id = '00000000-0004-0003-0002-000000000001'
     group_data = {'name': 'new-admin'}
 
     keycloak_mock.group_update.return_value = group_id
-    keycloak_mock.group_get.return_value = group_data
+    keycloak_mock.group_get.return_value = group_data | {'id': group_id}
 
     rv = client.patch(
         f'{API_BASE}/auth/group/{group_id}',
@@ -241,11 +263,11 @@ def test_update_group(client, keycloak_mock):
     keycloak_mock.group_get.assert_called_with(group_id)
 
     assert rv.status_code == 200
-    assert rv.json == group_data
+    assert rv.json == group_data | {'id': group_id, '_href': ANY}
 
 
 def test_delete_group(client, keycloak_mock):
-    group_id = 'uuid'
+    group_id = '00000000-0004-0003-0002-000000000001'
 
     keycloak_mock.group_delete.return_value = group_id
 
@@ -261,10 +283,13 @@ def test_delete_group(client, keycloak_mock):
 
 
 def test_list_group_users(client, keycloak_mock):
-    group_id = 'uuid'
-    user_list = [{'username': 'user'}]
+    group_id = '00000000-0004-0003-0002-000000000001'
+    user_data = {
+        'id': '00000000-0000-0000-0000-000000000000',
+        'username': 'user',
+    }
 
-    keycloak_mock.group_user_list.return_value = user_list
+    keycloak_mock.group_user_list.return_value = [user_data]
 
     rv = client.get(
         f'{API_BASE}/auth/group/{group_id}/users',
@@ -274,11 +299,14 @@ def test_list_group_users(client, keycloak_mock):
     keycloak_mock.group_user_list.assert_called_with(group_id)
 
     assert rv.status_code == 200
-    assert rv.json == user_list
+    assert rv.json == [user_data | {'_href': ANY}]
 
 
 def test_list_roles(client, keycloak_mock):
-    keycloak_mock.role_list.return_value = [{'name': 'admin'}]
+    keycloak_mock.role_list.return_value = [{
+        'id': '00000000-000d-000c-000b-00000000000a',
+        'name': 'admin',
+    }]
 
     rv = client.get(
         f'{API_BASE}/auth/role',
@@ -286,15 +314,19 @@ def test_list_roles(client, keycloak_mock):
     )
 
     assert rv.status_code == 200
-    assert rv.json == [{'name': 'admin'}]
+    assert rv.json == [{
+        'id': '00000000-000d-000c-000b-00000000000a',
+        'name': 'admin',
+        '_href': ANY,
+    }]
 
 
 def test_create_role(client, keycloak_mock):
-    role_id = 'uuid'
+    role_id = '00000000-000d-000c-000b-00000000000a'
     role_data = {'name': 'admin'}
 
     keycloak_mock.role_create.return_value = role_id
-    keycloak_mock.role_get.return_value = role_data
+    keycloak_mock.role_get.return_value = role_data | {'id': role_id}
 
     rv = client.post(
         f'{API_BASE}/auth/role',
@@ -306,14 +338,14 @@ def test_create_role(client, keycloak_mock):
     keycloak_mock.role_get.assert_called_with(role_id)
 
     assert rv.status_code == 200
-    assert rv.json == role_data
+    assert rv.json == role_data | {'id': role_id, '_href': ANY}
 
 
 def test_get_role(client, keycloak_mock):
-    role_id = 'uuid'
+    role_id = '00000000-000d-000c-000b-00000000000a'
     role_data = {'name': 'admin'}
 
-    keycloak_mock.role_get.return_value = role_data
+    keycloak_mock.role_get.return_value = role_data | {'id': role_id}
 
     rv = client.get(
         f'{API_BASE}/auth/role/{role_id}',
@@ -323,15 +355,15 @@ def test_get_role(client, keycloak_mock):
     keycloak_mock.role_get.assert_called_with(role_id)
 
     assert rv.status_code == 200
-    assert rv.json == role_data
+    assert rv.json == role_data | {'id': role_id, '_href': ANY}
 
 
 def test_update_role(client, keycloak_mock):
-    role_id = 'uuid'
+    role_id = '00000000-000d-000c-000b-00000000000a'
     role_data = {'name': 'new-admin'}
 
     keycloak_mock.role_update.return_value = role_id
-    keycloak_mock.role_get.return_value = role_data
+    keycloak_mock.role_get.return_value = role_data | {'id': role_id}
 
     rv = client.patch(
         f'{API_BASE}/auth/role/{role_id}',
@@ -343,11 +375,11 @@ def test_update_role(client, keycloak_mock):
     keycloak_mock.role_get.assert_called_with(role_data['name'])
 
     assert rv.status_code == 200
-    assert rv.json == role_data
+    assert rv.json == role_data | {'id': role_id, '_href': ANY}
 
 
 def test_delete_role(client, keycloak_mock):
-    role_id = 'uuid'
+    role_id = '00000000-000d-000c-000b-00000000000a'
 
     keycloak_mock.role_delete.return_value = role_id
 

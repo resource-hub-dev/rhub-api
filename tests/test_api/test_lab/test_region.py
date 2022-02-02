@@ -1,4 +1,5 @@
 import base64
+from unittest.mock import ANY
 
 import pytest
 import sqlalchemy.exc
@@ -19,7 +20,7 @@ def _db_add_row_side_effect(data_added):
     return side_effect
 
 
-def test_to_dict():
+def test_to_dict(keycloak_mock):
     region = model.Region(
         id=1,
         name='test',
@@ -58,6 +59,8 @@ def test_to_dict():
         vault_server='https://vault.example.com/',
         download_server='https://download.example.com',
     )
+
+    keycloak_mock.group_get.return_value = {'name': 'foobar-group'}
 
     assert region.to_dict() == {
         'id': 1,
@@ -183,6 +186,7 @@ def test_list_regions(client):
                 },
                 'vault_server': 'https://vault.example.com/',
                 'download_server': 'https://download.example.com',
+                '_href': ANY,
             }
         ],
         'total': 1,
@@ -266,6 +270,7 @@ def test_get_region(client):
         },
         'vault_server': 'https://vault.example.com/',
         'download_server': 'https://download.example.com',
+        '_href': ANY,
     }
 
 
@@ -916,6 +921,7 @@ def test_region_list_products(client):
                 'flavors': {},
             },
             'enabled': True,
+            '_href': ANY,
         },
     ]
 

@@ -2,7 +2,7 @@ import logging
 
 import sqlalchemy
 import sqlalchemy.exc
-from flask import request
+from flask import request, url_for
 from connexion import problem
 from werkzeug.exceptions import Forbidden
 import dpath.util as dpath
@@ -13,6 +13,7 @@ from rhub.api import db, DEFAULT_PAGE_LIMIT
 from rhub.api.utils import db_sort
 from rhub.api.vault import Vault
 from rhub.api.lab.cluster import _user_can_access_region
+from rhub.api.lab.product import _product_href
 from rhub.auth import ADMIN_ROLE
 from rhub.auth.keycloak import (
     KeycloakClient, KeycloakGetError, problem_from_keycloak_error,
@@ -24,6 +25,25 @@ logger = logging.getLogger(__name__)
 
 VAULT_PATH_PREFIX = 'kv/lab/region'
 """Vault path prefix to create new credentials in Vault."""
+
+
+def _region_href(region):
+    href = {
+        'region': url_for('.rhub_api_lab_region_get_region',
+                          region_id=region.id),
+        'region_usage': url_for('.rhub_api_lab_region_get_usage',
+                                region_id=region.id),
+        'region_products': url_for('.rhub_api_lab_region_list_region_products',
+                                   region_id=region.id),
+        'tower': url_for('.rhub_api_tower_get_server',
+                         server_id=region.tower_id),
+        'owner_group': url_for('.rhub_api_auth_group_get_group',
+                               group_id=region.owner_group)
+    }
+    if region.users_group:
+        href['users_group'] = url_for('.rhub_api_auth_group_get_group',
+                                      group_id=region.users_group)
+    return href
 
 
 def list_regions(keycloak: KeycloakClient,
@@ -57,7 +77,8 @@ def list_regions(keycloak: KeycloakClient,
 
     return {
         'data': [
-            region.to_dict() for region in regions.limit(limit).offset(page * limit)
+            region.to_dict() | {'_href': _region_href(region)}
+            for region in regions.limit(limit).offset(page * limit)
         ],
         'total': regions.count(),
     }
@@ -132,7 +153,7 @@ def create_region(keycloak: KeycloakClient, vault: Vault, body, user):
         keycloak.group_delete(owners_id)
         raise
 
-    return region.to_dict()
+    return region.to_dict() | {'_href': _region_href(region)}
 
 
 def get_region(keycloak: KeycloakClient, region_id, user):
@@ -146,7 +167,7 @@ def get_region(keycloak: KeycloakClient, region_id, user):
                     user, [region.users_group, region.owner_group]):
                 raise Forbidden("You don't have access to this region.")
 
-    return region.to_dict()
+    return region.to_dict() | {'_href': _region_href(region)}
 
 
 def update_region(keycloak: KeycloakClient, vault: Vault, region_id, body, user):
@@ -201,7 +222,7 @@ def update_region(keycloak: KeycloakClient, vault: Vault, region_id, body, user)
     db.session.commit()
     logger.info(f'Region {region.name} (id {region.id}) updated by user {user}')
 
-    return region.to_dict()
+    return region.to_dict() | {'_href': _region_href(region)}
 
 
 def delete_region(keycloak: KeycloakClient, region_id, user):
@@ -264,7 +285,15 @@ def list_region_products(keycloak: KeycloakClient, region_id, user, filter_):
         )
 
     return [
-        {'id': r.product_id, 'product': r.product.to_dict(), 'enabled': r.enabled}
+        {
+            'id': r.product_id,
+            'region_id': r.region.id,
+            'product_id': r.product.id,
+            'product': r.product.to_dict(),
+            'enabled': r.enabled,
+        } | {
+            '_href': _region_href(r.region) | _product_href(r.product)
+        }
         for r in products_relation
     ]
 
