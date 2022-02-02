@@ -217,6 +217,14 @@ endpoints:
                 multiple characters
             enabled:
               type: boolean
+      - name: sort
+        in: query
+        description: Sort servers by attribute.
+        schema:
+          type: string
+          enum:
+            - name
+            - -name
       - name: page
         in: query
         description: Page number (``0`` indexed).
@@ -361,6 +369,14 @@ endpoints:
               type: integer
               minimum: 1
               description: ID of the server
+      - name: sort
+        in: query
+        description: Sort templates by attribute.
+        schema:
+          type: string
+          enum:
+            - name
+            - -name
       - name: page
         in: query
         description: Page number (``0`` indexed).

@@ -96,6 +96,16 @@ endpoints:
               description: >
                 Department of a policy. Wildcard ``%`` can be used to match
                 zero, one, or multiple characters
+      - name: sort
+        in: query
+        description: Sort policies by attribute.
+        schema:
+          type: string
+          enum:
+            - name
+            - -name
+            - department
+            - -department
       - name: page
         in: query
         description: Page number (``0`` indexed).

@@ -5,6 +5,7 @@ import sqlalchemy
 
 from rhub.lab import model
 from rhub.api import db, DEFAULT_PAGE_LIMIT
+from rhub.api.utils import db_sort
 from rhub.auth.keycloak import KeycloakClient
 from rhub.auth import ADMIN_ROLE
 from rhub.auth.utils import route_require_admin
@@ -13,7 +14,7 @@ from rhub.auth.utils import route_require_admin
 logger = logging.getLogger(__name__)
 
 
-def list_products(user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
+def list_products(user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
     products = model.Product.query
 
     if 'name' in filter_:
@@ -21,6 +22,9 @@ def list_products(user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
 
     if 'enabled' in filter_:
         products = products.filter(model.Product.enabled == filter_['enabled'])
+
+    if sort:
+        products = db_sort(products, sort)
 
     return {
         'data': [

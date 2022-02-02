@@ -10,6 +10,7 @@ import dpath.util as dpath
 from rhub.lab import model
 from rhub.tower import model as tower_model
 from rhub.api import db, DEFAULT_PAGE_LIMIT
+from rhub.api.utils import db_sort
 from rhub.api.vault import Vault
 from rhub.api.lab.cluster import _user_can_access_region
 from rhub.auth import ADMIN_ROLE
@@ -26,7 +27,7 @@ VAULT_PATH_PREFIX = 'kv/lab/region'
 
 
 def list_regions(keycloak: KeycloakClient,
-                 user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
+                 user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
     if keycloak.user_check_role(user, ADMIN_ROLE):
         regions = model.Region.query
     else:
@@ -50,6 +51,9 @@ def list_regions(keycloak: KeycloakClient,
         regions = regions.filter(
             model.Region.reservations_enabled == filter_['reservations_enabled']
         )
+
+    if sort:
+        regions = db_sort(regions, sort)
 
     return {
         'data': [
