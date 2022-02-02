@@ -1,4 +1,5 @@
 import base64
+from unittest.mock import ANY
 
 import pytest
 
@@ -46,6 +47,7 @@ def test_list_servers(client):
                 'url': 'https://tower.example.com',
                 'verify_ssl': True,
                 'credentials': 'kv/test',
+                '_href': ANY,
             }
         ],
         'total': 1,
@@ -79,6 +81,7 @@ def test_get_server(client):
         'url': 'https://tower.example.com',
         'verify_ssl': True,
         'credentials': 'kv/test',
+        '_href': ANY,
     }
 
 
@@ -173,6 +176,15 @@ def test_list_templates(client):
             server_id=1,
             tower_template_id=1,
             tower_template_is_workflow=False,
+            server=model.Server(
+                id=1,
+                name='test',
+                description='',
+                enabled=True,
+                url='https://tower.example.com',
+                verify_ssl=True,
+                credentials='kv/test',
+            ),
         ),
     ]
     model.Template.query.count.return_value = 1
@@ -192,6 +204,7 @@ def test_list_templates(client):
                 'server_id': 1,
                 'tower_template_id': 1,
                 'tower_template_is_workflow': False,
+                '_href': ANY,
             }
         ],
         'total': 1,
@@ -257,6 +270,7 @@ def test_get_template(client, mocker, workflow):
             'description': '',
             'spec': [],
         },
+        '_href': ANY,
     }
 
 
@@ -305,6 +319,7 @@ def test_create_template(client, db_session_mock, mocker):
 
     model.Template.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
+    mocker.patch('rhub.api.tower._template_href').return_value = {}
 
     rv = client.post(
         f'{API_BASE}/tower/template',
@@ -321,7 +336,7 @@ def test_create_template(client, db_session_mock, mocker):
     assert rv.status_code == 200
 
 
-def test_update_template(client):
+def test_update_template(client, mocker):
     template = model.Template(
         id=1,
         name='test',
@@ -331,6 +346,7 @@ def test_update_template(client):
         tower_template_is_workflow=False,
     )
     model.Template.query.get.return_value = template
+    mocker.patch('rhub.api.tower._template_href').return_value = {}
 
     rv = client.patch(
         f'{API_BASE}/tower/template/1',
@@ -405,6 +421,8 @@ def test_template_launch(client, db_session_mock, mocker, workflow):
 
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
+    mocker.patch('rhub.api.tower._job_href').return_value = {}
+
     rv = client.post(
         f'{API_BASE}/tower/template/1/launch',
         headers={'Authorization': 'Bearer foobar'},
@@ -429,6 +447,7 @@ def test_template_launch(client, db_session_mock, mocker, workflow):
         'finished': tower_data['finished'] is not None,
         'finished_at': tower_data['finished'],
         'failed': tower_data['failed'],
+        '_href': ANY,
     }
 
 
@@ -452,6 +471,8 @@ def test_template_launch_towererror(client, mocker):
 
     tower_client_mock.template_launch.side_effect = TowerError(
         '...', response=response_mock)
+
+    mocker.patch('rhub.api.tower._job_href').return_value = {}
 
     rv = client.post(
         f'{API_BASE}/tower/template/1/launch',
@@ -517,10 +538,11 @@ def test_job_relaunch(client, db_session_mock, mocker):
         'finished': tower_data['finished'] is not None,
         'finished_at': tower_data['finished'],
         'failed': tower_data['failed'],
+        '_href': ANY,
     }
 
 
-def test_list_jobs(client):
+def test_list_jobs(client, mocker):
     model.Job.query.limit.return_value.offset.return_value = [
         model.Job(
             id=1,
@@ -530,6 +552,8 @@ def test_list_jobs(client):
         ),
     ]
     model.Job.query.count.return_value = 1
+
+    mocker.patch('rhub.api.tower._job_href').return_value = {}
 
     rv = client.get(
         f'{API_BASE}/tower/job',
@@ -544,6 +568,7 @@ def test_list_jobs(client):
                 'template_id': 1,
                 'tower_job_id': 1,
                 'launched_by': '00000000-0000-0000-0000-000000000000',
+                '_href': ANY,
             }
         ],
         'total': 1,
@@ -601,6 +626,7 @@ def test_get_job(client, mocker):
         'finished': tower_data['finished'] is not None,
         'finished_at': tower_data['finished'],
         'failed': tower_data['failed'],
+        '_href': ANY,
     }
 
 

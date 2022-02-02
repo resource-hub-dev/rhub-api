@@ -1,6 +1,7 @@
 import logging
 
 from connexion import problem
+from flask import url_for
 import sqlalchemy
 
 from rhub.lab import model
@@ -12,6 +13,16 @@ from rhub.auth.utils import route_require_admin
 
 
 logger = logging.getLogger(__name__)
+
+
+def _product_href(product):
+    href = {
+        'product': url_for('.rhub_api_lab_product_get_product',
+                           product_id=product.id),
+        'product_regions': url_for('.rhub_api_lab_product_list_product_regions',
+                                   product_id=product.id),
+    }
+    return href
 
 
 def list_products(user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
@@ -28,7 +39,8 @@ def list_products(user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
 
     return {
         'data': [
-            product.to_dict() for product in products.limit(limit).offset(page * limit)
+            product.to_dict() | {'_href': _product_href(product)}
+            for product in products.limit(limit).offset(page * limit)
         ],
         'total': products.count(),
     }
@@ -52,14 +64,14 @@ def create_product(body, user):
     db.session.commit()
     logger.info(f'Product {product.name} (id {product.id}) created by user {user}')
 
-    return product.to_dict()
+    return product.to_dict() | {'_href': _product_href(product)}
 
 
 def get_product(product_id):
     product = model.Product.query.get(product_id)
     if not product:
         return problem(404, 'Not Found', f'Product {product_id} does not exist')
-    return product.to_dict()
+    return product.to_dict() | {'_href': _product_href(product)}
 
 
 @route_require_admin
@@ -73,7 +85,7 @@ def update_product(product_id, body, user):
     db.session.commit()
     logger.info(f'Product {product.name} (id {product.id}) updated by user {user}')
 
-    return product.to_dict()
+    return product.to_dict() | {'_href': _product_href(product)}
 
 
 @route_require_admin

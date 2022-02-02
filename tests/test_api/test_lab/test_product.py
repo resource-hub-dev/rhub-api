@@ -1,4 +1,5 @@
 import datetime
+from unittest.mock import ANY
 
 import pytest
 from dateutil.tz import tzutc
@@ -57,6 +58,7 @@ def test_list_products(client):
                 'tower_template_name_delete': 'dummy',
                 'parameters': [],
                 'flavors': {},
+                '_href': ANY,
             },
         ],
         'total': 1,
@@ -90,6 +92,7 @@ def test_get_product(client):
         'tower_template_name_delete': 'dummy',
         'parameters': [],
         'flavors': {},
+        '_href': ANY,
     }
 
 

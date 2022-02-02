@@ -1,6 +1,6 @@
 import logging
 
-from flask import request
+from flask import request, url_for
 from connexion import problem
 
 from rhub.api import DEFAULT_PAGE_LIMIT
@@ -13,13 +13,27 @@ from rhub.auth.utils import route_require_admin
 logger = logging.getLogger(__name__)
 
 
+def _user_href(user):
+    return {
+        'user': url_for('.rhub_api_auth_user_get_user',
+                        user_id=user['id']),
+        'user_groups': url_for('.rhub_api_auth_user_list_user_groups',
+                               user_id=user['id']),
+        'user_roles': url_for('.rhub_api_auth_user_list_user_roles',
+                              user_id=user['id']),
+    }
+
+
 def list_users(keycloak: KeycloakClient, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
     try:
-        return keycloak.user_list({
-            'first': page * limit,
-            'max': limit,
-            **filter_,
-        }), 200
+        return [
+            user | {'_href': _user_href(user)}
+            for user in keycloak.user_list({
+                'first': page * limit,
+                'max': limit,
+                **filter_,
+            })
+        ]
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -33,7 +47,8 @@ def create_user(keycloak: KeycloakClient, body, user):
     try:
         user_id = keycloak.user_create(body)
         logger.info(f'Created user {user_id}')
-        return keycloak.user_get(user_id), 200
+        user_data = keycloak.user_get(user_id)
+        return user_data | {'_href': _user_href(user_data)}
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -44,7 +59,8 @@ def create_user(keycloak: KeycloakClient, body, user):
 
 def get_user(keycloak: KeycloakClient, user_id):
     try:
-        return keycloak.user_get(user_id), 200
+        user_data = keycloak.user_get(user_id)
+        return user_data | {'_href': _user_href(user_data)}
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -58,7 +74,8 @@ def update_user(keycloak: KeycloakClient, user_id, body, user):
     try:
         keycloak.user_update(user_id, body)
         logger.info(f'Updated user {user_id}')
-        return keycloak.user_get(user_id), 200
+        user_data = keycloak.user_get(user_id)
+        return user_data | {'_href': _user_href(user_data)}
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -83,7 +100,11 @@ def delete_user(keycloak: KeycloakClient, user_id, user):
 
 def list_user_groups(keycloak: KeycloakClient, user_id):
     try:
-        return keycloak.user_group_list(user_id), 200
+        from rhub.api.auth.group import _group_href
+        return [
+            group | {'_href': _group_href(group)}
+            for group in keycloak.user_group_list(user_id)
+        ]
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
@@ -134,7 +155,8 @@ def delete_user_role(user_id, body, user):
 
 def get_current_user(keycloak: KeycloakClient, user):
     try:
-        return keycloak.user_get(user), 200
+        user_data = keycloak.user_get(user)
+        return user_data | {'_href': _user_href(user_data)}
     except KeycloakGetError as e:
         logger.exception(e)
         return problem_from_keycloak_error(e)
