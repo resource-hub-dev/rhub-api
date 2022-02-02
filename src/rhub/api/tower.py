@@ -7,6 +7,7 @@ from werkzeug.exceptions import Unauthorized
 from rhub.tower import model
 from rhub.tower.client import TowerError
 from rhub.api import db, DEFAULT_PAGE_LIMIT
+from rhub.api.utils import db_sort
 from rhub.auth.utils import route_require_admin, user_is_admin
 
 
@@ -30,11 +31,14 @@ def _tower_job(db_row, tower_data):
     }
 
 
-def list_servers(filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
+def list_servers(filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
     servers = model.Server.query
 
     if 'name' in filter_:
         servers = servers.filter(model.Server.name.ilike(filter_['name']))
+
+    if sort:
+        servers = db_sort(servers, sort)
 
     return {
         'data': [
@@ -90,7 +94,7 @@ def delete_server(server_id, user):
     db.session.commit()
 
 
-def list_templates(filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
+def list_templates(filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
     templates = model.Template.query
 
     if 'name' in filter_:
@@ -98,6 +102,9 @@ def list_templates(filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
 
     if 'server_id' in filter_:
         templates = templates.filter(model.Template.server_id == filter_['server_id'])
+
+    if sort:
+        templates = db_sort(templates, sort)
 
     return {
         'data': [

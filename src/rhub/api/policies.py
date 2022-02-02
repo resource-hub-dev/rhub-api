@@ -5,6 +5,7 @@ from connexion import problem
 
 from rhub.policies import model
 from rhub.api import db, di, DEFAULT_PAGE_LIMIT
+from rhub.api.utils import db_sort
 from rhub.auth.keycloak import (
     KeycloakClient, KeycloakGetError, problem_from_keycloak_error,
 )
@@ -58,7 +59,7 @@ def check_access(func):
     return inner
 
 
-def list_policies(user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
+def list_policies(user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
     """
     API endpoint to provide a list of policies
     """
@@ -73,6 +74,9 @@ def list_policies(user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
 
     if 'department' in filter_:
         policies = policies.filter(model.Policy.department.ilike(filter_['department']))
+
+    if sort:
+        policies = db_sort(policies, sort)
 
     return {
         'data': [

@@ -593,6 +593,18 @@ endpoints:
               type: boolean
             reservations_enabled:
               type: boolean
+      - name: sort
+        in: query
+        description: Sort regions by attribute.
+        schema:
+          type: string
+          enum:
+            - name
+            - -name
+            - location
+            - -location
+            - reservation_expiration_max
+            - -reservation_expiration_max
       - name: page
         in: query
         description: Page number (``0`` indexed).
@@ -913,6 +925,14 @@ endpoints:
                 or multiple characters
             enabled:
               type: boolean
+      - name: sort
+        in: query
+        description: Sort products by attribute.
+        schema:
+          type: string
+          enum:
+            - name
+            - -name
       - name: page
         in: query
         description: Page number (``0`` indexed).
@@ -1120,6 +1140,18 @@ endpoints:
             shared:
               type: boolean
               description: Filter shared clusters
+      - name: sort
+        in: query
+        description: Sort clusters by attribute.
+        schema:
+          type: string
+          enum:
+            - name
+            - -name
+            - reservation_expiration
+            - -reservation_expiration
+            - lifespan_expiration
+            - -lifespan_expiration
       - name: page
         in: query
         description: Page number (``0`` indexed).

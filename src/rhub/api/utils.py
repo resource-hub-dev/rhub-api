@@ -1,5 +1,7 @@
 import datetime
 
+from rhub.api import db
+
 
 class ModelMixin:
     """Datatabase model mixin with methods useful in REST API endpoints."""
@@ -24,3 +26,9 @@ class ModelMixin:
 
 def date_now():
     return datetime.datetime.now().astimezone(datetime.timezone.utc)
+
+
+def db_sort(query, sort_by):
+    direction = 'DESC' if sort_by.startswith('-') else 'ASC'
+    column = sort_by.removeprefix('-')
+    return query.order_by(db.text(f'{column} {direction}'))

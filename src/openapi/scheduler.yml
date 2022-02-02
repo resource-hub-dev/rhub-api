@@ -64,6 +64,14 @@ endpoints:
                 multiple characters
             enabled:
               type: boolean
+      - name: sort
+        in: query
+        description: Sort cron jobs by attribute.
+        schema:
+          type: string
+          enum:
+            - name
+            - -name
       - name: page
         in: query
         description: Page number (``0`` indexed).

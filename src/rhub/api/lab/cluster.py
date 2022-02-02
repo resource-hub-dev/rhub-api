@@ -11,7 +11,7 @@ from rhub.api import db, di, DEFAULT_PAGE_LIMIT
 from rhub.auth import ADMIN_ROLE
 from rhub.auth.utils import route_require_admin
 from rhub.auth.keycloak import KeycloakClient
-from rhub.api.utils import date_now
+from rhub.api.utils import date_now, db_sort
 
 
 logger = logging.getLogger(__name__)
@@ -90,7 +90,7 @@ def _get_sharedcluster_group_id():
 
 
 def list_clusters(keycloak: KeycloakClient,
-                  user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
+                  user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
     if keycloak.user_check_role(user, ADMIN_ROLE):
         clusters = model.Cluster.query
     else:
@@ -124,6 +124,9 @@ def list_clusters(keycloak: KeycloakClient,
                 clusters = clusters.filter(
                     model.Cluster.group_id != sharedcluster_group_id
                 )
+
+    if sort:
+        clusters = db_sort(clusters, sort)
 
     return {
         'data': [
