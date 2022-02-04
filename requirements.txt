@@ -10,11 +10,12 @@ flask-sqlalchemy
 flask_injector
 gunicorn
 hvac
+openstacksdk
 prance
+prometheus_flask_exporter == 0.18.7
 psycopg2-binary
 python-dateutil
 python-keycloak == 0.25.0
 pyyaml
 requests
 tenacity
-openstacksdk
