@@ -80,7 +80,9 @@ def test_to_dict(keycloak_mock):
         'reservations_enabled': True,
         'reservation_expiration_max': 7,
         'owner_group': '00000000-0000-0000-0000-000000000000',
+        'owner_group_name': 'foobar-group',
         'users_group': None,
+        'users_group_name': None,
         'tower_id': 1,
         'openstack': {
             'url': 'https://openstack.example.com:13000',
@@ -106,7 +108,7 @@ def test_to_dict(keycloak_mock):
     }
 
 
-def test_list_regions(client):
+def test_list_regions(client, keycloak_mock):
     model.Region.query.limit.return_value.offset.return_value = [
         model.Region(
             id=1,
@@ -142,6 +144,8 @@ def test_list_regions(client):
     ]
     model.Region.query.count.return_value = 1
 
+    keycloak_mock.group_get.return_value = {'name': 'foobar-group'}
+
     rv = client.get(
         f'{API_BASE}/lab/region',
         headers={'Authorization': 'Bearer foobar'},
@@ -163,7 +167,9 @@ def test_list_regions(client):
                 'reservations_enabled': True,
                 'reservation_expiration_max': 7,
                 'owner_group': '00000000-0000-0000-0000-000000000000',
+                'owner_group_name': 'foobar-group',
                 'users_group': None,
+                'users_group_name': None,
                 'tower_id': 1,
                 'openstack': {
                     'url': 'https://openstack.example.com:13000',
@@ -193,7 +199,7 @@ def test_list_regions(client):
     }
 
 
-def test_get_region(client):
+def test_get_region(client, keycloak_mock):
     model.Region.query.get.return_value = model.Region(
         id=1,
         name='test',
@@ -226,6 +232,8 @@ def test_get_region(client):
         download_server='https://download.example.com',
     )
 
+    keycloak_mock.group_get.return_value = {'name': 'foobar-group'}
+
     rv = client.get(
         f'{API_BASE}/lab/region/1',
         headers={'Authorization': 'Bearer foobar'},
@@ -247,7 +255,9 @@ def test_get_region(client):
         'reservations_enabled': True,
         'reservation_expiration_max': 7,
         'owner_group': '00000000-0000-0000-0000-000000000000',
+        'owner_group_name': 'foobar-group',
         'users_group': None,
+        'users_group_name': None,
         'tower_id': 1,
         'openstack': {
             'url': 'https://openstack.example.com:13000',
