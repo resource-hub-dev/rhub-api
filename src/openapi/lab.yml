@@ -75,9 +75,15 @@ model:
         format: uuid
         readOnly: true
         example: 7670ac07-cb21-448d-af8a-6e3882216be3
+      owner_group_name:
+        type: string
+        nullable: true
       users_group:
         type: string
         format: uuid
+        nullable: true
+      users_group_name:
+        type: string
         nullable: true
       tower_id:
         $ref: 'common.yml#/model/ID'
