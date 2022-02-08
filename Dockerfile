@@ -26,3 +26,4 @@ RUN export RHUB_DB_TYPE='postgresql'; \
 
 CMD ["./bin/entrypoint.sh"]
 
+HEALTHCHECK --interval=10s --retries=5 --timeout=5s CMD ["curl", "-f", "http://localhost:8081/v0/ping"]

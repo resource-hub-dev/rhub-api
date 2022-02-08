@@ -26,7 +26,7 @@ services:
     env_file:
       - .env
     ports:
-      - 8081:8081
+      - "8081:8081"
     #command: [tail, -f, /dev/null]
 
   keycloak:
@@ -36,9 +36,15 @@ services:
     env_file:
       - .env
     ports:
-      - 8080:8080
+      - "8080:8080"
     volumes:
         - ./config/keycloak-config.json:/srv/rhub-keycloak-config.json:delegated,z
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080" ]
+      interval: 20s
+      retries: 10
+      start_period: 90s
+      timeout: 10s
 
   postgres:
     image: postgres:${RHUB_IMAGE_POSTGRES_VERSION:-13}
@@ -49,6 +55,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./bin/setup_postgres.sh:/docker-entrypoint-initdb.d/setup_postgres.sh:delegated,z
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 10s
+      retries: 5
+      timeout: 5s
 
 volumes:
   postgres_data:
