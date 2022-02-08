@@ -15,6 +15,7 @@ flask-sqlalchemy
 gunicorn
 hvac
 injector
+inotify
 openapi-spec-validator
 openstacksdk
 prance
