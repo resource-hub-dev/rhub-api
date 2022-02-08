@@ -5,3 +5,4 @@ __pycache__
 .coverage
 .DS_Store
 keycloak-config.json
+.idea
