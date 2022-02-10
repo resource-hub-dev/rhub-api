@@ -6,10 +6,12 @@ dpath
 flask-apscheduler
 flask-cors
 flask-dotenv
+flask-migrate
 flask-sqlalchemy
 flask_injector
 gunicorn
 hvac
+openstacksdk
 prance
 psycopg2-binary
 python-dateutil
@@ -17,4 +19,3 @@ python-keycloak == 0.25.0
 pyyaml
 requests
 tenacity
-openstacksdk

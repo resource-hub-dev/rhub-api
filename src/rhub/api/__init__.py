@@ -9,6 +9,7 @@ from flask.cli import with_appcontext
 from flask_cors import CORS
 from flask_injector import FlaskInjector
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
 import rhub
 from rhub.api.vault import Vault, VaultModule
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 di = injector.Injector()
 db = SQLAlchemy()
+migrate = Migrate()
 
 
 DEFAULT_PAGE_LIMIT = 20
@@ -66,6 +68,7 @@ def create_app():
     flask_app.cli.add_command(init_command)
 
     db.init_app(flask_app)
+    migrate.init_app(flask_app, db)
 
     try:
         import coloredlogs
