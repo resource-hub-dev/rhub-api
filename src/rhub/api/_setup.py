@@ -1,6 +1,7 @@
 import logging
 
 import tenacity
+import flask_migrate
 
 from rhub.api import db, di
 from rhub.auth import ADMIN_USER, ADMIN_GROUP, ADMIN_ROLE
@@ -100,7 +101,7 @@ def setup_keycloak():
 # This function must be idempotent. In container, it may be called on every
 # start.
 def setup():
-    db.create_all()
+    flask_migrate.upgrade()
 
     setup_keycloak()
 
