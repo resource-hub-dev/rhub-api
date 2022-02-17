@@ -4,6 +4,7 @@ import functools
 import sqlalchemy
 from connexion import problem
 from dateutil.parser import isoparse as date_parse
+from flask import url_for
 
 from rhub.lab import SHAREDCLUSTER_USER, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_ROLE
 from rhub.lab import model
@@ -89,6 +90,50 @@ def _get_sharedcluster_group_id():
     return None
 
 
+def _cluster_href(cluster):
+    href = {
+        'cluster': url_for('.rhub_api_lab_cluster_get_cluster',
+                           cluster_id=cluster.id),
+        'cluster_events': url_for('.rhub_api_lab_cluster_list_cluster_events',
+                                  cluster_id=cluster.id),
+        'cluster_hosts': url_for('.rhub_api_lab_cluster_list_cluster_hosts',
+                                 cluster_id=cluster.id),
+        'cluster_reboot_hosts': url_for('.rhub_api_lab_cluster_reboot_hosts',
+                                        cluster_id=cluster.id),
+        'region': url_for('.rhub_api_lab_region_get_region',
+                          region_id=cluster.region_id),
+        'product': url_for('.rhub_api_lab_product_get_product',
+                           product_id=cluster.product_id),
+        'user': url_for('.rhub_api_auth_user_get_user',
+                        user_id=cluster.user_id),
+    }
+    if cluster.group_id:
+        href['group'] = url_for('.rhub_api_auth_group_get_group',
+                                group_id=cluster.group_id)
+    return href
+
+
+def _cluster_event_href(cluster_event):
+    href = {
+        'cluster': url_for('.rhub_api_lab_cluster_get_cluster',
+                           cluster_id=cluster_event.cluster_id),
+        'user': url_for('.rhub_api_auth_user_get_user',
+                        user_id=cluster_event.user_id),
+    }
+    if cluster_event.type == model.ClusterEventType.TOWER_JOB:
+        href['tower'] = url_for('.rhub_api_tower_get_server',
+                                server_id=cluster_event.tower_id)
+    return href
+
+
+def _cluster_host_href(cluster_host):
+    href = {
+        'cluster': url_for('.rhub_api_lab_cluster_get_cluster',
+                           cluster_id=cluster_host.cluster_id),
+    }
+    return href
+
+
 def list_clusters(keycloak: KeycloakClient,
                   user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
     if keycloak.user_check_role(user, ADMIN_ROLE):
@@ -130,7 +175,8 @@ def list_clusters(keycloak: KeycloakClient,
 
     return {
         'data': [
-            cluster.to_dict() for cluster in clusters.limit(limit).offset(page * limit)
+            cluster.to_dict() | {'_href': _cluster_href(cluster)}
+            for cluster in clusters.limit(limit).offset(page * limit)
         ],
         'total': clusters.count(),
     }
@@ -283,7 +329,7 @@ def create_cluster(keycloak: KeycloakClient, body, user):
     db.session.commit()
     logger.info(f'Cluster {cluster.name} (id {cluster.id}) created by user {user}')
 
-    return cluster.to_dict()
+    return cluster.to_dict() | {'_href': _cluster_href(cluster)}
 
 
 def get_cluster(cluster_id, user):
@@ -294,7 +340,7 @@ def get_cluster(cluster_id, user):
     if not _user_can_access_cluster(cluster, user):
         return problem(403, 'Forbidden', "You don't have access to this cluster.")
 
-    return cluster.to_dict()
+    return cluster.to_dict() | {'_href': _cluster_href(cluster)}
 
 
 def update_cluster(cluster_id, body, user):
@@ -386,7 +432,7 @@ def update_cluster(cluster_id, body, user):
     db.session.commit()
     logger.info(f'Cluster {cluster.name} (id {cluster.id}) updated by user {user}')
 
-    return cluster.to_dict()
+    return cluster.to_dict() | {'_href': _cluster_href(cluster)}
 
 
 def delete_cluster(cluster_id, user):
@@ -428,7 +474,10 @@ def list_cluster_events(cluster_id, user):
     if not _user_can_access_cluster(cluster, user):
         return problem(403, 'Forbidden', "You don't have access to this cluster.")
 
-    return [event.to_dict() for event in cluster.events]
+    return [
+        event.to_dict() | {'_href': _cluster_event_href(event)}
+        for event in cluster.events
+    ]
     logger.info(f'Cluster {cluster.name} (id {cluster.id}) deleted by user {user}')
 
 
@@ -440,7 +489,7 @@ def get_cluster_event(event_id, user):
     if not _user_can_access_cluster(event.cluster, user):
         return problem(403, 'Forbidden', "You don't have access to related cluster.")
 
-    return event.to_dict()
+    return event.to_dict() | {'_href': _cluster_event_href(event)}
 
 
 def get_cluster_event_stdout(event_id, user):
@@ -462,7 +511,10 @@ def list_cluster_hosts(cluster_id, user):
     if not _user_can_access_cluster(cluster, user):
         return problem(403, 'Forbidden', "You don't have access to this cluster.")
 
-    return [host.to_dict() for host in cluster.hosts]
+    return [
+        host.to_dict() | {'_href': _cluster_host_href(host)}
+        for host in cluster.hosts
+    ]
 
 
 @route_require_admin
@@ -478,7 +530,10 @@ def create_cluster_hosts(cluster_id, body, user):
     db.session.add_all(hosts)
     db.session.commit()
 
-    return [host.to_dict() for host in hosts]
+    return [
+        host.to_dict() | {'_href': _cluster_host_href(host)}
+        for host in hosts
+    ]
 
 
 @route_require_admin

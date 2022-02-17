@@ -6,6 +6,7 @@ dpath
 flask-apscheduler
 flask-cors
 flask-dotenv
+flask-migrate
 flask-sqlalchemy
 flask_injector
 gunicorn

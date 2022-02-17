@@ -96,6 +96,16 @@ class Region(db.Model, ModelMixin):
             return None
         return datetime.timedelta(days=self.reservation_expiration_max)
 
+    @property
+    def owner_group_name(self):
+        return di.get(KeycloakClient).group_get(self.owner_group)['name']
+
+    @property
+    def users_group_name(self):
+        if self.users_group:
+            return di.get(KeycloakClient).group_get(self.users_group)['name']
+        return None
+
     def to_dict(self):
         data = {}
 
@@ -113,6 +123,9 @@ class Region(db.Model, ModelMixin):
 
         for k in ['user_quota', 'total_quota']:
             data[k] = getattr(self, k).to_dict() if getattr(self, k) else None
+
+        data['owner_group_name'] = self.owner_group_name
+        data['users_group_name'] = self.users_group_name
 
         return data
 

@@ -1,6 +1,7 @@
 import logging
 
 import tenacity
+import flask_migrate
 
 from rhub.api import db, di
 from rhub.auth import ADMIN_USER, ADMIN_GROUP, ADMIN_ROLE
@@ -18,10 +19,11 @@ logger = logging.getLogger(__name__)
 
 # This function must be idempotent. In container, it may be called on every
 # start.
+# Keycloak setup is in a separate function because we need retry logic on it
+# (Keycloak is slow on start and may be unavailable for the first few seconds),
+# but retry causes a deadlock in DB, if used for DB setup and something failed.
 @tenacity.retry(wait=tenacity.wait_fixed(5000), stop=tenacity.stop_after_attempt(3))
-def setup():
-    db.create_all()
-
+def setup_keycloak():
     keycloak = di.get(KeycloakClient)
 
     groups = {group['name']: group for group in keycloak.group_list()}
@@ -94,6 +96,14 @@ def setup():
                     f'to sharedcluster group "{SHAREDCLUSTER_GROUP}"')
         keycloak.group_user_add(sharedcluster_user['id'],
                                 groups[SHAREDCLUSTER_GROUP]['id'])
+
+
+# This function must be idempotent. In container, it may be called on every
+# start.
+def setup():
+    flask_migrate.upgrade()
+
+    setup_keycloak()
 
     query = scheduler_model.SchedulerCronJob.query.filter(
         scheduler_model.SchedulerCronJob.job_name

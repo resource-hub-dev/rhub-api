@@ -1,6 +1,6 @@
 import logging
 
-from flask import Response, request, current_app
+from flask import Response, request, current_app, url_for
 from connexion import problem
 from werkzeug.exceptions import Unauthorized
 
@@ -31,6 +31,38 @@ def _tower_job(db_row, tower_data):
     }
 
 
+def _server_href(server):
+    href = {
+        'server': url_for('.rhub_api_tower_get_server',
+                          server_id=server.id),
+    }
+    return href
+
+
+def _template_href(template):
+    href = {
+        'template': url_for('.rhub_api_tower_get_template',
+                            template_id=template.id),
+        'template_launch': url_for('.rhub_api_tower_launch_template',
+                                   template_id=template.id),
+        'template_jobs': url_for('.rhub_api_tower_list_template_jobs',
+                                 template_id=template.id),
+    }
+    return href | _server_href(template.server)
+
+
+def _job_href(job):
+    href = {
+        'job': url_for('.rhub_api_tower_get_job',
+                       job_id=job.id),
+        'job_stdout': url_for('.rhub_api_tower_get_job_stdout',
+                              job_id=job.id),
+        'job_relaunch': url_for('.rhub_api_tower_relaunch_job',
+                                job_id=job.id),
+    }
+    return href | _template_href(job.template)
+
+
 def list_servers(filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
     servers = model.Server.query
 
@@ -42,7 +74,8 @@ def list_servers(filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
 
     return {
         'data': [
-            server.to_dict() for server in servers.limit(limit).offset(page * limit)
+            server.to_dict() | {'_href': _server_href(server)}
+            for server in servers.limit(limit).offset(page * limit)
         ],
         'total': servers.count(),
     }
@@ -60,16 +93,18 @@ def create_server(body, user):
         )
 
     server = model.Server.from_dict(body)
+
     db.session.add(server)
     db.session.commit()
-    return server.to_dict()
+
+    return server.to_dict() | {'_href': _server_href(server)}
 
 
 def get_server(server_id):
     server = model.Server.query.get(server_id)
     if not server:
         return problem(404, 'Not Found', f'Server {server_id} does not exist')
-    return server.to_dict()
+    return server.to_dict() | {'_href': _server_href(server)}
 
 
 @route_require_admin
@@ -108,7 +143,7 @@ def list_templates(filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
 
     return {
         'data': [
-            template.to_dict()
+            template.to_dict() | {'_href': _template_href(template)}
             for template in templates.limit(limit).offset(page * limit)
         ],
         'total': templates.count(),
@@ -127,10 +162,11 @@ def create_template(body, user):
         )
 
     template = model.Template.from_dict(body)
+
     db.session.add(template)
     db.session.commit()
 
-    return template.to_dict()
+    return template.to_dict() | {'_href': _template_href(template)}
 
 
 def get_template(template_id):
@@ -148,9 +184,9 @@ def get_template(template_id):
             tower_survey_data = tower_client.template_get_survey(
                 template.tower_template_id)
 
-        return {
-            **template.to_dict(),
+        return template.to_dict() | {
             'tower_survey': tower_survey_data,
+            '_href': _template_href(template),
         }
 
     except TowerError as e:
@@ -172,7 +208,7 @@ def update_template(template_id, body, user):
     template.update_from_dict(body)
     db.session.commit()
 
-    return template.to_dict()
+    return template.to_dict() | {'_href': _template_href(template)}
 
 
 @route_require_admin
@@ -213,7 +249,7 @@ def launch_template(template_id, body, user):
         db.session.add(job)
         db.session.commit()
 
-        return _tower_job(job, tower_job_data)
+        return _tower_job(job, tower_job_data) | {'_href': _job_href(job)}
 
     except TowerError as e:
         logger.exception(f'Failed to launch tower template, {e}')
@@ -246,7 +282,8 @@ def list_template_jobs(template_id, user, filter_, page=0, limit=DEFAULT_PAGE_LI
 
     return {
         'data': [
-            job.to_dict() for job in jobs.limit(limit).offset(page * limit)
+            job.to_dict() | {'_href': _job_href(job)}
+            for job in jobs.limit(limit).offset(page * limit)
         ],
         'total': jobs.count(),
     }
@@ -263,7 +300,8 @@ def list_jobs(user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
 
     return {
         'data': [
-            job.to_dict() for job in jobs.limit(limit).offset(page * limit)
+            job.to_dict() | {'_href': _job_href(job)}
+            for job in jobs.limit(limit).offset(page * limit)
         ],
         'total': jobs.count(),
     }
@@ -286,7 +324,7 @@ def get_job(job_id, user):
         else:
             tower_job_data = tower_client.template_job_get(job.tower_job_id)
 
-        return _tower_job(job, tower_job_data)
+        return _tower_job(job, tower_job_data) | {'_href': _job_href(job)}
 
     except TowerError as e:
         logger.exception(f'Failed to get job data from Tower, {e}')
@@ -323,7 +361,7 @@ def relaunch_job(job_id, user):
         db.session.add(relaunched_job)
         db.session.commit()
 
-        return _tower_job(relaunched_job, tower_job_data)
+        return _tower_job(relaunched_job, tower_job_data) | {'_href': _job_href(job)}
 
     except TowerError as e:
         logger.exception(f'Failed to relaunch job, {e}')

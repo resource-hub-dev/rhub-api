@@ -1,4 +1,5 @@
 import base64
+from unittest.mock import ANY
 
 import pytest
 import sqlalchemy.exc
@@ -19,7 +20,7 @@ def _db_add_row_side_effect(data_added):
     return side_effect
 
 
-def test_to_dict():
+def test_to_dict(keycloak_mock):
     region = model.Region(
         id=1,
         name='test',
@@ -59,6 +60,8 @@ def test_to_dict():
         download_server='https://download.example.com',
     )
 
+    keycloak_mock.group_get.return_value = {'name': 'foobar-group'}
+
     assert region.to_dict() == {
         'id': 1,
         'name': 'test',
@@ -77,7 +80,9 @@ def test_to_dict():
         'reservations_enabled': True,
         'reservation_expiration_max': 7,
         'owner_group': '00000000-0000-0000-0000-000000000000',
+        'owner_group_name': 'foobar-group',
         'users_group': None,
+        'users_group_name': None,
         'tower_id': 1,
         'openstack': {
             'url': 'https://openstack.example.com:13000',
@@ -103,7 +108,7 @@ def test_to_dict():
     }
 
 
-def test_list_regions(client):
+def test_list_regions(client, keycloak_mock):
     model.Region.query.limit.return_value.offset.return_value = [
         model.Region(
             id=1,
@@ -139,6 +144,8 @@ def test_list_regions(client):
     ]
     model.Region.query.count.return_value = 1
 
+    keycloak_mock.group_get.return_value = {'name': 'foobar-group'}
+
     rv = client.get(
         f'{API_BASE}/lab/region',
         headers={'Authorization': 'Bearer foobar'},
@@ -160,7 +167,9 @@ def test_list_regions(client):
                 'reservations_enabled': True,
                 'reservation_expiration_max': 7,
                 'owner_group': '00000000-0000-0000-0000-000000000000',
+                'owner_group_name': 'foobar-group',
                 'users_group': None,
+                'users_group_name': None,
                 'tower_id': 1,
                 'openstack': {
                     'url': 'https://openstack.example.com:13000',
@@ -183,13 +192,14 @@ def test_list_regions(client):
                 },
                 'vault_server': 'https://vault.example.com/',
                 'download_server': 'https://download.example.com',
+                '_href': ANY,
             }
         ],
         'total': 1,
     }
 
 
-def test_get_region(client):
+def test_get_region(client, keycloak_mock):
     model.Region.query.get.return_value = model.Region(
         id=1,
         name='test',
@@ -222,6 +232,8 @@ def test_get_region(client):
         download_server='https://download.example.com',
     )
 
+    keycloak_mock.group_get.return_value = {'name': 'foobar-group'}
+
     rv = client.get(
         f'{API_BASE}/lab/region/1',
         headers={'Authorization': 'Bearer foobar'},
@@ -243,7 +255,9 @@ def test_get_region(client):
         'reservations_enabled': True,
         'reservation_expiration_max': 7,
         'owner_group': '00000000-0000-0000-0000-000000000000',
+        'owner_group_name': 'foobar-group',
         'users_group': None,
+        'users_group_name': None,
         'tower_id': 1,
         'openstack': {
             'url': 'https://openstack.example.com:13000',
@@ -266,6 +280,7 @@ def test_get_region(client):
         },
         'vault_server': 'https://vault.example.com/',
         'download_server': 'https://download.example.com',
+        '_href': ANY,
     }
 
 
@@ -905,6 +920,8 @@ def test_region_list_products(client):
     assert rv.json == [
         {
             'id': 1,
+            'region_id': 1,
+            'product_id': 1,
             'product': {
                 'id': 1,
                 'name': 'dummy',
@@ -916,6 +933,7 @@ def test_region_list_products(client):
                 'flavors': {},
             },
             'enabled': True,
+            '_href': ANY,
         },
     ]
 

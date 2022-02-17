@@ -1,4 +1,5 @@
 import datetime
+from unittest.mock import ANY
 
 import pytest
 from dateutil.tz import tzutc
@@ -129,6 +130,7 @@ def test_list_clusters(client, keycloak_mock, mocker):
                 'product_name': 'dummy',
                 'product_params': {},
                 'shared': False,
+                '_href': ANY,
             },
         ],
         'total': 1,
@@ -249,6 +251,7 @@ def test_get_cluster(client, keycloak_mock, mocker):
         'product_name': 'dummy',
         'product_params': {},
         'shared': False,
+        '_href': ANY,
     }
 
 
@@ -769,6 +772,7 @@ def test_get_cluster_events(client):
             user_id='00000000-0000-0000-0000-000000000000',
             cluster_id=1,
             tower_id=1,
+            tower=tower_model.Server(id=1),
             tower_job_id=1,
             status=model.ClusterStatus.POST_PROVISIONING,
         ),
@@ -816,6 +820,7 @@ def test_get_cluster_events(client):
             'tower_id': 1,
             'tower_job_id': 1,
             'status': model.ClusterStatus.POST_PROVISIONING.value,
+            '_href': ANY,
         },
         {
             'id': 2,
@@ -826,6 +831,7 @@ def test_get_cluster_events(client):
             'user_name': 'test-user',
             'old_value': None,
             'new_value': '2021-02-01T00:00:00+00:00',
+            '_href': ANY,
         },
     ]
 
@@ -885,6 +891,7 @@ def test_get_cluster_hosts(client):
             'ram_mb': 2048,
             'num_volumes': 3,
             'volumes_gb': 30,
+            '_href': ANY,
         },
         {
             'id': 2,
@@ -895,6 +902,7 @@ def test_get_cluster_hosts(client):
             'ram_mb': 2048,
             'num_volumes': 3,
             'volumes_gb': 30,
+            '_href': ANY,
         },
     ]
 
