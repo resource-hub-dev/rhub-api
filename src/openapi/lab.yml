@@ -78,6 +78,7 @@ model:
       owner_group_name:
         type: string
         nullable: true
+        readOnly: true
       users_group:
         type: string
         format: uuid
@@ -85,6 +86,7 @@ model:
       users_group_name:
         type: string
         nullable: true
+        readOnly: true
       tower_id:
         $ref: 'common.yml#/model/ID'
       openstack:
@@ -159,6 +161,7 @@ model:
         example:
           hostname: satellite.example.com
           credentials: kv/region/rdu2-a/satellite
+          insecure: false
       dns_server:
         type: object
         properties:
