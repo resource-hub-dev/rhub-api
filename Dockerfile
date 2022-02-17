@@ -19,6 +19,7 @@ WORKDIR /opt/app-root/src/
 RUN export RHUB_DB_TYPE='postgresql'; \
     export FLASK_ENV='development'; \
     export FLASK_APP='rhub.api:create_app()'; \
+    export PROMETHEUS_MULTIPROC_DIR=/tmp/ ; \
     export PYTHONPATH=/opt/app-root/src/src:/opt/app-root/src/src/rhub:/opt/app-root/packages \
     export RHUB_RETURN_INITIAL_FLASK_APP=True; \
     python3 -m flask routes;

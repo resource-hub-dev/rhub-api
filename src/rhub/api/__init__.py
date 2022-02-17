@@ -9,6 +9,7 @@ from flask.cli import with_appcontext
 from flask_cors import CORS
 from flask_injector import FlaskInjector
 from flask_sqlalchemy import SQLAlchemy
+from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
 from flask_migrate import Migrate
 
 import rhub
@@ -49,6 +50,8 @@ def create_app():
 
     flask_app = connexion_app.app
     flask_app.url_map.strict_slashes = False
+    if os.getenv('PROMETHEUS_MULTIPROC_DIR'):
+        GunicornInternalPrometheusMetrics(flask_app)
 
     from . import _config
     flask_app.config.from_object(_config)
