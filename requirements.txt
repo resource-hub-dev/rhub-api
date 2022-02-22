@@ -1,7 +1,7 @@
 attrs
 coloredlogs
 connexion[swagger-ui]
-cron-validator
+cron-validator==1.0.3
 dpath
 flask-apscheduler
 flask-cors
