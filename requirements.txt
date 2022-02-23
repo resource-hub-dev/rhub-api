@@ -1,16 +1,20 @@
+alembic
 attrs
+click
 coloredlogs
 connexion[swagger-ui]
 cron-validator == 1.0.3
 dpath
+flask
+flask_injector
 flask-apscheduler
 flask-cors
 flask-dotenv
 flask-migrate
 flask-sqlalchemy
-flask_injector
 gunicorn
 hvac
+injector
 openapi-spec-validator
 openstacksdk
 prance
@@ -20,4 +24,6 @@ python-dateutil
 python-keycloak == 0.25.0
 pyyaml
 requests
+SQLAlchemy
 tenacity
+Werkzeug
