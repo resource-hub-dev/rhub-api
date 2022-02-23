@@ -480,7 +480,7 @@ endpoints:
       content:
         application/json:
           schema:
-            $ref: '#/model/Server'
+            $ref: '#/model/Template'
           example:
             description: Template to create a new project in OpenStack
     responses:
