@@ -1247,7 +1247,6 @@ endpoints:
               - required:
                   - name
                   - region_id
-                  - reservation_expiration
                   - product_id
                   - product_params
     responses:
