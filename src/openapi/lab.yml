@@ -1242,21 +1242,21 @@ endpoints:
       content:
         application/json:
           schema:
-            $ref: '#/model/Cluster'
+            allOf:
+              - $ref: '#/model/Cluster'
+              - required:
+                  - name
+                  - region_id
+                  - reservation_expiration
+                  - product_id
+                  - product_params
     responses:
       '200':
         description: Cluster
         content:
           application/json:
             schema:
-              allOf:
-                - $ref: '#/model/Cluster'
-                - required:
-                    - name
-                    - region_id
-                    - reservation_expiration
-                    - product_id
-                    - product_params
+              $ref: '#/model/Cluster'
       default:
         $ref: 'common.yml#/responses/problem'
     security:
