@@ -11,6 +11,7 @@ flask-sqlalchemy
 flask_injector
 gunicorn
 hvac
+openapi-spec-validator
 openstacksdk
 prance
 prometheus_flask_exporter == 0.18.7
