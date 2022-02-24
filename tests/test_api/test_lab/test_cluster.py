@@ -287,6 +287,8 @@ def test_create_cluster(client, keycloak_mock, db_session_mock, mocker):
         tower_client_mock := mocker.Mock()
     )
 
+    mocker.patch.object(model.Region, 'is_product_enabled').return_value = True
+
     tower_client_mock.template_get.return_value = {'id': 123, 'name': 'dummy-create'}
     tower_client_mock.template_launch.return_value = {'id': 321}
 
@@ -335,6 +337,8 @@ def test_create_cluster_shared(client, keycloak_mock, db_session_mock, mocker):
 
     model.Region.query.get.return_value = region = _create_test_region()
     model.Product.query.get.return_value = product = _create_test_product()
+
+    mocker.patch.object(model.Region, 'is_product_enabled').return_value = True
 
     keycloak_mock.user_list.return_value = []
     keycloak_mock.user_get.return_value = {
@@ -414,11 +418,13 @@ def test_create_cluster_shared(client, keycloak_mock, db_session_mock, mocker):
     assert rv.json['lifespan_expiration'] is None
 
 
-def test_create_cluster_in_disabled_region(client, db_session_mock):
+def test_create_cluster_in_disabled_region(client, db_session_mock, mocker):
     region = _create_test_region()
     region.enabled = False
     model.Region.query.get.return_value = region
     model.Cluster.query.filter.return_value.count.return_value = 0
+
+    mocker.patch.object(model.Region, 'is_product_enabled').return_value = True
 
     cluster_data = {
         'name': 'testcluster',
@@ -447,10 +453,12 @@ def test_create_cluster_in_disabled_region(client, db_session_mock):
         pytest.param('all'),
     ]
 )
-def test_create_cluster_invalid_name(client, cluster_name):
+def test_create_cluster_invalid_name(client, cluster_name, mocker):
     region = _create_test_region()
     model.Region.query.get.return_value = region
     model.Cluster.query.filter.return_value.count.return_value = 0
+
+    mocker.patch.object(model.Region, 'is_product_enabled').return_value = True
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
@@ -467,11 +475,13 @@ def test_create_cluster_invalid_name(client, cluster_name):
     assert rv.status_code == 400
 
 
-def test_create_cluster_exceeded_reservation(client):
+def test_create_cluster_exceeded_reservation(client, mocker):
     region = _create_test_region()
     region.reservation_expiration_max = 1
     model.Region.query.get.return_value = region
     model.Cluster.query.filter.return_value.count.return_value = 0
+
+    mocker.patch.object(model.Region, 'is_product_enabled').return_value = True
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
@@ -497,6 +507,8 @@ def test_create_cluster_set_lifespan_forbidden(client, mocker):
     model.Region.query.get.return_value = region
     model.Cluster.query.filter.return_value.count.return_value = 0
 
+    mocker.patch.object(model.Region, 'is_product_enabled').return_value = True
+
     rv = client.post(
         f'{API_BASE}/lab/cluster',
         headers={'Authorization': 'Bearer foobar'},
@@ -511,6 +523,94 @@ def test_create_cluster_set_lifespan_forbidden(client, mocker):
     )
 
     assert rv.status_code == 403
+
+
+def test_create_cluster_with_disabled_product(
+        client, keycloak_mock, db_session_mock, mocker):
+    user_id = '00000000-0000-0000-0000-000000000000'
+    keycloak_mock.user_list.return_value = []
+    keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
+
+    model.Product.query.get.return_value = product = _create_test_product()
+    product.enabled = False
+
+    m = mocker.patch.object(model.Region, 'products_relation')
+    model.Region.query.get.return_value = region = _create_test_region()
+
+    region.products_relation.filter.return_value.first.return_value = (
+        model.RegionProduct(
+            region_id=region.id,
+            product_id=product.id,
+            enabled=True,
+            product=product,
+        )
+    )
+
+    cluster_data = {
+        'name': 'testcluster',
+        'description': 'test cluster',
+        'region_id': 1,
+        'reservation_expiration': datetime.datetime(2100, 1, 1, 0, 0, tzinfo=tzutc()),
+        'lifespan_expiration': None,
+        'product_id': 1,
+        'product_params': {},
+    }
+
+    model.Cluster.query.filter.return_value.count.return_value = 0
+
+    rv = client.post(
+        f'{API_BASE}/lab/cluster',
+        headers={'Authorization': 'Bearer foobar'},
+        json=cluster_data,
+    )
+
+    assert rv.status_code == 400, rv.data
+
+    db_session_mock.commit.assert_not_called()
+
+
+def test_create_cluster_with_disabled_product_in_region(
+        client, keycloak_mock, db_session_mock, mocker):
+    user_id = '00000000-0000-0000-0000-000000000000'
+    keycloak_mock.user_list.return_value = []
+    keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
+
+    model.Product.query.get.return_value = product = _create_test_product()
+    product.enabled = False
+
+    m = mocker.patch.object(model.Region, 'products_relation')
+    model.Region.query.get.return_value = region = _create_test_region()
+
+    region.products_relation.filter.return_value.first.return_value = (
+        model.RegionProduct(
+            region_id=region.id,
+            product_id=product.id,
+            enabled=True,
+            product=product,
+        )
+    )
+
+    cluster_data = {
+        'name': 'testcluster',
+        'description': 'test cluster',
+        'region_id': 1,
+        'reservation_expiration': datetime.datetime(2100, 1, 1, 0, 0, tzinfo=tzutc()),
+        'lifespan_expiration': None,
+        'product_id': 1,
+        'product_params': {},
+    }
+
+    model.Cluster.query.filter.return_value.count.return_value = 0
+
+    rv = client.post(
+        f'{API_BASE}/lab/cluster',
+        headers={'Authorization': 'Bearer foobar'},
+        json=cluster_data,
+    )
+
+    assert rv.status_code == 400, rv.data
+
+    db_session_mock.commit.assert_not_called()
 
 
 def test_update_cluster(client, keycloak_mock, db_session_mock):
