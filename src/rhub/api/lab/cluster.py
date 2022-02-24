@@ -210,6 +210,10 @@ def create_cluster(keycloak: KeycloakClient, body, user):
     if not product:
         return problem(404, 'Not Found', f'Product {body["product_id"]} does not exist')
 
+    if not region.is_product_enabled(product.id):
+        return problem(400, 'Bad request',
+                       f'Product {product.id} is not enabled in the region')
+
     cluster_data = body.copy()
     cluster_data['user_id'] = user
     cluster_data['created'] = date_now()

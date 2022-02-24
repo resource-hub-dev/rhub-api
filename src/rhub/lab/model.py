@@ -241,6 +241,16 @@ class Region(db.Model, ModelMixin):
         os_client = self.create_openstack_client(project)
         return os_client.compute.get_limits()
 
+    def is_product_enabled(self, product_id):
+        """Check if the product is configured and enabled in the region."""
+        region_product = self.products_relation.filter(
+            db.and_(
+                RegionProduct.product_id == product_id,
+                RegionProduct.enabled.is_(True),
+            ),
+        ).first()
+        return bool(region_product and region_product.product.enabled)
+
 
 class Quota(db.Model, ModelMixin):
     __tablename__ = 'lab_quota'
