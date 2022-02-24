@@ -936,6 +936,29 @@ def test_get_cluster_events(client):
     ]
 
 
+def test_get_cluster_event_stdout(client, mocker):
+    event = model.ClusterTowerJobEvent(
+        id=1,
+        date=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
+        user_id='00000000-0000-0000-0000-000000000000',
+        cluster_id=1,
+        tower_id=1,
+        tower=tower_model.Server(id=1),
+        tower_job_id=1,
+        status=model.ClusterStatus.POST_PROVISIONING,
+    )
+    mocker.patch.object(event, 'get_tower_job_output').return_value = 'Ansible output.'
+
+    model.ClusterTowerJobEvent.query.get.return_value = event
+
+    rv = client.get(
+        f'{API_BASE}/lab/cluster_event/1/stdout',
+        headers={'Authorization': 'Bearer foobar'},
+    )
+
+    assert rv.data == b'Ansible output.'
+
+
 def test_get_cluster_hosts(client):
     model.Cluster.query.get.return_value = model.Cluster(
         id=1,

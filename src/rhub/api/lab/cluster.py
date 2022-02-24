@@ -4,7 +4,7 @@ import functools
 import sqlalchemy
 from connexion import problem
 from dateutil.parser import isoparse as date_parse
-from flask import url_for
+from flask import url_for, Response
 
 from rhub.lab import SHAREDCLUSTER_USER, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_ROLE
 from rhub.lab import model
@@ -497,14 +497,14 @@ def get_cluster_event(event_id, user):
 
 
 def get_cluster_event_stdout(event_id, user):
-    event = model.Event.query.get(event_id)
+    event = model.ClusterTowerJobEvent.query.get(event_id)
     if not event:
         return problem(404, 'Not Found', f'Event {event_id} does not exist')
 
     if not _user_can_access_cluster(event.cluster, user):
         return problem(403, 'Forbidden', "You don't have access to related cluster.")
 
-    return event.get_tower_job_output()
+    return Response(event.get_tower_job_output(), 200, content_type='text/plain')
 
 
 def list_cluster_hosts(cluster_id, user):
