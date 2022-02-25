@@ -4,7 +4,7 @@ ENV PATH "$PATH:/opt/app-root/packages/bin/"
 ENV PYTHONPATH=/opt/app-root/src/src:/opt/app-root/packages
 
 COPY ./requirements.txt ./requirements.txt
-RUN pip3 install --upgrade -r ./requirements.txt -t ../packages
+RUN pip3 install pip-tools && pip-sync --pip-args '-t ../packages'
 COPY . .
 
 USER 0
