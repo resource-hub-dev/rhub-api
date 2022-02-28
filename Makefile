@@ -32,3 +32,6 @@ docs:
 .PHONY: clean
 clean:
 	$(MAKE) -C docs clean
+
+requirements.txt: requirements.in
+	pip-compile
