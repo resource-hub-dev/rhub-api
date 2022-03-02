@@ -27,9 +27,12 @@ class Server(db.Model, ModelMixin):
                  credentials in vault
         :raises: `Exception` any other errors
         """
-        credentials = di.get(Vault).read(self.credentials)
+        vault = di.get(Vault)
+        credentials = vault.read(self.credentials)
         if not credentials:
-            raise RuntimeError('Missing credentials in vault')
+            raise RuntimeError(
+                f'Missing credentials in vault; {vault!r} {self.credentials}'
+            )
         return Tower(
             url=self.url,
             username=credentials['username'],

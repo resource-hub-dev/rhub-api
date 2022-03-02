@@ -176,7 +176,12 @@ class Region(db.Model, ModelMixin):
         Returns:
             openstack.connection.Connection
         """
-        credentials = di.get(Vault).read(self.openstack_credentials)
+        vault = di.get(Vault)
+        credentials = vault.read(self.openstack_credentials)
+        if not credentials:
+            raise RuntimeError(
+                f'Missing credentials in vault; {vault!r} {self.openstack_credentials}'
+            )
         connection = openstack.connection.Connection(
             auth=dict(
                 auth_url=self.openstack_url,
