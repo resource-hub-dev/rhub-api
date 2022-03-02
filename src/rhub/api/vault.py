@@ -40,6 +40,9 @@ class HashicorpVault(Vault):
     def write(self, path, data):
         self._client.write(path, **data)
 
+    def __repr__(self):
+        return f'HashiCorpVault{self._client.url})'
+
 
 class FileVault(Vault):
     """
@@ -71,6 +74,9 @@ class FileVault(Vault):
         self._data[path] = data
         with open(self._datafile, 'w') as f:
             yaml.safe_dump(self._data, f)
+
+    def __repr__(self):
+        return f'FileVault({self._datafile})'
 
 
 class VaultModule(injector.Module):

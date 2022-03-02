@@ -96,16 +96,19 @@ def create_app():
     # Try to retrieve Tower notification webhook creds from vault
     try:
         with flask_app.app_context():
-            webhookCreds = di.get(Vault).read(flask_app.config['WEBHOOK_VAULT_PATH'])
+            vault = di.get(Vault)
+            webhookCreds = vault.read(flask_app.config['WEBHOOK_VAULT_PATH'])
             if webhookCreds:
                 flask_app.config['WEBHOOK_USER'] = webhookCreds['username']
                 flask_app.config['WEBHOOK_PASS'] = webhookCreds['password']
             else:
-                logger.error('Missing tower webhook notification credentials')
-                raise Exception('Missing tower webhook notification credentials')
+                raise Exception(
+                    'Missing tower webhook notification credentials; '
+                    f'{vault} {flask_app.config["WEBHOOK_VAULT_PATH"]}'
+                )
 
     except Exception as e:
-        logger.warning(
+        logger.error(
             f'Failed to load {flask_app.config["WEBHOOK_VAULT_PATH"]} tower'
             f' webhook notification credentials {e!s}.'
         )
