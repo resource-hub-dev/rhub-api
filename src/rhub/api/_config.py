@@ -2,8 +2,6 @@ import os
 import urllib.parse
 
 
-LOG_LEVEL = os.getenv('LOG_LEVEL', 'info').upper()
-
 KEYCLOAK_SERVER = os.getenv('KEYCLOAK_SERVER')
 KEYCLOAK_RESOURCE = os.getenv('KEYCLOAK_RESOURCE')
 KEYCLOAK_REALM = os.getenv('KEYCLOAK_REALM')

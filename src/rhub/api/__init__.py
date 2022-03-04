@@ -1,16 +1,19 @@
 import os
 import logging
+import logging.config
 
 import connexion
 import click
 import prance
 import injector
+import flask
 from flask.cli import with_appcontext
 from flask_cors import CORS
 from flask_injector import FlaskInjector
 from flask_sqlalchemy import SQLAlchemy
 from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
 from flask_migrate import Migrate
+from ruamel import yaml
 
 import rhub
 from rhub.api.vault import Vault, VaultModule
@@ -44,6 +47,19 @@ def init_command():
 
 def create_app():
     """Create Connexion/Flask application."""
+    log_config = os.getenv('LOG_CONFIG')
+    if log_config and os.path.exists(log_config):
+        with open(log_config, 'r') as f:
+            logging.config.dictConfig(yaml.safe_load(f))
+    else:
+        log_level = os.getenv('LOG_LEVEL', 'info').upper()
+        try:
+            import coloredlogs
+            coloredlogs.install(level=log_level)
+        except ImportError:
+            logger.addHandler(flask.logging.default_handler)
+            logger.setLevel(log_level)
+
     root = os.path.dirname(rhub.__path__[0])
 
     connexion_app = connexion.App(__name__)
@@ -72,12 +88,6 @@ def create_app():
 
     db.init_app(flask_app)
     migrate.init_app(flask_app, db)
-
-    try:
-        import coloredlogs
-        coloredlogs.install(level=flask_app.config['LOG_LEVEL'])
-    except ImportError:
-        logging.basicConfig(level=flask_app.config['LOG_LEVEL'])
 
     RHUB_RETURN_INITIAL_FLASK_APP = os.getenv('RHUB_RETURN_INITIAL_FLASK_APP', 'False')
     if str(RHUB_RETURN_INITIAL_FLASK_APP).lower() == 'true':

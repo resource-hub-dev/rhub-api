@@ -6,3 +6,4 @@ __pycache__
 .DS_Store
 keycloak-config.json
 .idea
+config/logging.yml
