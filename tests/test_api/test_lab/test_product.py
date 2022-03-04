@@ -1,5 +1,6 @@
 import datetime
 from unittest.mock import ANY
+from contextlib import contextmanager
 
 import pytest
 from dateutil.tz import tzutc
@@ -177,3 +178,141 @@ def test_delete_product(client, db_session_mock):
 
     db_session_mock.delete.assert_called_with(product)
     db_session_mock.commit.assert_called()
+
+
+@contextmanager
+def does_not_raise():
+    yield
+
+
+def gen_validation_test_params(name, param_spec, params_vals_and_expectation):
+    return [
+        pytest.param(param_spec, param_vals, expectation, id=f'{name} {param_vals!r}')
+        for param_vals, expectation in params_vals_and_expectation
+    ]
+
+
+@pytest.mark.parametrize(
+    'param_spec, param_vals, expectation',
+    [
+        *gen_validation_test_params(
+            'integer',
+            {
+                'variable': 'x',
+                'type': 'integer',
+            },
+            [
+                ({'x': 1}, does_not_raise()),
+                ({'x': 'a'}, pytest.raises(ValueError)),
+                # True == 1 and isinstance(True, int) are true in Py
+                # but we should allow only int
+                ({'x': True}, pytest.raises(ValueError)),
+            ],
+        ),
+        *gen_validation_test_params(
+            'integer min-max',
+            {
+                'variable': 'x',
+                'type': 'integer',
+                'min': 0,
+                'max': 10,
+            },
+            [
+                ({'x': 1}, does_not_raise()),
+                ({'x': 100}, pytest.raises(ValueError)),
+                ({'x': -10}, pytest.raises(ValueError))
+            ],
+        ),
+        *gen_validation_test_params(
+            'integer enum',
+            {
+                'variable': 'x',
+                'type': 'integer',
+                'enum': [2, 4, 8],
+            },
+            [
+                ({'x': 2}, does_not_raise()),
+                ({'x': 6}, pytest.raises(ValueError)),
+            ],
+        ),
+        *gen_validation_test_params(
+            'string',
+            {
+                'variable': 'x',
+                'type': 'string',
+            },
+            [
+                ({'x': 'a'}, does_not_raise()),
+                ({'x': 1}, pytest.raises(ValueError)),
+                ({'x': True}, pytest.raises(ValueError)),
+            ],
+        ),
+        *gen_validation_test_params(
+            'string mix-max len',
+            {
+                'variable': 'x',
+                'type': 'string',
+                'minLength': 2,
+                'maxLength': 4,
+            },
+            [
+                ({'x': 'abc'}, does_not_raise()),
+                ({'x': ''}, pytest.raises(ValueError)),
+                ({'x': '01234567'}, pytest.raises(ValueError))
+            ],
+        ),
+        *gen_validation_test_params(
+            'string enum',
+            {
+                'variable': 'x',
+                'type': 'string',
+                'enum': ['foo', 'bar'],
+            },
+            [
+                ({'x': 'foo'}, does_not_raise()),
+                ({'x': 'abc'}, pytest.raises(ValueError)),
+            ],
+        ),
+        *gen_validation_test_params(
+            'boolean',
+            {
+                'variable': 'x',
+                'type': 'boolean',
+            },
+            [
+                ({'x': True}, does_not_raise()),
+                ({'x': False}, does_not_raise()),
+                ({'x': 1}, pytest.raises(ValueError)),
+                ({'x': 'yes'}, pytest.raises(ValueError)),
+                ({'x': 'true'}, pytest.raises(ValueError)),
+                ({'x': None}, pytest.raises(ValueError)),
+            ],
+        ),
+        *gen_validation_test_params(
+            'required',
+            {
+                'variable': 'x',
+                'type': 'string',
+                'required': False,
+            },
+            [
+                ({}, does_not_raise()),
+                ({'foo': 'bar'}, pytest.raises(ValueError)), # 'foo' is not in spec
+                ({'x': 1}, pytest.raises(ValueError)),  # invalid type
+            ],
+        )
+    ]
+)
+def test_product_params_validation(param_spec, param_vals, expectation):
+    product = model.Product(
+        id=1,
+        name='dummy',
+        description='dummy',
+        enabled=True,
+        tower_template_name_create='dummy',
+        tower_template_name_delete='dummy',
+        parameters=[param_spec],
+    )
+
+    with expectation:
+        product.validate_cluster_params(param_vals)
