@@ -606,20 +606,48 @@ class Product(db.Model, ModelMixin):
                 continue
 
             t = param_spec['type']
-            if t == 'string' and not isinstance(cluster_params[var], str):
-                invalid_params[var] = 'must be a string'
-                continue
-            elif t == 'integer' and type(cluster_params[var]) is not int:
-                invalid_params[var] = 'must be an integer'
-                continue
-            elif t == 'boolean' and not isinstance(cluster_params[var], bool):
-                invalid_params[var] = 'must be a boolean'
-                continue
+
+            if t == 'string':
+                if not isinstance(cluster_params[var], str):
+                    invalid_params[var] = 'must be a string'
+
+                if param_spec.get('maxLength') is not None:
+                    max_len = param_spec['maxLength']
+                    if len(cluster_params[var]) > max_len:
+                        invalid_params[var] = (
+                            f'invalid value, maximal length is {max_len}'
+                        )
+                if param_spec.get('minLength') is not None:
+                    min_len = param_spec['minLength']
+                    if len(cluster_params[var]) < min_len:
+                        invalid_params[var] = (
+                            f'invalid vlue, minimal length is {min_len}'
+                        )
+
+            elif t == 'integer':
+                if type(cluster_params[var]) is not int:
+                    invalid_params[var] = 'must be an integer'
+
+                if param_spec.get('max') is not None:
+                    max_val = param_spec['max']
+                    if cluster_params[var] > max_val:
+                        invalid_params[var] = (
+                            f'invalid value, maximal value is {max_val}'
+                        )
+                if param_spec.get('min') is not None:
+                    min_val = param_spec['min']
+                    if cluster_params[var] < min_val:
+                        invalid_params[var] = (
+                            f'invalid value, minimal value is {min_val}'
+                        )
+
+            elif t == 'boolean':
+                if not isinstance(cluster_params[var], bool):
+                    invalid_params[var] = 'must be a boolean'
 
             if (e := param_spec.get('enum')) is not None:
                 if cluster_params[var] not in e:
                     invalid_params[var] = 'value not allowed'
-                    continue
 
         if invalid_params:
             raise ValueError(invalid_params)
