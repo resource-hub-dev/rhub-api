@@ -361,7 +361,7 @@ def update_cluster(cluster_id, body, user):
 
     cluster_data = body.copy()
 
-    for key in ['name', 'region_id']:
+    for key in ['name', 'region_id', 'product_id', 'product_params']:
         if key in cluster_data:
             return problem(400, 'Bad Request',
                            f'Cluster {key} field cannot be changed.')
