@@ -78,7 +78,7 @@ def test_list_clusters(client, keycloak_mock, mocker):
     sample_region = _create_test_region()
     sample_product = _create_test_product()
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
-    model.Cluster.query.limit.return_value.offset.return_value = [
+    model.Cluster.query.filter.return_value.limit.return_value.offset.return_value = [
         model.Cluster(
             id=1,
             name='testcluster',
@@ -98,7 +98,7 @@ def test_list_clusters(client, keycloak_mock, mocker):
     ]
     mocker.patch.object(model.Cluster, 'hosts', [])
     mocker.patch.object(model.Cluster, 'quota', None)
-    model.Cluster.query.count.return_value = 1
+    model.Cluster.query.filter.return_value.count.return_value = 1
 
     rv = client.get(
         f'{API_BASE}/lab/cluster',
@@ -860,7 +860,8 @@ def test_delete_cluster(client, db_session_mock, keycloak_mock, mocker):
         },
     })
 
-    db_session_mock.delete.assert_called_with(cluster)
+    # Clusters should not be deleted immediately
+    db_session_mock.delete.assert_not_called()
     db_session_mock.commit.assert_called()
 
 

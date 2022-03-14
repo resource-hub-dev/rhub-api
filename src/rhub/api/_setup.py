@@ -129,3 +129,13 @@ def setup():
             job_params=None,
         )
     )
+    create_cronjob(
+        scheduler_model.SchedulerCronJob(
+            name='Cleanup deleted clusters',
+            description='Cleanup clusters that were successfully destroyed.',
+            enabled=True,
+            time_expr='0 * * * *',  # hourly
+            job_name=scheduler_jobs.cleanup_deleted_clusters.name,
+            job_params=None,
+        )
+    )

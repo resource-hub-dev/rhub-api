@@ -113,3 +113,22 @@ def delete_expired_clusters(params):
 
         with contextlib.suppress(Exception):
             lab_utils.delete_cluster(cluster)
+
+
+@CronJob
+def cleanup_deleted_clusters(params):
+    deleted_clusters = lab_model.Cluster.query.filter(
+        lab_model.Cluster.status == lab_model.ClusterStatus.DELETED
+    )
+    for cluster in deleted_clusters:
+        logger.info(
+            f'Cleaning deleted cluster "{cluster.name}" ({cluster.id=})',
+            extra={'cluster': cluster.to_dict(), 'region': cluster.region.to_dict()},
+        )
+        try:
+            db.session.delete(cluster)
+            db.session.commit()
+        except Exception:
+            logger.exception(
+                f'Cleanup of deleted cluster "{cluster.name}" ({cluster.id=}) failed'
+            )
