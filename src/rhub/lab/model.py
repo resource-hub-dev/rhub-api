@@ -304,12 +304,44 @@ class ClusterStatus(str, enum.Enum):
     DELETED = 'Deleted'
     QUEUED = 'Queued'
 
+    @property
+    def is_active(self):
+        return self.name == 'ACTIVE'
+
+    @property
+    def is_deleted(self):
+        return self.name == 'DELETED'
+
+    @property
+    def is_failed(self):
+        return self.name.endswith('_FAILED')
+
+    @property
+    def is_creating(self):
+        return not self.is_failed and (
+            'PROVISION' in self.name or 'INSTALL' in self.name
+        )
+
+    @property
+    def is_deleting(self):
+        return not self.is_failed and not self.is_deleted and 'DELET' in self.name
+
 
 class Cluster(db.Model, ModelMixin):
     __tablename__ = 'lab_cluster'
+    __table_args__ = (
+        db.Index(
+            'ix_name',
+            'name',
+            unique=True,
+            postgresql_where=(
+                db.Column('status') != ClusterStatus.DELETED.name
+            ),
+        ),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(32), unique=True, nullable=False)
+    name = db.Column(db.String(32), nullable=False)
     description = db.Column(db.Text, nullable=False, default='')
     user_id = db.Column(postgresql.UUID, nullable=False)
     group_id = db.Column(postgresql.UUID, nullable=True)

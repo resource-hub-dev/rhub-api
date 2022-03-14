@@ -1149,6 +1149,12 @@ endpoints:
             shared:
               type: boolean
               description: Filter shared clusters
+            deleted:
+              type: boolean
+              description: |
+                List deleted clusters. By default deleted clusters are not
+                included in the listing. When this filter is set to `true` only
+                deleted clusters will be listed.
       - name: sort
         in: query
         description: Sort clusters by attribute.
@@ -1307,6 +1313,12 @@ endpoints:
 
   cluster_delete:
     summary: Delete cluster
+    description: |
+      Clusters are not deleted immediately after calling this endpoint. Instead,
+      Tower job will be launched (`Product.tower_template_name_delete`) and the
+      cluster is marked as deleted from the job by changing status to "Deleted".
+      If deletion fails status should be changed to "Deletion Failed" and
+      cluster won't be deleted.
     tags: [lab]
     operationId: rhub.api.lab.cluster.delete_cluster
     parameters:

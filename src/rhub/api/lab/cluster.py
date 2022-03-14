@@ -175,6 +175,15 @@ def list_clusters(keycloak: KeycloakClient,
                     model.Cluster.group_id != sharedcluster_group_id
                 )
 
+    if filter_.get('deleted', False):
+        clusters = clusters.filter(
+            model.Cluster.status == model.ClusterStatus.DELETED
+        )
+    else:
+        clusters = clusters.filter(
+            model.Cluster.status != model.ClusterStatus.DELETED
+        )
+
     if sort:
         clusters = db_sort(clusters, sort)
 
@@ -204,7 +213,12 @@ def create_cluster(keycloak: KeycloakClient, body, user):
                        'Reservations are disabled in the selected region, only admin '
                        'and region owners are allowed to create new reservations.')
 
-    query = model.Cluster.query.filter(model.Cluster.name == body['name'])
+    query = model.Cluster.query.filter(
+        db.and_(
+            model.Cluster.name == body['name'],
+            model.Cluster.status != model.ClusterStatus.DELETED,
+        )
+    )
     if query.count() > 0:
         return problem(
             400, 'Bad Request',
@@ -360,6 +374,10 @@ def update_cluster(cluster_id, body, user):
     if not _user_can_access_cluster(cluster, user):
         return problem(403, 'Forbidden', "You don't have access to this cluster.")
 
+    if cluster.status.is_deleted:
+        return problem(400, 'Bad Request',
+                       f"Can't update, cluster {cluster_id} is in deleted state")
+
     cluster_data = body.copy()
 
     for key in ['name', 'region_id', 'product_id', 'product_params']:
@@ -451,6 +469,14 @@ def delete_cluster(cluster_id, user):
 
     if not _user_can_access_cluster(cluster, user):
         return problem(403, 'Forbidden', "You don't have access to this cluster.")
+
+    if cluster.status.is_deleting:
+        return problem(400, 'Bad Request',
+                       f'Cluster {cluster_id} is already in deleting state')
+
+    if cluster.status.is_deleted:
+        return problem(400, 'Bad Request',
+                       f'Cluster {cluster_id} was already deleted')
 
     try:
         lab_utils.delete_cluster(cluster, user)
