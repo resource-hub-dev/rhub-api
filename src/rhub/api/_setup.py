@@ -98,6 +98,17 @@ def setup_keycloak():
                                 groups[SHAREDCLUSTER_GROUP]['id'])
 
 
+def create_cronjob(cronjob):
+    """Utility to create a cron job, if it doesn't already exist."""
+    query = scheduler_model.SchedulerCronJob.query.filter(
+        scheduler_model.SchedulerCronJob.job_name == cronjob.job_name
+    )
+    if query.count() < 1:
+        logger.info(f'Creating cron job {cronjob!r}.')
+        db.session.add(cronjob)
+        db.session.commit()
+
+
 # This function must be idempotent. In container, it may be called on every
 # start.
 def setup():
@@ -105,13 +116,8 @@ def setup():
 
     setup_keycloak()
 
-    query = scheduler_model.SchedulerCronJob.query.filter(
-        scheduler_model.SchedulerCronJob.job_name
-        == scheduler_jobs.delete_expired_clusters.name
-    )
-    if query.count() < 1:
-        logger.info('Creating default delete_expired_clusters cron job.')
-        row = scheduler_model.SchedulerCronJob(
+    create_cronjob(
+        scheduler_model.SchedulerCronJob(
             name='Delete expired clusters',
             description=(
                 'Deletes clusters with expired `reservation_expiration` '
@@ -122,5 +128,4 @@ def setup():
             job_name=scheduler_jobs.delete_expired_clusters.name,
             job_params=None,
         )
-        db.session.add(row)
-        db.session.commit()
+    )
