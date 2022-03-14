@@ -8,6 +8,7 @@ from flask import url_for, Response
 
 from rhub.lab import SHAREDCLUSTER_USER, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_ROLE
 from rhub.lab import model
+from rhub.lab import utils as lab_utils
 from rhub.api import db, di, DEFAULT_PAGE_LIMIT
 from rhub.auth import ADMIN_ROLE
 from rhub.auth.utils import route_require_admin
@@ -452,26 +453,10 @@ def delete_cluster(cluster_id, user):
         return problem(403, 'Forbidden', "You don't have access to this cluster.")
 
     try:
-        tower_client = cluster.region.tower.create_tower_client()
-        tower_template = tower_client.template_get(
-            template_name=cluster.product.tower_template_name_delete,
-        )
-
-        logger.info(
-            f'Launching Tower template {tower_template["name"]} '
-            f'(id={tower_template["id"]}), '
-            f'extra_vars={cluster.tower_launch_extra_vars!r}'
-        )
-        tower_client.template_launch(
-            tower_template['id'],
-            {'extra_vars': cluster.tower_launch_extra_vars},
-        )
-
-    except Exception as e:
-        logger.exception(e)
-
-    db.session.delete(cluster)
-    db.session.commit()
+        lab_utils.delete_cluster(cluster, user)
+    except Exception:
+        return problem(500, 'Internal Server Error',
+                       'Failed to trigger cluster deletion.')
 
 
 def list_cluster_events(cluster_id, user):
