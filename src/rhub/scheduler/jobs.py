@@ -1,5 +1,6 @@
 import logging
 import contextlib
+import datetime
 
 import rhub.tower.model
 from rhub.api import db
@@ -29,8 +30,10 @@ class CronJob:
     def doc(self):
         return self.fn.__doc__
 
-    def __call__(self, *args, **kwargs):
-        return self.fn(*args, **kwargs)
+    def __call__(self, params):
+        if params is None:
+            params = {}
+        return self.fn(params)
 
     @classmethod
     def get_jobs(cls):
@@ -87,15 +90,22 @@ def delete_expired_clusters(params):
     Delete expired clusters.
 
     params:
-        None
+        reservation_grace_period -- 'grace' period for reservation expiration,
+            if cluster reservation is not extended it will be deleted after N
+            days. This only applies to reservation (soft limit), if lifespan
+            (hard limit) expires cluster is deleted immediately.
     """
     now = date_now()
+    reservation_grace_period = datetime.timedelta(
+        days=params.get('reservation_grace_period', 0),
+    )
 
     expired_clusters = lab_model.Cluster.query.filter(
         db.or_(
             db.and_(
                 ~lab_model.Cluster.reservation_expiration.is_(None),
-                lab_model.Cluster.reservation_expiration <= now,
+                lab_model.Cluster.reservation_expiration <= (
+                    now - reservation_grace_period),
             ),
             db.and_(
                 ~lab_model.Cluster.lifespan_expiration.is_(None),
