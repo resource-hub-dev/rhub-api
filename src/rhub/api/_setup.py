@@ -126,7 +126,9 @@ def setup():
             enabled=True,
             time_expr='0 1 * * *',  # daily, 1 AM
             job_name=scheduler_jobs.delete_expired_clusters.name,
-            job_params=None,
+            job_params={
+                'reservation_grace_period': 3,
+            },
         )
     )
     create_cronjob(
