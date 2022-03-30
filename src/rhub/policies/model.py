@@ -36,8 +36,8 @@ class Policy(db.Model, ModelMixin):
         new = {}
         for key, value in data.items():
             if key == 'constraint':
-                for key, value in value.items():
-                    new['constraint_' + key] = value
+                for k, v in value.items():
+                    new['constraint_' + k] = v
             else:
                 new[key] = value
         return new
