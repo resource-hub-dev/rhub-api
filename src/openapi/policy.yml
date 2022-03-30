@@ -42,10 +42,15 @@ model:
           cost:
             type: number
             nullable: true
+          location_id:
+            anyOf:
+              - $ref: 'common.yml#/model/ID'
+              - nullable: true
           location:
-            type: string
-            nullable: true
-            maxLength: 4
+            anyOf:
+              - $ref: 'lab.yml#/model/Location'
+              - nullable: true
+                readOnly: true
 
   BriefPolicy:
     type: object

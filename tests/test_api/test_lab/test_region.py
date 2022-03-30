@@ -21,10 +21,16 @@ def _db_add_row_side_effect(data_added):
 
 
 def test_to_dict(keycloak_mock):
+    location = model.Location(
+        id=1,
+        name='RDU',
+        description='Raleigh',
+    )
     region = model.Region(
         id=1,
         name='test',
-        location='RDU',
+        location_id=location.id,
+        location=location,
         description='desc',
         banner='ban',
         enabled=True,
@@ -65,7 +71,12 @@ def test_to_dict(keycloak_mock):
     assert region.to_dict() == {
         'id': 1,
         'name': 'test',
-        'location': 'RDU',
+        'location_id': 1,
+        'location': {
+            'id': 1,
+            'name': 'RDU',
+            'description': 'Raleigh',
+        },
         'description': 'desc',
         'banner':'ban',
         'enabled': True,
@@ -113,7 +124,12 @@ def test_list_regions(client, keycloak_mock):
         model.Region(
             id=1,
             name='test',
-            location='RDU',
+            location_id=1,
+            location=model.Location(
+                id=1,
+                name='RDU',
+                description='Raleigh',
+            ),
             description='',
             banner='',
             enabled=True,
@@ -157,7 +173,12 @@ def test_list_regions(client, keycloak_mock):
             {
                 'id': 1,
                 'name': 'test',
-                'location': 'RDU',
+                'location_id': 1,
+                'location': {
+                    'id': 1,
+                    'name': 'RDU',
+                    'description': 'Raleigh',
+                },
                 'description': '',
                 'banner': '',
                 'enabled': True,
@@ -203,7 +224,12 @@ def test_get_region(client, keycloak_mock):
     model.Region.query.get.return_value = model.Region(
         id=1,
         name='test',
-        location='RDU',
+        location_id=1,
+        location=model.Location(
+            id=1,
+            name='RDU',
+            description='Raleigh',
+        ),
         description='',
         banner='',
         enabled=True,
@@ -245,7 +271,12 @@ def test_get_region(client, keycloak_mock):
     assert rv.json == {
         'id': 1,
         'name': 'test',
-        'location': 'RDU',
+        'location_id': 1,
+        'location': {
+            'id': 1,
+            'name': 'RDU',
+            'description': 'Raleigh',
+        },
         'description': '',
         'banner': '',
         'enabled': True,
@@ -287,7 +318,7 @@ def test_get_region(client, keycloak_mock):
 def test_create_region(client, db_session_mock, keycloak_mock, mocker):
     region_data = {
         'name': 'test',
-        'location': 'RDU',
+        'location_id': 1,
         'tower_id': 1,
         'openstack': {
             'url': 'https://openstack.example.com:13000',
@@ -345,7 +376,7 @@ def test_create_region(client, db_session_mock, keycloak_mock, mocker):
 def test_create_region_credentials(client, db_session_mock, keycloak_mock, vault_mock):
     region_data = {
         'name': 'test',
-        'location': 'RDU',
+        'location_id': 1,
         'tower_id': 1,
         'openstack': {
             'url': 'https://openstack.example.com:13000',
@@ -424,7 +455,7 @@ def test_create_region_with_quota(client, db_session_mock, keycloak_mock, mocker
     }
     region_data = {
         'name': 'test',
-        'location': 'RDU',
+        'location_id': 1,
         'tower_id': 1,
         'user_quota': quota_data,
         'total_quota': None,
@@ -490,7 +521,7 @@ def test_create_region_with_quota(client, db_session_mock, keycloak_mock, mocker
 def test_create_region_fail_keycloak_cleanup(client, db_session_mock, keycloak_mock):
     region_data = {
         'name': 'test',
-        'location': 'RDU',
+        'location_id': 1,
         'tower_id': 1,
         'openstack': {
             'url': 'https://openstack.example.com:13000',
@@ -541,7 +572,12 @@ def test_update_region(client):
     region = model.Region(
         id=1,
         name='test',
-        location='RDU',
+        location_id=1,
+        location=model.Location(
+            id=1,
+            name='RDU',
+            description='Raleigh',
+        ),
         description='',
         banner='',
         enabled=True,
@@ -592,7 +628,12 @@ def test_update_region_credentials(client, vault_mock):
     region = model.Region(
         id=1,
         name='test',
-        location='RDU',
+        location_id=1,
+        location=model.Location(
+            id=1,
+            name='RDU',
+            description='Raleigh',
+        ),
         description='',
         banner='',
         enabled=True,
@@ -695,7 +736,12 @@ def test_update_region_quota(client, keycloak_mock, quota_data):
     region = model.Region(
         id=1,
         name='test',
-        location='RDU',
+        location_id=1,
+        location=model.Location(
+            id=1,
+            name='RDU',
+            description='Raleigh',
+        ),
         description='',
         banner='',
         enabled=True,
@@ -773,7 +819,12 @@ def test_update_region_nested_data(client, update_data):
     region = model.Region(
         id=1,
         name='test',
-        location='RDU',
+        location_id=1,
+        location=model.Location(
+            id=1,
+            name='RDU',
+            description='Raleigh',
+        ),
         description='',
         banner='',
         enabled=True,
@@ -824,7 +875,12 @@ def test_delete_region(client, keycloak_mock, db_session_mock):
     region = model.Region(
         id=1,
         name='test',
-        location='RDU',
+        location_id=1,
+        location=model.Location(
+            id=1,
+            name='RDU',
+            description='Raleigh',
+        ),
         description='',
         banner='',
         enabled=True,
@@ -881,7 +937,12 @@ def test_region_list_products(client):
     model.Region.query.get.return_value = model.Region(
         id=1,
         name='test',
-        location='RDU',
+        location_id=1,
+        location=model.Location(
+            id=1,
+            name='RDU',
+            description='Raleigh',
+        ),
         description='',
         banner='',
         enabled=True,
@@ -941,7 +1002,12 @@ def test_region_add_product(client, db_session_mock):
     model.Region.query.get.return_value = model.Region(
         id=1,
         name='test',
-        location='RDU',
+        location_id=1,
+        location=model.Location(
+            id=1,
+            name='RDU',
+            description='Raleigh',
+        ),
         description='',
         banner='',
         enabled=True,
@@ -1003,7 +1069,12 @@ def test_region_disable_product(client, db_session_mock):
     model.Region.query.get.return_value = model.Region(
         id=1,
         name='test',
-        location='RDU',
+        location_id=1,
+        location=model.Location(
+            id=1,
+            name='RDU',
+            description='Raleigh',
+        ),
         description='',
         banner='',
         enabled=True,
@@ -1064,7 +1135,12 @@ def test_region_delete_product(client, db_session_mock):
     model.Region.query.get.return_value = model.Region(
         id=1,
         name='test',
-        location='RDU',
+        location_id=1,
+        location=model.Location(
+            id=1,
+            name='RDU',
+            description='Raleigh',
+        ),
         description='',
         banner='',
         enabled=True,
