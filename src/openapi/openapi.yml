@@ -37,6 +37,21 @@ paths:
     get:
       $ref: 'health.yml#/endpoints/ping'
 
+  /lab/location:
+    get:
+      $ref: 'lab.yml#/endpoints/location_list'
+    post:
+      $ref: 'lab.yml#/endpoints/location_create'
+  /lab/location/{location_id}:
+    get:
+      $ref: 'lab.yml#/endpoints/location_get'
+    patch:
+      $ref: 'lab.yml#/endpoints/location_update'
+    delete:
+      $ref: 'lab.yml#/endpoints/location_delete'
+  /lab/location/{location_id}/regions:
+    get:
+      $ref: 'lab.yml#/endpoints/location_region_list'
   /lab/region:
     get:
       $ref: 'lab.yml#/endpoints/region_list'

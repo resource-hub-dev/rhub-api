@@ -61,7 +61,11 @@ def list_regions(keycloak: KeycloakClient,
         regions = regions.filter(model.Region.name.ilike(filter_['name']))
 
     if 'location' in filter_:
-        regions = regions.filter(model.Region.location.ilike(filter_['location']))
+        regions = (
+            regions
+            .outerjoin(model.Location)
+            .filter(model.Location.name.ilike(filter_['location']))
+        )
 
     if 'enabled' in filter_:
         regions = regions.filter(model.Region.enabled == filter_['enabled'])

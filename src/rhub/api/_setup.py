@@ -141,3 +141,22 @@ def setup():
             job_params=None,
         )
     )
+
+    # Initial set of locations
+    locations = [
+        {'name': 'AMS', 'description': 'Amsterdam'},
+        {'name': 'PEK', 'description': 'Beijing'},
+        {'name': 'BNE', 'description': 'Brisbane'},
+        {'name': 'BRQ', 'description': 'Brno'},
+        {'name': 'FAB', 'description': 'Farnborough'},
+        {'name': 'PHX', 'description': 'Phoenix'},
+        {'name': 'PNQ', 'description': 'Pune'},
+        {'name': 'RDU', 'description': 'Raleigh'},
+        {'name': 'GRU', 'description': 'São Paulo'},
+        {'name': 'SIN', 'description': 'Singapore'},
+        {'name': 'TLV', 'description': 'Tel Aviv'},
+        {'name': 'NRT', 'description': 'Tokyo'},
+    ]
+    for loc in locations:
+        print(loc)
+        ...

@@ -31,7 +31,12 @@ def _create_test_region():
     return model.Region(
         id=1,
         name='test',
-        location='RDU',
+        location_id=1,
+        location=model.Location(
+            id=1,
+            name='RDU',
+            description='Raleigh',
+        ),
         description='',
         banner='',
         enabled=True,

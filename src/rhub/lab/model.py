@@ -15,12 +15,23 @@ from rhub.api.vault import Vault
 from rhub.lab import SHAREDCLUSTER_GROUP
 
 
+class Location(db.Model, ModelMixin):
+    __tablename__ = 'lab_location'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(32), unique=True, nullable=False)
+    description = db.Column(db.Text, nullable=False, default='')
+
+    regions = db.relationship('Region', back_populates='location')
+
+
 class Region(db.Model, ModelMixin):
     __tablename__ = 'lab_region'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(32), unique=True, nullable=False)
-    location = db.Column(db.String(32), index=True, nullable=True)
+    location_id = db.Column(db.Integer, db.ForeignKey('lab_location.id'))
+    location = db.relationship('Location', back_populates='regions')
     description = db.Column(db.Text, nullable=False, default='')
     banner = db.Column(db.Text, nullable=False, default='')
     enabled = db.Column(db.Boolean, default=True)
@@ -126,6 +137,11 @@ class Region(db.Model, ModelMixin):
 
         data['owner_group_name'] = self.owner_group_name
         data['users_group_name'] = self.users_group_name
+
+        if self.location:
+            data['location'] = self.location.to_dict()
+        else:
+            data['location'] = None
 
         return data
 

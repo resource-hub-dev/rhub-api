@@ -1,5 +1,23 @@
 model:
 
+  Location:
+    type: object
+    properties:
+      id:
+        allOf:
+          - $ref: 'common.yml#/model/ID'
+          - readOnly: true
+      name:
+        type: string
+        description: Short name of location / IATA identifier / ...
+        maxLength: 32
+        example: RDU
+      description:
+        type: string
+        description: Long description of location, address, ...
+        nullable: true
+        example: Raleigh
+
   Quota:
     type: object
     properties:
@@ -31,12 +49,15 @@ model:
         type: string
         maxLength: 32
         example: rdu2-a
+      location_id:
+        anyOf:
+          - $ref: 'common.yml#/model/ID'
+          - nullable: true
       location:
-        description: Geographical location of region.
-        type: string
-        maxLength: 32
-        nullable: true
-        example: RDU
+        anyOf:
+          - $ref: '#/model/Location'
+          - nullable: true
+            readOnly: true
       description:
         type: string
       banner:
@@ -545,6 +566,13 @@ model:
 
 parameters:
 
+  location_id:
+    name: location_id
+    in: path
+    description: ID of the location
+    required: true
+    schema:
+      $ref: 'common.yml#/model/ID'
   region_id:
     name: region_id
     in: path
@@ -576,6 +604,186 @@ parameters:
 
 endpoints:
 
+  location_list:
+    summary: Get location list
+    tags: [lab]
+    operationId: rhub.api.lab.location.location_list
+    parameters:
+      - name: sort
+        in: query
+        description: Sort regions by attribute.
+        schema:
+          type: string
+          enum:
+            - name
+            - -name
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+    responses:
+      '200':
+        description: List of Location
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/Location'
+                total:
+                  type: integer
+                  minimum: 0
+                  description: The total number of items
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  location_create:
+    summary: Create location
+    tags: [lab]
+    operationId: rhub.api.lab.location.location_create
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/model/Location'
+              - required:
+                  - name
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  location_get:
+    summary: Get location
+    tags: [lab]
+    operationId: rhub.api.lab.location.location_get
+    parameters:
+      - $ref: '#/parameters/location_id'
+    responses:
+      '200':
+        description: Location
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Location'
+      '404':
+        description: Not found
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  location_update:
+    summary: Update location
+    tags: [lab]
+    operationId: rhub.api.lab.location.location_update
+    parameters:
+      - $ref: '#/parameters/location_id'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/model/Location'
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  location_delete:
+    summary: Delete location
+    tags: [lab]
+    operationId: rhub.api.lab.location.location_delete
+    parameters:
+      - $ref: '#/parameters/location_id'
+    responses:
+      '204':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  location_region_list:
+    summary: Get list of regions in the location.
+    tags: [lab]
+    operationId: rhub.api.lab.location.location_region_list
+    parameters:
+      - $ref: '#/parameters/location_id'
+      - name: filter
+        in: query
+        description: Filter regions by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: >
+                Name of a region. Wildcard ``%`` can be used to match zero, one,
+                or multiple characters
+            location:
+              type: string
+              description: >
+                Location of a region. Wildcard ``%`` can be used to match zero,
+                one, or multiple characters
+            enabled:
+              type: boolean
+            reservations_enabled:
+              type: boolean
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+    responses:
+      '200':
+        description: List of Region
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    $ref: 'common.yml#/model/ID'
+                  enabled:
+                    type: boolean
+                  region:
+                    $ref: '#/model/Region'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
   region_list:
     summary: Get region list
     tags: [lab]
@@ -596,8 +804,8 @@ endpoints:
             location:
               type: string
               description: >
-                Location of a region. Wildcard ``%`` can be used to match zero,
-                one, or multiple characters
+                Location of a region, value is location name. Wildcard ``%`` can
+                be used to match zero, one, or multiple characters
             enabled:
               type: boolean
             reservations_enabled:
