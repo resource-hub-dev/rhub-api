@@ -23,6 +23,7 @@ services:
       # don't pollute /opt/app-root/src with home crap
       RHUB_SKIP_INIT: ${RHUB_SKIP_INIT:-False}
       RHUB_RETURN_INITIAL_FLASK_APP: ${RHUB_RETURN_INITIAL_FLASK_APP:-False}
+      REQUESTS_CA_BUNDLE: /etc/pki/tls/certs/ca-bundle.crt
     env_file:
       - .env
     ports:
