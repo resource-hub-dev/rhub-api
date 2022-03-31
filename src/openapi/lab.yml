@@ -793,8 +793,6 @@ endpoints:
               items:
                 type: object
                 properties:
-                  id:
-                    $ref: 'common.yml#/model/ID'
                   enabled:
                     type: boolean
                   product:
@@ -1108,8 +1106,6 @@ endpoints:
               items:
                 type: object
                 properties:
-                  id:
-                    $ref: 'common.yml#/model/ID'
                   enabled:
                     type: boolean
                   region:

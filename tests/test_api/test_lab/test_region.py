@@ -919,7 +919,6 @@ def test_region_list_products(client):
     assert rv.status_code == 200
     assert rv.json == [
         {
-            'id': 1,
             'region_id': 1,
             'product_id': 1,
             'product': {
