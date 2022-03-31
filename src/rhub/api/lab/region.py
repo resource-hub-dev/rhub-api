@@ -13,7 +13,6 @@ from rhub.api import db, DEFAULT_PAGE_LIMIT
 from rhub.api.utils import db_sort
 from rhub.api.vault import Vault
 from rhub.api.lab.cluster import _user_can_access_region
-from rhub.api.lab.product import _product_href
 from rhub.auth import ADMIN_ROLE
 from rhub.auth.keycloak import (
     KeycloakClient, KeycloakGetError, problem_from_keycloak_error,
@@ -284,6 +283,7 @@ def list_region_products(keycloak: KeycloakClient, region_id, user, filter_):
             model.Product.enabled == filter_['enabled'],
         )
 
+    from rhub.api.lab.product import _product_href
     return [
         {
             'id': r.product_id,
