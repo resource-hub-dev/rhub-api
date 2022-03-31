@@ -157,6 +157,7 @@ def setup():
         {'name': 'TLV', 'description': 'Tel Aviv'},
         {'name': 'NRT', 'description': 'Tokyo'},
     ]
-    for loc in locations:
-        print(loc)
-        ...
+    if lab_model.Location.query.count() == 0:
+        for loc in locations:
+            db.session.add(lab_model.Location(**loc))
+        db.session.commit()
