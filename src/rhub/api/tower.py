@@ -116,7 +116,7 @@ def update_server(server_id, body, user):
     server.update_from_dict(body)
     db.session.commit()
 
-    return server.to_dict()
+    return server.to_dict() | {'_href': _server_href(server)}
 
 
 @route_require_admin
