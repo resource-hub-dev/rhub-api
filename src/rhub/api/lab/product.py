@@ -148,7 +148,16 @@ def list_product_regions(keycloak: KeycloakClient, product_id, user, filter_,
             model.Region.reservations_enabled == filter_['reservations_enabled'],
         )
 
+    from rhub.api.lab.region import _region_href
     return [
-        {'id': r.region_id, 'region': r.region.to_dict(), 'enabled': r.enabled}
+        {
+            'id': r.region_id,
+            'region_id': r.region.id,
+            'product_id': r.product.id,
+            'region': r.region.to_dict(),
+            'enabled': r.enabled,
+        } | {
+            '_href': _region_href(r.region) | _product_href(r.product)
+        }
         for r in regions_relation
     ]

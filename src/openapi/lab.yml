@@ -799,6 +799,10 @@ endpoints:
                     type: boolean
                   product:
                     $ref: '#/model/Product'
+                  product_id:
+                    $ref: 'common.yml#/model/ID'
+                  region_id:
+                    $ref: 'common.yml#/model/ID'
       default:
         $ref: 'common.yml#/responses/problem'
     security:
@@ -1110,6 +1114,10 @@ endpoints:
                     type: boolean
                   region:
                     $ref: '#/model/Region'
+                  region_id:
+                    $ref: 'common.yml#/model/ID'
+                  product_id:
+                    $ref: 'common.yml#/model/ID'
       default:
         $ref: 'common.yml#/responses/problem'
     security:
