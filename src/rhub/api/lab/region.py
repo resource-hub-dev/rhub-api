@@ -286,7 +286,6 @@ def list_region_products(keycloak: KeycloakClient, region_id, user, filter_):
     from rhub.api.lab.product import _product_href
     return [
         {
-            'id': r.product_id,
             'region_id': r.region.id,
             'product_id': r.product.id,
             'product': r.product.to_dict(),
