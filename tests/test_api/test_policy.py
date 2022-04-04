@@ -1,6 +1,7 @@
 import pytest
 
 from rhub.policies import model
+from rhub.lab import model as lab_model
 from rhub.api import db
 from test_tower import _db_add_row_side_effect
 from rhub.auth.keycloak import KeycloakClient
@@ -55,7 +56,8 @@ def test_get_policy(client):
         constraint_density='',
         constraint_tag=[],
         constraint_cost=1.23,
-        constraint_location='',
+        constraint_location_id=1,
+        constraint_location=lab_model.Location(id=1, name='RDU', description=''),
     )
 
     rv = client.get(
@@ -77,7 +79,12 @@ def test_get_policy(client):
             'density': '',
             'tag': [],
             'cost': 1.23,
-            'location': '',
+            'location_id': 1,
+            'location': {
+                'id': 1,
+                'name': 'RDU',
+                'description': '',
+            },
         }
     }
 
@@ -124,7 +131,8 @@ def test_delete_policy(client, keycloak_mock, db_session_mock):
         constraint_density='',
         constraint_tag=[],
         constraint_cost=1.23,
-        constraint_location='',
+        constraint_location_id=1,
+        constraint_location=lab_model.Location(id=1, name='RDU', description=''),
     )
     model.Policy.query.get.return_value = policy
     model.Policy.query.delete.return_value = policy
@@ -155,7 +163,8 @@ def test_update_policy(client, keycloak_mock, db_session_mock):
         constraint_density='',
         constraint_tag=[],
         constraint_cost=1.23,
-        constraint_location='',
+        constraint_location_id=1,
+        constraint_location=lab_model.Location(id=1, name='RDU', description=''),
     )
     model.Policy.query.get.return_value = policy
     keycloak_mock.user_group_list.return_value = [{'name': 'policy-1-owners'}]
@@ -183,6 +192,11 @@ def test_update_policy(client, keycloak_mock, db_session_mock):
             'density': '',
             'tag': [],
             'cost': 1.23,
-            'location': '',
+            'location_id': 1,
+            'location': {
+                'id': 1,
+                'name': 'RDU',
+                'description': '',
+            },
         }
     }
