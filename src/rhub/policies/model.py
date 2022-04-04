@@ -14,7 +14,9 @@ class Policy(db.Model, ModelMixin):
     constraint_density = db.Column(db.Text, nullable=True)
     constraint_tag = db.Column(db.ARRAY(db.Text), nullable=True)
     constraint_cost = db.Column(db.Numeric, nullable=True)
-    constraint_location = db.Column(db.Text, nullable=True)
+    constraint_location_id = db.Column(db.Integer, db.ForeignKey('lab_location.id'),
+                                       nullable=True)
+    constraint_location = db.relationship('Location')
 
     def to_dict(self):
         data = {}
@@ -26,6 +28,8 @@ class Policy(db.Model, ModelMixin):
                 data['constraint'][key[11:]] = value
             else:
                 data[key] = value
+        if self.constraint_location:
+            data['constraint']['location'] = self.constraint_location.to_dict()
         return data
 
     @staticmethod

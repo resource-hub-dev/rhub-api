@@ -52,8 +52,52 @@ def upgrade():
     op.drop_index('ix_lab_region_location', table_name='lab_region')
     op.drop_column('lab_region', 'location')
 
+    op.execute(
+        """
+        INSERT INTO lab_location (name, description)
+        SELECT DISTINCT constraint_location, '' FROM policies
+            WHERE constraint_location IS NOT NULL
+        ON CONFLICT DO NOTHING
+        """
+    )
+    op.add_column(
+        'policies',
+        sa.Column('constraint_location_id', sa.Integer(), nullable=True),
+    )
+    op.execute(
+        """
+        UPDATE policies AS p
+        SET constraint_location_id = l.id
+        FROM lab_location AS l
+        WHERE p.constraint_location = l.name
+        """
+    )
+    op.create_foreign_key(
+        'policies_constraint_location_id_fkey',
+        'policies',
+        'lab_location',
+        ['constraint_location_id'],
+        ['id'],
+    )
+    op.drop_column('policies', 'constraint_location')
+
 
 def downgrade():
+    op.add_column(
+        'policies',
+        sa.Column('constraint_location', sa.TEXT(), autoincrement=False, nullable=True),
+    )
+    op.drop_constraint('policies_constraint_location_id_fkey', 'policies')
+    op.execute(
+        """
+        UPDATE policies AS p
+        SET constraint_location = l.name
+        FROM lab_location AS l
+        WHERE p.constraint_location_id = l.id
+        """
+    )
+    op.drop_column('policies', 'constraint_location_id')
+
     op.add_column(
         'lab_region',
         sa.Column('location', sa.VARCHAR(length=32), nullable=True)
