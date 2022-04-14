@@ -1531,6 +1531,9 @@ endpoints:
       cluster is marked as deleted from the job by changing status to "Deleted".
       If deletion fails status should be changed to "Deletion Failed" and
       cluster won't be deleted.
+
+      Clusters that are in a creating state cannot be deleted. Before deleting,
+      the cluster must be in the `Active` state or in any of failed states.
     tags: [lab]
     operationId: rhub.api.lab.cluster.delete_cluster
     parameters:
