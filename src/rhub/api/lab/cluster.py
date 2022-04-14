@@ -478,6 +478,13 @@ def delete_cluster(cluster_id, user):
         return problem(400, 'Bad Request',
                        f'Cluster {cluster_id} was already deleted')
 
+    if cluster.status.is_creating:
+        return problem(
+            400, 'Bad Request',
+            f'Cluster {cluster_id} is in creating state. Before deleting, '
+            'the cluster must be in the Active state or in any of failed states.',
+        )
+
     try:
         lab_utils.delete_cluster(cluster, user)
     except Exception:
