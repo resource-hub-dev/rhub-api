@@ -289,58 +289,69 @@ class Quota(db.Model, ModelMixin):
 
 
 class ClusterStatus(str, enum.Enum):
-    ACTIVE = 'Active'
-    PRE_PROVISIONING_QUEUED = 'Pre-Provisioning Queued'
-    PRE_PROVISIONING = 'Pre-Provisioning'
-    PRE_PROVISIONING_FAILED = 'Pre-Provisioning Failed'
-    PROVISIONING_QUEUED = 'Provisioning Queued'
-    PROVISIONING = 'Provisioning'
-    PROVISIONING_FAILED = 'Provisioning Failed'
-    POST_PROVISIONING_QUEUED = 'Post-Provisioning Queued'
-    POST_PROVISIONING = 'Post-Provisioning'
-    POST_PROVISIONING_FAILED = 'Post-Provisioning Failed'
-    PRE_INSTALLATION_QUEUED = 'Pre-Installation Queued'
-    PRE_INSTALLING = 'Pre-Installing'
-    PRE_INSTALLATION_FAILED = 'Pre-Installation Failed'
-    INSTALLATION_QUEUED = 'Installation Queued'
-    INSTALLING = 'Installing'
-    INSTALLATION_FAILED = 'Installation Failed'
-    POST_INSTALLATION_QUEUED = 'Post-Installation Queued'
-    POST_INSTALLING = 'Post-Installing'
-    POST_INSTALLATION_FAILED = 'Post-Installation Failed'
-    PRE_DELETION_QUEUED = 'Pre-Deletion Queued'
-    PRE_DELETING = 'Pre-Deleting'
-    PRE_DELETION_FAILED = 'Pre-Deletion Failed'
-    DELETION_QUEUED = 'Deletion Queued'
-    DELETING = 'Deleting'
-    DELETION_FAILED = 'Deletion Failed'
-    POST_DELETION_QUEUED = 'Post-Deletion Queued'
-    POST_DELETING = 'Post-Deleting'
-    POST_DELETION_FAILED = 'Post-Deletion Failed'
-    DELETED = 'Deleted'
-    QUEUED = 'Queued'
+    ACTIVE = 'Active', 'active'
+    PRE_PROVISIONING_QUEUED = 'Pre-Provisioning Queued', 'creating'
+    PRE_PROVISIONING = 'Pre-Provisioning', 'creating'
+    PRE_PROVISIONING_FAILED = 'Pre-Provisioning Failed', 'failed'
+    PROVISIONING_QUEUED = 'Provisioning Queued', 'creating'
+    PROVISIONING = 'Provisioning', 'creating'
+    PROVISIONING_FAILED = 'Provisioning Failed', 'failed'
+    POST_PROVISIONING_QUEUED = 'Post-Provisioning Queued', 'creating'
+    POST_PROVISIONING = 'Post-Provisioning', 'creating'
+    POST_PROVISIONING_FAILED = 'Post-Provisioning Failed', 'failed'
+    PRE_INSTALLATION_QUEUED = 'Pre-Installation Queued', 'creating'
+    PRE_INSTALLING = 'Pre-Installing', 'creating'
+    PRE_INSTALLATION_FAILED = 'Pre-Installation Failed', 'failed'
+    INSTALLATION_QUEUED = 'Installation Queued', 'creating'
+    INSTALLING = 'Installing', 'creating'
+    INSTALLATION_FAILED = 'Installation Failed', 'failed'
+    POST_INSTALLATION_QUEUED = 'Post-Installation Queued', 'creating'
+    POST_INSTALLING = 'Post-Installing', 'creating'
+    POST_INSTALLATION_FAILED = 'Post-Installation Failed', 'failed'
+    PRE_DELETION_QUEUED = 'Pre-Deletion Queued', 'deleting'
+    PRE_DELETING = 'Pre-Deleting', 'deleting'
+    PRE_DELETION_FAILED = 'Pre-Deletion Failed', 'failed'
+    DELETION_QUEUED = 'Deletion Queued', 'deleting'
+    DELETING = 'Deleting', 'deleting'
+    DELETION_FAILED = 'Deletion Failed', 'failed'
+    POST_DELETION_QUEUED = 'Post-Deletion Queued', 'deleting'
+    POST_DELETING = 'Post-Deleting', 'deleting'
+    POST_DELETION_FAILED = 'Post-Deletion Failed', 'failed'
+    DELETED = 'Deleted', 'deleted'
+    QUEUED = 'Queued', 'creating'
+
+    def __new__(cls, value, flag=None):
+        if not flag:
+            raise ValueError(f'Missing flag for status {value}')
+        obj = str.__new__(cls, [value])
+        obj._value_ = value
+        obj.flag = flag
+        return obj
 
     @property
     def is_active(self):
-        return self.name == 'ACTIVE'
+        return self.flag == 'active'
 
     @property
     def is_deleted(self):
-        return self.name == 'DELETED'
+        return self.flag == 'deleted'
 
     @property
     def is_failed(self):
-        return self.name.endswith('_FAILED')
+        return self.flag == 'failed'
 
     @property
     def is_creating(self):
-        return not self.is_failed and (
-            'PROVISION' in self.name or 'INSTALL' in self.name
-        )
+        return self.flag == 'creating'
 
     @property
     def is_deleting(self):
-        return not self.is_failed and not self.is_deleted and 'DELET' in self.name
+        return self.flag == 'deleting'
+
+    @classmethod
+    def flag_statuses(cls, flag):
+        """Get list of status for a given flag."""
+        return [i for i in cls if i.flag == flag]
 
 
 class Cluster(db.Model, ModelMixin):
@@ -486,8 +497,10 @@ class Cluster(db.Model, ModelMixin):
 
         if self.status:
             data['status'] = self.status.value
+            data['status_flag'] = self.status.flag
         else:
             data['status'] = None
+            data['status_flag'] = None
 
         data['product_name'] = self.product.name
 

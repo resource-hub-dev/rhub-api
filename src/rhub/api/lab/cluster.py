@@ -164,6 +164,18 @@ def list_clusters(keycloak: KeycloakClient,
     if 'group_id' in filter_:
         clusters = clusters.filter(model.Cluster.group_id == filter_['group_id'])
 
+    if 'status' in filter_:
+        clusters = clusters.filter(
+            model.Cluster.status == model.ClusterStatus(filter_['status'])
+        )
+
+    if 'status_flag' in filter_:
+        clusters = clusters.filter(
+            model.Cluster.status.in_(
+                model.ClusterStatus.flag_statuses(filter_['status_flag'])
+            )
+        )
+
     if 'shared' in filter_:
         if sharedcluster_group_id := _get_sharedcluster_group_id():
             if filter_['shared']:

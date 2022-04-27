@@ -125,6 +125,7 @@ def test_list_clusters(client, keycloak_mock, mocker):
                 'reservation_expiration': None,
                 'lifespan_expiration': None,
                 'status': model.ClusterStatus.ACTIVE.value,
+                'status_flag': model.ClusterStatus.ACTIVE.flag,
                 'region_name': 'test',
                 'user_name': 'test-user',
                 'group_name': None,
@@ -215,6 +216,7 @@ def test_get_cluster(client, keycloak_mock, mocker):
         'reservation_expiration': None,
         'lifespan_expiration': None,
         'status': model.ClusterStatus.ACTIVE.value,
+        'status_flag': model.ClusterStatus.ACTIVE.flag,
         'region_name': 'test',
         'user_name': 'test-user',
         'group_name': None,
@@ -332,7 +334,7 @@ def test_create_cluster(client, keycloak_mock, db_session_mock, mocker):
     assert cluster_event.tower_job_id == 321
 
     assert rv.json['user_id'] == '00000000-0000-0000-0000-000000000000'
-    assert rv.json['status'] == model.ClusterStatus.QUEUED
+    assert rv.json['status'] == model.ClusterStatus.QUEUED.value
     assert rv.json['created'] == '2021-01-01T01:00:00+00:00'
 
 
