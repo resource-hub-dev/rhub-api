@@ -253,6 +253,16 @@ model:
       - Provisioning Queued
       - Queued
 
+  ClusterStatusFlag:
+    type: string
+    nullable: true
+    enum:
+      - active
+      - creating
+      - deleted
+      - deleting
+      - failed
+
   Cluster:
     type: object
     properties:
@@ -304,6 +314,10 @@ model:
         nullable: true
       status:
         $ref: '#/model/ClusterStatus'
+      status_flag:
+        allOf:
+          - $ref: '#/model/ClusterStatusFlag'
+          - readOnly: true
       quota:
         anyOf:
           - $ref: '#/model/Quota'
@@ -1358,6 +1372,10 @@ endpoints:
               format: uuid
               nullable: true
               description: ID of the group or ``null``.
+            status:
+              $ref: '#/model/ClusterStatus'
+            status_flag:
+              $ref: '#/model/ClusterStatusFlag'
             shared:
               type: boolean
               description: Filter shared clusters
