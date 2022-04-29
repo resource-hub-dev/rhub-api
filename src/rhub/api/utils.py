@@ -32,3 +32,32 @@ def db_sort(query, sort_by):
     direction = 'DESC' if sort_by.startswith('-') else 'ASC'
     column = sort_by.removeprefix('-')
     return query.order_by(db.text(f'{column} {direction}'))
+
+
+def condition_eval(expr, params):
+    """
+    Evaluate condition expression.
+
+    ["not", <expr>]
+    ["and", <expr...>]
+    ["or", <expr...>]
+    ["param_eq", <param-name>, <value>]
+    ["param_ne", <param-name>, <value>]
+    ["param_lt", <param-name>, <value>]
+    ["param_gt", <param-name>, <value>]
+    """
+    if expr[0] == 'not':
+        return not condition_eval(expr[1], params)
+    elif expr[0] == 'and':
+        return all(condition_eval(i, params) for i in expr[1:])
+    elif expr[0] == 'or':
+        return any(condition_eval(i, params) for i in expr[1:])
+    if expr[0] == 'param_eq':
+        return params.get(expr[1]) == expr[2]
+    elif expr[0] == 'param_ne':
+        return params.get(expr[1]) != expr[2]
+    elif expr[0] == 'param_lt':
+        return expr[1] in params and params[expr[1]] < expr[2]
+    elif expr[0] == 'param_gt':
+        return expr[1] in params and params[expr[1]] > expr[2]
+    raise ValueError(f'Unknown operation {expr[0]!r}')

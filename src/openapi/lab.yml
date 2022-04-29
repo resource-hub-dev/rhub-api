@@ -498,8 +498,11 @@ model:
               type: boolean
               default: false
             condition:
+              description: Condition for extra validations that need values from other options.
+              nullable: true
+              example: ["and", ["param_eq", "extra_nic", true], ["param_gt", "num_nodes", 1]]
+            display_condition:
               description: Condition when to display option based on the values of other options.
-              # TODO
               nullable: true
           oneOf:
             - description: string variable
