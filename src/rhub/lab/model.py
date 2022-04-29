@@ -13,6 +13,7 @@ from rhub.tower import model as tower_model
 from rhub.auth.keycloak import KeycloakClient
 from rhub.api.vault import Vault
 from rhub.lab import SHAREDCLUSTER_GROUP
+from rhub.api.utils import condition_eval
 
 
 class Location(db.Model, ModelMixin):
@@ -709,6 +710,10 @@ class Product(db.Model, ModelMixin):
             if (e := param_spec.get('enum')) is not None:
                 if cluster_params[var] not in e:
                     invalid_params[var] = 'value not allowed'
+
+            if (c := param_spec.get('condition')) is not None:
+                if not condition_eval(c, cluster_params):
+                    invalid_params[var] = 'value does not satisfy the condition'
 
         if invalid_params:
             raise ValueError(invalid_params)
