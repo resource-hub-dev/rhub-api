@@ -327,6 +327,45 @@ def create_cluster(keycloak: KeycloakClient, body, user):
         return problem(400, 'Bad Request', 'Invalid product parameters.',
                        ext={'invalid_product_params': e.args[0]})
 
+    if (product.flavors is not None):
+        current_user_quota_usage = region.get_user_quota_usage(user)
+        user_quota = region.user_quota
+        params = cluster.product_params
+        node_params_keys = list(
+            filter(lambda param: param.find('node') != -1, params.keys()))
+        node_consumption = {}
+        if ('num_nodes' in node_params_keys):  # Generic
+            num_nodes = int(params['num_nodes'])
+            for rsc in product.flavors[params['node_flavor']].keys():
+                node_consumption[rsc] = num_nodes * \
+                    product.flavors[params['node_flavor']][rsc]
+        else:
+            num_node_param_keys = list(
+                filter(lambda param: param.find('num') != -1, node_params_keys))
+            for key in num_node_param_keys:
+                count = int(params[key])
+                flavor_name = key[key.find('num_') + 4:]
+                if key.find('master') != -1:
+                    if count == 1:
+                        flavor_name = [name for name in product.flavors
+                                       if 'single' in name][0]
+                    else:
+                        flavor_name = [name for name in product.flavors
+                                       if 'multi' in name][0]
+                flavor = product.flavors[flavor_name]
+                for rsc in flavor.keys():
+                    if rsc not in node_consumption:
+                        node_consumption[rsc] = 0
+                    node_consumption[rsc] += count * int(flavor[rsc])
+        for rsc in user_quota.keys():
+            rsc_consumption = node_consumption[rsc] + \
+                current_user_quota_usage[rsc]
+            if (rsc_consumption / user_quota[rsc] >= 1):
+                db.session.rollback()
+                logger.exception('Failed to create cluster. Quota Exceeded')
+                return problem(500, 'Internal Server Error',
+                                    'Quota Exceeded. Please resize cluster')
+
     try:
         tower_client = region.tower.create_tower_client()
         tower_template = tower_client.template_get(
