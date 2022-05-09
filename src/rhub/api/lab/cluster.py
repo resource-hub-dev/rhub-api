@@ -496,6 +496,8 @@ def update_cluster(cluster_id, body, user):
         db.session.add(cluster_event)
 
     if 'status' in cluster_data:
+        cluster_data['status'] = model.ClusterStatus(cluster_data['status'])
+
         cluster_event = model.ClusterStatusChangeEvent(
             cluster_id=cluster.id,
             user_id=user,
