@@ -329,7 +329,7 @@ def create_cluster(keycloak: KeycloakClient, body, user):
 
     if (product.flavors is not None):
         current_user_quota_usage = region.get_user_quota_usage(user)
-        user_quota = region.user_quota
+        user_quota = region.user_quota.to_dict()
         params = cluster.product_params
         node_params_keys = list(
             filter(lambda param: param.find('node') != -1, params.keys()))
