@@ -368,9 +368,9 @@ def get_usage(region_id, user, with_openstack_limits=None):
         raise Forbidden("You don't have access to this region.")
 
     data = {
-        'user_quota': region.user_quota.to_dict(),
+        'user_quota': region.user_quota.to_dict() if region.user_quota else None,
         'user_quota_usage': region.get_user_quota_usage(user),
-        'total_quota': region.total_quota.to_dict(),
+        'total_quota': region.total_quota.to_dict() if region.total_quota else None,
         'total_quota_usage': region.get_total_quota_usage(),
     }
 
