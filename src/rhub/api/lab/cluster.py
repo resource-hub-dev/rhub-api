@@ -327,7 +327,7 @@ def create_cluster(keycloak: KeycloakClient, body, user):
         return problem(400, 'Bad Request', 'Invalid product parameters.',
                        ext={'invalid_product_params': e.args[0]})
 
-    if (product.flavors is not None):
+    if region.user_quota is not None and product.flavors is not None:
         current_user_quota_usage = region.get_user_quota_usage(user)
         user_quota = region.user_quota.to_dict()
         params = cluster.product_params
