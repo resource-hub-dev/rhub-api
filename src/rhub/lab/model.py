@@ -171,7 +171,7 @@ class Region(db.Model, ModelMixin):
                     if getattr(self, k) is None:
                         setattr(self, k, Quota.from_dict(data[k]))
                     else:
-                        setattr(self, k).update_from_dict(data[k])
+                        getattr(self, k).update_from_dict(data[k])
                 else:
                     setattr(self, k, None)
                 del data[k]
