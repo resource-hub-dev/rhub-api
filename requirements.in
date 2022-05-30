@@ -1,5 +1,6 @@
 alembic
 attrs
+celery
 click
 coloredlogs
 connexion[swagger-ui]

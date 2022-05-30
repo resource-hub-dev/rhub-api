@@ -1,16 +1,20 @@
-version: '3.5'
+version: '3.9'
 
 networks:
   default:
     name: rhub-development
 
+secrets:
+  user_ssh_key:
+    file: ~/.ssh/id_rsa
+
 services:
   rhub-api:
     build:
-        context: .
+      context: .
     image: quay.io/resource-hub-dev/rhub-api
     volumes:
-      - .:/opt/app-root/src:delegated,z
+      - .:/opt/app-root/src/rhub/:delegated,z
       - ./data/vault-data.yml:/srv/vault-data.yml:delegated,z
     environment:
       FLASK_APP: ${FLASK_APP:-rhub.api:create_app()}
@@ -18,7 +22,7 @@ services:
       FLASK_RUN_HOST: ${FLASK_RUN_HOST:-0.0.0.0}
       FLASK_RUN_PORT: ${FLASK_RUN_PORT:-8081}
       HOME: /opt/app-root/home
-      PYTHONPATH: /opt/app-root/src/src:/opt/app-root/src/src/rhub:/opt/app-root/packages
+      PYTHONPATH: /opt/app-root/src/rhub/src:/opt/app-root/src/rhub/src/rhub:/opt/app-root/packages
       PYTHONDONTWRITEBYTECODE: please
       # don't pollute /opt/app-root/src with home crap
       RHUB_SKIP_INIT: ${RHUB_SKIP_INIT:-False}
@@ -30,6 +34,49 @@ services:
       - "8081:8081"
     #command: [tail, -f, /dev/null]
 
+  rhub-worker:
+    build:
+      context: .
+    image: quay.io/resource-hub-dev/rhub-api
+    volumes:
+      - .:/opt/app-root/src/rhub/:delegated,z
+      - ./data/vault-data.yml:/srv/vault-data.yml:delegated,z
+    environment:
+      FLASK_ENV: ${FLASK_ENV:-development}
+      RHUB_SKIP_INIT: ${RHUB_SKIP_INIT:-False}
+      RHUB_RETURN_INITIAL_FLASK_APP: ${RHUB_RETURN_INITIAL_FLASK_APP:-False}
+    env_file:
+      - .env
+    command: ./bin/entrypoint-worker.sh
+    user: "0:0"
+    secrets:
+      - user_ssh_key
+    healthcheck:
+      test: celery -A rhub.api.celery_worker:celery inspect ping -d celery@$$HOSTNAME
+      interval: 30s
+      retries: 5
+      timeout: 30s
+
+  rhub-cron:
+    build:
+      context: .
+    image: quay.io/resource-hub-dev/rhub-api
+    volumes:
+      - .:/opt/app-root/src/rhub/:delegated,z
+      - ./data/vault-data.yml:/srv/vault-data.yml:delegated,z
+    environment:
+      FLASK_ENV: ${FLASK_ENV:-development}
+      RHUB_SKIP_INIT: ${RHUB_SKIP_INIT:-False}
+      RHUB_RETURN_INITIAL_FLASK_APP: ${RHUB_RETURN_INITIAL_FLASK_APP:-False}
+    env_file:
+      - .env
+    command: ./bin/entrypoint-cron.sh
+    user: "0:0"
+    secrets:
+      - user_ssh_key
+    healthcheck:
+      disable: true
+
   keycloak:
     image: quay.io/keycloak/keycloak:${RHUB_IMAGE_KEYCLOAK_VERSION:-15.0.2}
     environment:
@@ -39,7 +86,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-        - ./config/keycloak-config.json:/srv/rhub-keycloak-config.json:delegated,z
+      - ./config/keycloak-config.json:/srv/rhub-keycloak-config.json:delegated,z
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080" ]
       interval: 20s
@@ -61,6 +108,19 @@ services:
       interval: 10s
       retries: 5
       timeout: 5s
+
+  broker:
+    image: rabbitmq:${RHUB_IMAGE_RABBITMQ_VERSION:-3}
+    env_file:
+      - .env
+    ports:
+      - '5672:5672'
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 30s
+      retries: 5
+      timeout: 30s
+
 
 volumes:
   postgres_data:
