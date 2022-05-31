@@ -6,7 +6,8 @@ from connexion import problem
 from dateutil.parser import isoparse as date_parse
 from flask import url_for, Response
 
-from rhub.lab import SHAREDCLUSTER_USER, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_ROLE
+from rhub.lab import (SHAREDCLUSTER_USER, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_ROLE,
+                      CLUSTER_ADMIN_ROLE)
 from rhub.lab import model
 from rhub.lab import utils as lab_utils
 from rhub.api import db, di, DEFAULT_PAGE_LIMIT
@@ -19,10 +20,18 @@ from rhub.api.utils import date_now, db_sort
 logger = logging.getLogger(__name__)
 
 
+def _user_is_cluster_admin(user_id):
+    """Check if user is cluster admin."""
+    keycloak = di.get(KeycloakClient)
+    if keycloak.user_check_role(user_id, ADMIN_ROLE):
+        return True
+    return keycloak.user_check_role(user_id, CLUSTER_ADMIN_ROLE)
+
+
 def _user_can_access_cluster(cluster, user_id):
     """Check if user can access cluster."""
     keycloak = di.get(KeycloakClient)
-    if keycloak.user_check_role(user_id, ADMIN_ROLE):
+    if _user_is_cluster_admin(user_id):
         return True
     if cluster.user_id == user_id:
         return True
@@ -141,7 +150,7 @@ def _cluster_host_href(cluster_host):
 
 def list_clusters(keycloak: KeycloakClient,
                   user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
-    if keycloak.user_check_role(user, ADMIN_ROLE):
+    if _user_is_cluster_admin(user):
         clusters = model.Cluster.query
     else:
         user_groups = [group['id'] for group in keycloak.user_group_list(user)]
@@ -496,6 +505,12 @@ def update_cluster(cluster_id, body, user):
         db.session.add(cluster_event)
 
     if 'status' in cluster_data:
+        if not _user_is_cluster_admin(user):
+            return problem(
+                403, 'Forbidden',
+                "You don't have permissions to change the cluster status."
+            )
+
         cluster_data['status'] = model.ClusterStatus(cluster_data['status'])
 
         cluster_event = model.ClusterStatusChangeEvent(

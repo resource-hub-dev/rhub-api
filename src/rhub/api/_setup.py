@@ -7,7 +7,8 @@ from rhub.api import db, di
 from rhub.auth import ADMIN_USER, ADMIN_GROUP, ADMIN_ROLE
 from rhub.auth.keycloak import KeycloakClient
 from rhub.tower import model as tower_model  # noqa: F401
-from rhub.lab import SHAREDCLUSTER_USER, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_ROLE
+from rhub.lab import (SHAREDCLUSTER_USER, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_ROLE,
+                      CLUSTER_ADMIN_ROLE)
 from rhub.lab import model as lab_model  # noqa: F401
 from rhub.policies import model as policies_model  # noqa: F401
 from rhub.scheduler import model as scheduler_model  # noqa: F401
@@ -96,6 +97,17 @@ def setup_keycloak():
                     f'to sharedcluster group "{SHAREDCLUSTER_GROUP}"')
         keycloak.group_user_add(sharedcluster_user['id'],
                                 groups[SHAREDCLUSTER_GROUP]['id'])
+
+    if CLUSTER_ADMIN_ROLE not in roles:
+        logger.info(f'Creating role "{CLUSTER_ADMIN_ROLE}"')
+        role_name = keycloak.role_create({'name': CLUSTER_ADMIN_ROLE})
+        roles[CLUSTER_ADMIN_ROLE] = keycloak.role_get(role_name)
+
+    if not any(role['name'] == CLUSTER_ADMIN_ROLE
+               for role in keycloak.group_role_list(groups[SHAREDCLUSTER_GROUP]['id'])):
+        logger.info(f'Adding role "{CLUSTER_ADMIN_ROLE}" '
+                    f'to sharedcluster group "{SHAREDCLUSTER_GROUP}"')
+        keycloak.group_role_add(CLUSTER_ADMIN_ROLE, groups[SHAREDCLUSTER_GROUP]['id'])
 
 
 def create_cronjob(cronjob):
