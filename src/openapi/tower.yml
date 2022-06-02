@@ -710,6 +710,6 @@ endpoints:
       '204':
         description: Success
       default:
-        $ref: 'common.yml#/responses/problem'
+        description: Failure
     security:
       - tower_webhook_notification_auth: []
