@@ -223,7 +223,9 @@ model:
     nullable: true
     enum:
       - Active
+      - Create Failed
       - Deleted
+      - Delete Failed
       - Deleting
       - Deletion Failed
       - Deletion Queued

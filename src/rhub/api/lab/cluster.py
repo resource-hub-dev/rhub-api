@@ -127,11 +127,12 @@ def _cluster_event_href(cluster_event):
     href = {
         'cluster': url_for('.rhub_api_lab_cluster_get_cluster',
                            cluster_id=cluster_event.cluster_id),
-        'user': url_for('.rhub_api_auth_user_get_user',
-                        user_id=cluster_event.user_id),
         'event': url_for('.rhub_api_lab_cluster_get_cluster_event',
                          event_id=cluster_event.id)
     }
+    if cluster_event.user_id:
+        href['user'] = url_for('.rhub_api_auth_user_get_user',
+                               user_id=cluster_event.user_id)
     if cluster_event.type == model.ClusterEventType.TOWER_JOB:
         href['tower'] = url_for('.rhub_api_tower_get_server',
                                 server_id=cluster_event.tower_id)
