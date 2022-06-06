@@ -592,6 +592,12 @@ class ClusterStatusChangeEvent(ClusterEvent):
     old_value = db.Column('status_old', db.Enum(ClusterStatus))
     new_value = db.Column('status_new', db.Enum(ClusterStatus))
 
+    def to_dict(self):
+        data = super().to_dict()
+        data["new_value"] = self.new_value.value
+        data["old_value"] = self.old_value.value
+        return data
+
 
 class ClusterReservationChangeEvent(ClusterEvent):
     __mapper_args__ = {
