@@ -320,6 +320,8 @@ class ClusterStatus(str, enum.Enum):
     POST_DELETION_FAILED = 'Post-Deletion Failed', 'failed'
     DELETED = 'Deleted', 'deleted'
     QUEUED = 'Queued', 'creating'
+    CREATE_FAILED = 'Create Failed', 'failed'  # Unknown create failure
+    DELETE_FAILED = 'Delete Failed', 'failed'  # Unknown delete failure
 
     def __new__(cls, value, flag=None):
         if not flag:

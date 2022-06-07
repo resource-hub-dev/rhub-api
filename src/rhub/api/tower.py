@@ -1,4 +1,6 @@
 import logging
+import json
+import time
 
 from flask import Response, request, current_app, url_for
 from connexion import problem
@@ -7,8 +9,9 @@ from werkzeug.exceptions import Unauthorized
 from rhub.tower import model
 from rhub.tower.client import TowerError
 from rhub.api import db, DEFAULT_PAGE_LIMIT
-from rhub.api.utils import db_sort
+from rhub.api.utils import date_now, db_sort
 from rhub.auth.utils import route_require_admin, user_is_admin
+from rhub.lab import model as lab_model
 
 
 logger = logging.getLogger(__name__)
@@ -430,6 +433,8 @@ def webhook_auth(username, password, required_scopes=None):
 
 
 def webhook_notification():
+    payload = request.json
+
     # See Tower notification documentation for additional information:
     #   https://docs.ansible.com/ansible-tower/latest/html/userguide/
     #       notifications.html#webhook
@@ -445,28 +450,81 @@ def webhook_notification():
     #      - send_email(user.email, message) or submit the notification to Hydra?
 
     # if this is a test notification from Tower, allow it to succeed
+    body = payload.get('body', '')
+    if 'Ansible Tower Test Notification' in body:
+        logger.info(f'Received a test notification from tower ({body})')
+        return Response(status=204)
+
+    job_id = payload.get('id')
+    job_status = payload.get('status')
+    if not job_id or not job_status:
+        logger.error('Unexpected tower webhook notification data')
+        return Response(status=400)
+
+    logger.info(f'Received a notification from tower {job_id=} {job_status=}')
+
     try:
-        body = request.json['body']
-        if 'Ansible Tower Test Notification' in body:
-            logger.info(f'Received a test notification from tower ({body})')
-            return Response(status=204)
+        extra_vars = json.loads(payload['extra_vars'])
+
+        # Notification from cluster create/delete job have `rhub_cluster_id`
+        # extra var.
+        if rhub_cluster_id := extra_vars.get('rhub_cluster_id'):
+            cluster_notification_handler(payload, rhub_cluster_id)
+
     except Exception:
-        pass
-
-    # inspect json payload to ensure certain fields are present
-    try:
-        jobId = request.json['id']
-        jobStatus = request.json['status']
-    except Exception as e:
-        logger.exception(f'Unexpected tower webhook notification json; missing {e}')
-        return problem(400, 'Unexpected tower webhook notification json',
-                            'JSON payload missing required field(s)',
-                            ext={'missing': str(e)})
-
-    logger.info(f'Received a notification from tower {jobId, jobStatus}')
-
-    # Notify the user that something has occurred...
-    # Do something here...TBD...
-    pass
+        logger.exception(
+            f'Failed to process a notification from tower {job_id=} {job_status=}'
+        )
 
     return Response(status=204)
+
+
+def cluster_notification_handler(payload, cluster_id):
+    cluster = lab_model.Cluster.query.get(cluster_id)
+    tower_client = cluster.region.tower.create_tower_client()
+
+    job_id = payload['id']
+    job_name = payload['name']
+    job_status = payload['status']
+
+    # If received notification and status is running, wait a few seconds and
+    # then check status of the job. Sometimes a job fails almost immediatelly
+    # after it started and does not send failure notification.
+    if job_status == 'running':
+        time.sleep(5)
+        job = tower_client.template_job_get(job_id)
+        if job['failed']:
+            job_status = 'failed'
+
+    if job_name == cluster.product.tower_template_name_create:
+        cluster_operation = 'create'
+    elif job_name == cluster.product.tower_template_name_delete:
+        cluster_operation = 'delete'
+    else:
+        return
+
+    def update_cluster_status(new_status):
+        if cluster.status != new_status:
+            cluster_event = lab_model.ClusterStatusChangeEvent(
+                cluster_id=cluster.id,
+                user_id=None,
+                date=date_now(),
+                old_value=cluster.status,
+                new_value=new_status,
+            )
+            db.session.add(cluster_event)
+            cluster.status = new_status
+            db.session.commit()
+
+    if job_status == 'successful':
+        if cluster_operation == 'create':
+            update_cluster_status(lab_model.ClusterStatus.ACTIVE)
+        else:
+            update_cluster_status(lab_model.ClusterStatus.DELETED)
+
+    elif job_status == 'failed':
+        if not cluster.status.is_failed:
+            if cluster_operation == 'create':
+                update_cluster_status(lab_model.ClusterStatus.CREATE_FAILED)
+            else:
+                update_cluster_status(lab_model.ClusterStatus.DELETE_FAILED)
