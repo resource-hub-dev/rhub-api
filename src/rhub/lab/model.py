@@ -320,6 +320,8 @@ class ClusterStatus(str, enum.Enum):
     POST_DELETION_FAILED = 'Post-Deletion Failed', 'failed'
     DELETED = 'Deleted', 'deleted'
     QUEUED = 'Queued', 'creating'
+    CREATE_FAILED = 'Create Failed', 'failed'  # Unknown create failure
+    DELETE_FAILED = 'Delete Failed', 'failed'  # Unknown delete failure
 
     def __new__(cls, value, flag=None):
         if not flag:
@@ -589,6 +591,12 @@ class ClusterStatusChangeEvent(ClusterEvent):
 
     old_value = db.Column('status_old', db.Enum(ClusterStatus))
     new_value = db.Column('status_new', db.Enum(ClusterStatus))
+
+    def to_dict(self):
+        data = super().to_dict()
+        data["new_value"] = self.new_value.value
+        data["old_value"] = self.old_value.value
+        return data
 
 
 class ClusterReservationChangeEvent(ClusterEvent):

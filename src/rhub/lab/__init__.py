@@ -6,3 +6,6 @@ SHAREDCLUSTER_GROUP = 'sharedclusters'
 
 SHAREDCLUSTER_ROLE = 'sharedclusters'
 """Role required to create a shared cluster."""
+
+CLUSTER_ADMIN_ROLE = 'cluster-admin'
+"""Role for cluster administrators, required to change cluster status."""
