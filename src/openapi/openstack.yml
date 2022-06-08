@@ -1,0 +1,219 @@
+model:
+
+  Cloud:
+    type: object
+    properties:
+      id:
+        allOf:
+          - $ref: 'common.yml#/model/ID'
+          - readOnly: true
+      name:
+        type: string
+        maxLength: 32
+        example: rhub-rdu
+      description:
+        type: string
+        nullable: true
+        example: Private cloud for RHub located in RDU.
+      owner_group_id:
+        type: string
+        format: uuid
+      owner_group_name:
+        type: string
+        readOnly: true
+      url:
+        type: string
+        maxLength: 256
+        example: https://rhub-cloud.rdu.example.com:13000
+      credentials:
+        oneOf:
+          - description: Credentials to store in Vault
+            type: object
+            properties:
+              username:
+                type: string
+              password:
+                type: string
+            writeOnly: true
+          - description: Credentials path in Vault
+            type: string
+            maxLength: 256
+        example: kv/openstack/rhub-rdu
+      domain_name:
+        type: string
+        maxLength: 64
+        example: Default
+      domain_id:
+        type: string
+        maxLength: 64
+        example: default
+      networks:
+        description: Network providers that can be used in the cloud
+        type: array
+        items:
+          type: string
+          maxLength: 64
+        minItems: 1
+        uniqueItems: true
+        example: [provider_net_rhub]
+
+
+parameters:
+
+  cloud_id:
+    name: cloud_id
+    in: path
+    description: ID of the cloud
+    required: true
+    schema:
+      $ref: 'common.yml#/model/ID'
+
+
+endpoints:
+
+  cloud_list:
+    summary: Get OpenStack cloud list
+    tags: [openstack]
+    operationId: rhub.api.openstack.cloud_list
+    parameters:
+      - name: filter
+        in: query
+        description: Filter clouds by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: >
+                Name of a cloud. Wildcard ``%`` can be used to match zero, one,
+                or multiple characters
+            owner_group_id:
+              type: string
+              format: uuid
+              nullable: true
+      - name: sort
+        in: query
+        description: Sort clouds by attribute.
+        schema:
+          type: string
+          enum:
+            - name
+            - -name
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+    responses:
+      '200':
+        description: List of Clouds
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/Cloud'
+                total:
+                  type: integer
+                  minimum: 0
+                  description: The total number of items
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cloud_create:
+    summary: Create OpenStack cloud
+    tags: [openstack]
+    operationId: rhub.api.openstack.cloud_create
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/model/Cloud'
+              - required:
+                  - credentials
+                  - domain_id
+                  - domain_name
+                  - name
+                  - networks
+                  - owner_group_id
+                  - url
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Cloud'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cloud_get:
+    summary: Get OpenStack cloud
+    tags: [openstack]
+    operationId: rhub.api.openstack.cloud_get
+    parameters:
+      - $ref: '#/parameters/cloud_id'
+    responses:
+      '200':
+        description: Cloud
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Cloud'
+      '404':
+        description: Not found
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cloud_update:
+    summary: Update OpenStack cloud
+    tags: [openstack]
+    operationId: rhub.api.openstack.cloud_update
+    parameters:
+      - $ref: '#/parameters/cloud_id'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/model/Cloud'
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cloud_delete:
+    summary: Delete OpenStack cloud
+    tags: [openstack]
+    operationId: rhub.api.openstack.cloud_delete
+    parameters:
+      - $ref: '#/parameters/cloud_id'
+    responses:
+      '204':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
