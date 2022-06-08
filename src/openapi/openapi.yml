@@ -28,6 +28,8 @@ tags:
     description: Clusters for testing purposes.
   - name: auth
     description: Authentication related functions.
+  - name: openstack
+    description: OpenStack clouds, projects, etc.
 
 paths:
   /cowsay:
@@ -36,6 +38,19 @@ paths:
   /ping:
     get:
       $ref: 'health.yml#/endpoints/ping'
+
+  /openstack/cloud:
+    get:
+      $ref: 'openstack.yml#/endpoints/cloud_list'
+    post:
+      $ref: 'openstack.yml#/endpoints/cloud_create'
+  /openstack/cloud/{cloud_id}:
+    get:
+      $ref: 'openstack.yml#/endpoints/cloud_get'
+    patch:
+      $ref: 'openstack.yml#/endpoints/cloud_update'
+    delete:
+      $ref: 'openstack.yml#/endpoints/cloud_delete'
 
   /lab/location:
     get:
