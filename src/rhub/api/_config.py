@@ -1,6 +1,6 @@
 import os
 import urllib.parse
-
+from datetime import timedelta
 
 KEYCLOAK_SERVER = os.getenv('KEYCLOAK_SERVER')
 KEYCLOAK_RESOURCE = os.getenv('KEYCLOAK_RESOURCE')
@@ -19,8 +19,7 @@ if 'postgresql' not in db_type:
 
 # See https://docs.sqlalchemy.org/en/14/core/engines.html
 SQLALCHEMY_DATABASE_URI = (
-    '{type}://{username}:{password}@{host}:{port}/{database}'
-    .format(
+    '{type}://{username}:{password}@{host}:{port}/{database}'.format(
         type=os.getenv('RHUB_DB_TYPE', ''),
         host=os.getenv('RHUB_DB_HOST', ''),
         port=os.getenv('RHUB_DB_PORT', ''),
@@ -41,3 +40,14 @@ VAULT_SECRET_ID = os.getenv('VAULT_SECRET_ID')
 VAULT_PATH = os.getenv('VAULT_PATH')
 
 SCHEDULER_API_ENABLED = False
+
+CELERY_BROKER_URL = '{type}://{username}:{password}@{host}:{port}'.format(
+    type=os.getenv('RHUB_BROKER_TYPE', ''),
+    host=os.getenv('RHUB_BROKER_HOST', ''),
+    port=os.getenv('RHUB_BROKER_PORT', ''),
+    username=os.getenv('RHUB_BROKER_USERNAME', ''),
+    password=urllib.parse.quote_plus(os.getenv('RHUB_BROKER_PASSWORD', '')),
+)
+
+CELERY_RESULT_BACKEND = 'db+postgresql:' + SQLALCHEMY_DATABASE_URI.split(':', 1)[1]
+CELERY_RESULT_EXPIRES = timedelta(days=7)

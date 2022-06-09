@@ -1,33 +1,31 @@
-import os
 import logging
 import logging.config
+import os
 
-import connexion
 import click
-import prance
-import injector
+import connexion
 import flask
+import injector
+import prance
 from flask.cli import with_appcontext
 from flask_cors import CORS
 from flask_injector import FlaskInjector
+from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
-from flask_migrate import Migrate
 from ruamel import yaml
 
 import rhub
+from rhub.api.extensions import celery
 from rhub.api.vault import Vault, VaultModule
 from rhub.auth.keycloak import KeycloakModule
 from rhub.scheduler import SchedulerModule
 
-
 logger = logging.getLogger(__name__)
-
 
 di = injector.Injector()
 db = SQLAlchemy()
 migrate = Migrate()
-
 
 DEFAULT_PAGE_LIMIT = 20
 
@@ -88,6 +86,7 @@ def create_app():
 
     db.init_app(flask_app)
     migrate.init_app(flask_app, db)
+    celery.init_app(flask_app)
 
     RHUB_RETURN_INITIAL_FLASK_APP = os.getenv('RHUB_RETURN_INITIAL_FLASK_APP', 'False')
     if str(RHUB_RETURN_INITIAL_FLASK_APP).lower() == 'true':
