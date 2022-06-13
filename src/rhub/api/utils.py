@@ -45,6 +45,7 @@ def condition_eval(expr, params):
     ["param_ne", <param-name>, <value>]
     ["param_lt", <param-name>, <value>]
     ["param_gt", <param-name>, <value>]
+    ["param_in", <param-name>, <value>]
     """
     if expr[0] == 'not':
         return not condition_eval(expr[1], params)
@@ -60,4 +61,6 @@ def condition_eval(expr, params):
         return expr[1] in params and params[expr[1]] < expr[2]
     elif expr[0] == 'param_gt':
         return expr[1] in params and params[expr[1]] > expr[2]
+    elif expr[0] == 'param_in':
+        return expr[1] in params and expr[2] in params[expr[1]]
     raise ValueError(f'Unknown operation {expr[0]!r}')
