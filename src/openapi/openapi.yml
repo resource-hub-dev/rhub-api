@@ -30,6 +30,8 @@ tags:
     description: Authentication related functions.
   - name: openstack
     description: OpenStack clouds, projects, etc.
+  - name: monitoring
+    description: Internal monitoring functions.
 
 paths:
   /cowsay:
@@ -280,3 +282,19 @@ paths:
       $ref: 'scheduler.yml#/endpoints/cron_job_update'
     delete:
       $ref: 'scheduler.yml#/endpoints/cron_job_delete'
+
+  /monitor/bm/hosts:
+    get:
+      $ref: 'monitor.yml#/endpoints/bm_hosts_to_monitor'
+  /monitor/bm/power_states:
+    get:
+      $ref: 'monitor.yml#/endpoints/bm_power_states'
+  /monitor/bm/metrics:
+    get:
+      $ref: 'monitor.yml#/endpoints/bm_metrics'
+  /monitor/vm/metrics:
+    get:
+      $ref: 'monitor.yml#/endpoints/vm_metrics'
+  /monitor/lab/metrics:
+    get:
+      $ref: 'monitor.yml#/endpoints/lab_metrics'
