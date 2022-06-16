@@ -10,12 +10,13 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-
 # revision identifiers, used by Alembic.
 revision = '01129c0eee22'
 down_revision = 'd0264f75ac84'
 branch_labels = None
 depends_on = None
+
+baremetalarch_enum = sa.Enum('x86_64', name='baremetalarch')
 
 
 def upgrade():
@@ -26,7 +27,7 @@ def upgrade():
     sa.Column('description', sa.Text(), server_default='', nullable=False),
     sa.Column('base_os', sa.Enum('CENTOS', 'FEDORA', 'RED_HAT', name='imagebaseos'), nullable=False),
     sa.Column('type', sa.Enum('GENERIC', 'ISO', 'QCOW2', name='baremetalimagetype'), nullable=False),
-    sa.Column('arch', sa.Enum('x86_64', name='baremetalarch'), nullable=False),
+    sa.Column('arch', baremetalarch_enum, nullable=False),
     sa.Column('legacy_bios', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('uefi', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('secure_boot', sa.Boolean(), server_default=sa.text('true'), nullable=False),
@@ -39,7 +40,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=128), nullable=False),
     sa.Column('type', sa.Enum('IRONIC', name='baremetalhandlertype'), nullable=False),
-    sa.Column('arch', sa.Enum('x86_64', name='baremetalarch'), nullable=False),
+    sa.Column('arch', baremetalarch_enum, nullable=False),
     sa.Column('status', sa.Enum('AVAILABLE', 'FAILED_API_CHECK', 'FAILED_SSH_CHECK', 'MAINTENANCE', 'UNAVAILABLE', name='baremetalhandlerstatus'), server_default='UNAVAILABLE', nullable=False),
     sa.Column('last_check', sa.DateTime(timezone=True), nullable=True),
     sa.Column('last_check_error', sa.Text(), nullable=True),
@@ -84,7 +85,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=128), nullable=False),
     sa.Column('mac', sa.String(length=20), nullable=False),
-    sa.Column('arch', sa.Enum('x86_64', name='baremetalarch'), nullable=False),
+    sa.Column('arch', baremetalarch_enum, nullable=False),
     sa.Column('legacy_bios', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('uefi', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('secure_boot', sa.Boolean(), server_default=sa.text('true'), nullable=False),
@@ -171,3 +172,20 @@ def downgrade():
     op.drop_table('bare_metal_handler')
     op.drop_table('bare_metal_image')
     # ### end Alembic commands ###
+
+    created_enum_names = [
+        'baremetalarch',
+        'baremetalboottype',
+        'baremetalhandlerstatus',
+        'baremetalhandlertype',
+        'baremetalhardwaretype',
+        'baremetalhoststatus',
+        'baremetalimagetype',
+        'baremetalprovisionstatus',
+        'baremetalprovisiontype',
+        'imagebaseos',
+    ]
+
+    for enum_name in created_enum_names:
+        sa_enum = sa.Enum(name=enum_name)
+        sa_enum.drop(op.get_bind(), checkfirst=True)
