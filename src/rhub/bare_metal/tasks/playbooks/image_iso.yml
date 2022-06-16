@@ -1,0 +1,36 @@
+---
+- hosts: all
+  remote_user: root
+  tasks:
+    - name: Create mount directory
+      file:
+        path: '{{ image_directory }}'
+        state: directory
+        mode: 0755
+        owner: ironic
+        group: ironic
+
+    - name: Download iso
+      get_url:
+        url: '{{ image_url }}'
+        dest: '{{ image_file }}'
+        checksum: 'sha256:{{ image_sha256 }}'
+        mode: 0644
+        owner: ironic
+        group: ironic
+
+    - name: Mount iso
+      ansible.posix.mount:
+        path: '{{ mount_directory }}'
+        src: '{{ image_file }}'
+        fstype: iso9660
+        opts: loop
+        state: mounted
+
+    - name: Copy kickstart
+      copy:
+        dest: '{{ kickstart_file }}'
+        src: '{{ kickstart_local_file }}'
+        mode: 0644
+        owner: ironic
+        group: ironic

@@ -12,6 +12,7 @@ from flask_cors import CORS
 from flask_injector import FlaskInjector
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
+from jinja2 import BaseLoader, Environment
 from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
 from ruamel import yaml
 
@@ -27,6 +28,7 @@ logger = logging.getLogger(__name__)
 di = injector.Injector()
 db = SQLAlchemy()
 migrate = Migrate()
+jinja_env = Environment(loader=BaseLoader())
 
 DEFAULT_PAGE_LIMIT = 20
 
