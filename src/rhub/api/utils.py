@@ -1,11 +1,15 @@
 import copy
 import datetime
 
+from sqlalchemy.inspection import inspect
+from sqlalchemy.orm import declarative_mixin, declared_attr
+from sqlalchemy.sql import functions
+
 from rhub.api import db
 
 
 class ModelMixin:
-    """Datatabase model mixin with methods useful in REST API endpoints."""
+    """Database model mixin with methods useful in REST API endpoints."""
 
     __embedded__ = []       # read-write embedding
     __embedded_ro__ = []    # read-only embedding
@@ -24,6 +28,12 @@ class ModelMixin:
                 data[embedded_name] = None
 
         return data
+
+    def to_dict_with_super(self) -> dict[str, str]:
+        return {
+            column.name: getattr(self, column.name)
+            for column in inspect(self.__class__).columns
+        }
 
     @classmethod
     def from_dict(cls, data):
@@ -101,3 +111,23 @@ def condition_eval(expr, params):
     elif expr[0] == 'param_in':
         return expr[1] in params and expr[2] in params[expr[1]]
     raise ValueError(f'Unknown operation {expr[0]!r}')
+
+
+@declarative_mixin
+class TimestampMixin:
+    @declared_attr
+    def created_at(cls):
+        return db.Column(
+            db.DateTime(timezone=True),
+            server_default=functions.now(),
+            nullable=False,
+        )
+
+    @declared_attr
+    def updated_at(cls):
+        return db.Column(
+            db.DateTime(timezone=True),
+            server_default=functions.now(),
+            nullable=False,
+            server_onupdate=functions.now(),  # TODO: why is alembic ignoring this?
+        )

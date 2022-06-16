@@ -51,3 +51,13 @@ CELERY_BROKER_URL = '{type}://{username}:{password}@{host}:{port}'.format(
 
 CELERY_RESULT_BACKEND = 'db+postgresql:' + SQLALCHEMY_DATABASE_URI.split(':', 1)[1]
 CELERY_RESULT_EXPIRES = timedelta(days=7)
+CELERYBEAT_SCHEDULE = {
+    'refresh_ironic_instances_status_task---every_10_minutes': {
+        'task': 'rhub.bare_metal.tasks.handler.refresh_ironic_instances_status_task',
+        'schedule': timedelta(minutes=10),
+    },
+    'stop_provision_after_expiration_task---every_hour': {
+        'task': 'rhub.bare_metal.tasks.provision.stop_provision_after_expiration_task',
+        'schedule': timedelta(hours=1),
+    },
+}
