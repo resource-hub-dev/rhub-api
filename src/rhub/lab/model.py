@@ -720,7 +720,7 @@ class Product(db.Model, ModelMixin):
                     invalid_params[var] = 'value not allowed'
 
             if (c := param_spec.get('condition')) is not None:
-                if not condition_eval(c.data, cluster_params):
+                if not condition_eval(c['data'], cluster_params):
                     invalid_params[var] = 'value does not satisfy the condition'
 
         if invalid_params:
