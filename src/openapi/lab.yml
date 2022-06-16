@@ -501,8 +501,15 @@ model:
               default: false
             condition:
               description: Condition for extra validations that need values from other options.
+              type: object
+              properties:
+                msg:
+                  type: string
+                data:
+                  type: array
+              example: {msg: "Extra_nic must be true and num_nodes must be great than 1",
+                        data: ["and", ["param_eq", "extra_nic", true], ["param_gt", "num_nodes", 1]]}
               nullable: true
-              example: ["and", ["param_eq", "extra_nic", true], ["param_gt", "num_nodes", 1]]
             display_condition:
               description: Condition when to display option based on the values of other options.
               nullable: true
