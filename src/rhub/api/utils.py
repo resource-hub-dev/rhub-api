@@ -1,3 +1,4 @@
+import copy
 import datetime
 
 from rhub.api import db
@@ -6,20 +7,56 @@ from rhub.api import db
 class ModelMixin:
     """Datatabase model mixin with methods useful in REST API endpoints."""
 
+    __embedded__ = []       # read-write embedding
+    __embedded_ro__ = []    # read-only embedding
+
     def to_dict(self):
         """Covert to `dict`."""
         data = {}
+
         for column in self.__table__.columns:
             data[column.name] = getattr(self, column.name)
+
+        for embedded_name in self.__embedded__ + self.__embedded_ro__:
+            if getattr(self, embedded_name):
+                data[embedded_name] = getattr(self, embedded_name).to_dict()
+            else:
+                data[embedded_name] = None
+
         return data
 
     @classmethod
     def from_dict(cls, data):
         """Create from `dict`."""
+        data = copy.deepcopy(data)
+
+        for embedded_name in cls.__embedded__:
+            embedded_cls = db.inspect(cls).relationships[embedded_name].mapper.class_
+            embedded_data = data.pop(embedded_name, None)
+            if embedded_data:
+                data[embedded_name] = embedded_cls.from_dict(embedded_data)
+
         return cls(**data)
 
     def update_from_dict(self, data):
         """Update from `dict`."""
+        data = copy.deepcopy(data)
+
+        for embedded_name in self.__embedded__:
+            if embedded_name not in data:
+                continue
+
+            embedded_cls = db.inspect(self.__class__).relationships[embedded_name].mapper.class_
+            embedded_data = data.pop(embedded_name, None)
+
+            if embedded_data:
+                if getattr(self, embedded_name) is None:
+                    setattr(self, embedded_name, embedded_cls.from_dict(embedded_data))
+                else:
+                    getattr(self, embedded_name).update_from_dict(embedded_data)
+            else:
+                setattr(self, embedded_name, None)
+
         for k, v in data.items():
             setattr(self, k, v)
 

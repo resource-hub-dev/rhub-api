@@ -1,20 +1,20 @@
-import logging
 import functools
+import logging
 
 import sqlalchemy
 from connexion import problem
 from dateutil.parser import isoparse as date_parse
-from flask import url_for, Response
+from flask import Response, url_for
 
-from rhub.lab import (SHAREDCLUSTER_USER, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_ROLE,
-                      CLUSTER_ADMIN_ROLE)
-from rhub.lab import model
-from rhub.lab import utils as lab_utils
-from rhub.api import db, di, DEFAULT_PAGE_LIMIT
-from rhub.auth import ADMIN_ROLE
-from rhub.auth.utils import route_require_admin
-from rhub.auth.keycloak import KeycloakClient
+from rhub.api import DEFAULT_PAGE_LIMIT, db, di
 from rhub.api.utils import date_now, db_sort
+from rhub.auth import ADMIN_ROLE
+from rhub.auth.keycloak import KeycloakClient
+from rhub.auth.utils import route_require_admin
+from rhub.lab import (CLUSTER_ADMIN_ROLE, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_ROLE,
+                      SHAREDCLUSTER_USER, model)
+from rhub.lab import utils as lab_utils
+from rhub.openstack import model as openstack_model
 
 
 logger = logging.getLogger(__name__)
@@ -116,6 +116,10 @@ def _cluster_href(cluster):
                            product_id=cluster.product_id),
         'user': url_for('.rhub_api_auth_user_get_user',
                         user_id=cluster.user_id),
+        'openstack': url_for('.rhub_api_openstack_cloud_get',
+                             cloud_id=cluster.region.openstack_id),
+        'project': url_for('.rhub_api_openstack_project_get',
+                           project_id=cluster.project_id),
     }
     if cluster.group_id:
         href['group'] = url_for('.rhub_api_auth_group_get_group',
@@ -324,9 +328,33 @@ def create_cluster(keycloak: KeycloakClient, body, user):
     )
 
     try:
+        user_name = keycloak.user_get(user)['username']
+        project_name = f'ql_{user_name}'
+
+        project_query = openstack_model.Project.query.filter(
+            db.and_(
+                openstack_model.Project.cloud_id == region.openstack.id,
+                openstack_model.Project.name == project_name,
+            )
+        )
+        if project_query.count() > 0:
+            project = project_query.first()
+        else:
+            project = openstack_model.Project(
+                cloud_id=region.openstack.id,
+                name=project_name,
+                description='Project created by QuickCluster playbooks',
+                owner_id=user,
+            )
+            db.session.add(project)
+            db.session.flush()
+
+        cluster_data['project_id'] = project.id
+
         cluster = model.Cluster.from_dict(cluster_data)
         db.session.add(cluster)
         db.session.flush()
+
     except ValueError as e:
         return problem(400, 'Bad Request', str(e))
 

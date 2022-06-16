@@ -91,16 +91,15 @@ model:
           ram_mb: 200000000
           num_volumes: 40000
           volumes_gb: 540000
-      owner_group:
+      owner_group_id:
         type: string
         format: uuid
-        readOnly: true
         example: 7670ac07-cb21-448d-af8a-6e3882216be3
       owner_group_name:
         type: string
         nullable: true
         readOnly: true
-      users_group:
+      users_group_id:
         type: string
         format: uuid
         nullable: true
@@ -110,113 +109,16 @@ model:
         readOnly: true
       tower_id:
         $ref: 'common.yml#/model/ID'
+      openstack_id:
+        $ref: 'common.yml#/model/ID'
       openstack:
-        type: object
-        properties:
-          url:
-            type: string
-            maxLength: 256
-          credentials:
-            oneOf:
-              - description: Credentials to store in Vault
-                type: object
-                properties:
-                  username:
-                    type: string
-                  password:
-                    type: string
-                writeOnly: true
-              - description: Credentials path in Vault
-                type: string
-                maxLength: 256
-          project:
-            type: string
-            maxLength: 64
-          domain_name:
-            type: string
-            maxLength: 64
-          domain_id:
-            type: string
-            maxLength: 64
-          networks:
-            description: Network providers that can be used in the region
-            type: array
-            items:
-              type: string
-              maxLength: 64
-            minItems: 1
-            uniqueItems: true
-          keyname:
-            description: SSH key name
-            type: string
-            maxLength: 64
-        example:
-          url: https://openstack.example.com:13000
-          credentials: kv/region/rdu2-a/openstack
-          project: rhub
-          domain_name: Default
-          domain_id: default
-          networks: [provider_net_rhub]
-          keyname: rhub
-      satellite:
-        type: object
-        properties:
-          hostname:
-            type: string
-            maxLength: 256
-          insecure:
-            type: boolean
-          credentials:
-            oneOf:
-              - description: Credentials to store in Vault
-                type: object
-                properties:
-                  username:
-                    type: string
-                  password:
-                    type: string
-                writeOnly: true
-              - description: Credentials path in Vault
-                type: string
-                maxLength: 256
-        example:
-          hostname: satellite.example.com
-          credentials: kv/region/rdu2-a/satellite
-          insecure: false
-      dns_server:
-        type: object
-        properties:
-          hostname:
-            type: string
-            maxLength: 256
-          zone:
-            type: string
-            maxLength: 256
-          key:
-            oneOf:
-              - description: Credentials to store in Vault
-                type: object
-                properties:
-                  name:
-                    type: string
-                  secret:
-                    type: string
-                writeOnly: true
-              - description: Credentials path in Vault
-                type: string
-                maxLength: 256
-        example:
-          hostname: ns.example.com
-          zone: example.com.
-          key: kv/region/rdu2-a/dns
-      vault_server:
+        allOf:
+          - $ref: 'openstack.yml#/model/Cloud'
+          - readOnly: true
+      openstack_keyname:
+        description: SSH key name
         type: string
-        maxLength: 256
-        example: https://vault.example.com
-      download_server:
-        type: string
-        maxLength: 256
-        example: https://download.example.com
+        maxLength: 64
 
   ClusterStatus:
     type: string
@@ -902,32 +804,10 @@ endpoints:
             allOf:
               - $ref: '#/model/Region'
               - required:
-                  - dns_server
-                  - download_server
                   - name
-                  - openstack
-                  - satellite
+                  - owner_group_id
+                  - openstack_id
                   - tower_id
-                  - vault_server
-              - properties:
-                  openstack:
-                    required:
-                      - credentials
-                      - domain_id
-                      - domain_name
-                      - keyname
-                      - networks
-                      - project
-                      - url
-                  satellite:
-                    required:
-                      - credentials
-                      - hostname
-                  dns_server:
-                    required:
-                      - hostname
-                      - key
-                      - zone
     responses:
       '200':
         description: Success
@@ -1110,19 +990,10 @@ endpoints:
 
       User quota and its usage is scoped to the currently logged in user. Total
       quota is overall quota and usage of the region.
-
-      If query parameter `with_openstack_limits` is set to `true` response will
-      also contain `openstack_limit`, which are real OpenStack limits that are
-      applied to the project's account in the region. It is retrieved from the
-      OpenStack API.
     tags: [lab]
     operationId: rhub.api.lab.region.get_usage
     parameters:
       - $ref: '#/parameters/region_id'
-      - name: with_openstack_limits
-        in: query
-        schema:
-          type: boolean
     responses:
       '200':
         description: Success
@@ -1131,9 +1002,6 @@ endpoints:
             schema:
               type: object
               properties:
-                openstack_limits:
-                  type: object
-                  description: OpenStack limits RAW value from the API.
                 user_quota:
                   anyOf:
                     - $ref: '#/model/Quota'

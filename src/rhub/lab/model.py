@@ -1,19 +1,16 @@
 import datetime
-import copy
 import enum
 import re
 
-import openstack
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import validates
 
 from rhub.api import db, di
-from rhub.api.utils import ModelMixin
-from rhub.tower import model as tower_model
+from rhub.api.utils import ModelMixin, condition_eval
 from rhub.auth.keycloak import KeycloakClient
-from rhub.api.vault import Vault
 from rhub.lab import SHAREDCLUSTER_GROUP
-from rhub.api.utils import condition_eval
+from rhub.openstack import model as openstack_model
+from rhub.tower import model as tower_model
 
 
 class Location(db.Model, ModelMixin):
@@ -49,37 +46,17 @@ class Region(db.Model, ModelMixin):
     lifespan_length = db.Column(db.Integer, nullable=True)
     reservations_enabled = db.Column(db.Boolean, default=True)
     reservation_expiration_max = db.Column(db.Integer, nullable=True)
-    owner_group = db.Column(postgresql.UUID, nullable=False)
+    owner_group_id = db.Column(postgresql.UUID, nullable=False)
     #: Limits use only to specific group of people. `NULL` == shared lab.
-    users_group = db.Column(postgresql.UUID, nullable=True, index=True)
+    users_group_id = db.Column(postgresql.UUID, nullable=True, index=True)
     ...  # TODO policies?
     tower_id = db.Column(db.Integer, db.ForeignKey(tower_model.Server.id))
     #: :type: :class:`rhub.tower.model.Server`
     tower = db.relationship(tower_model.Server)
 
-    openstack_url = db.Column(db.String(256), nullable=False)
-    #: OpenStack credentials path in Vault
-    openstack_credentials = db.Column(db.String(256), nullable=False)
-    openstack_project = db.Column(db.String(64), nullable=False)
-    openstack_domain_name = db.Column(db.String(64), nullable=False)
-    openstack_domain_id = db.Column(db.String(64), nullable=False)
-    #: Network providers that can be used in the region
-    openstack_networks = db.Column(db.ARRAY(db.String(64)), nullable=False)
-    #: SSH key name
-    openstack_keyname = db.Column(db.String(64), nullable=False)
-
-    satellite_hostname = db.Column(db.String(256), nullable=False)
-    satellite_insecure = db.Column(db.Boolean, default=False, nullable=False)
-    #: Satellite credentials path in Vault
-    satellite_credentials = db.Column(db.String(256), nullable=False)
-
-    dns_server_hostname = db.Column(db.String(256), nullable=False)
-    dns_server_zone = db.Column(db.String(256), nullable=False)
-    #: DNS server credentials path in Vault
-    dns_server_key = db.Column(db.String(256), nullable=False)
-
-    vault_server = db.Column(db.String(256), nullable=False)
-    download_server = db.Column(db.String(256), nullable=False)
+    openstack_id = db.Column(db.Integer, db.ForeignKey('openstack_cloud.id'),
+                             nullable=False)
+    openstack = db.relationship(openstack_model.Cloud)
 
     #: :type: list of :class:`Cluster`
     clusters = db.relationship('Cluster', back_populates='region')
@@ -88,7 +65,8 @@ class Region(db.Model, ModelMixin):
     products_relation = db.relationship('RegionProduct', back_populates='region',
                                         lazy='dynamic')
 
-    _INLINE_CHILDS = ['openstack', 'satellite', 'dns_server']
+    __embedded__ = ['user_quota', 'total_quota']
+    __embedded_ro__ = ['location', 'openstack']
 
     @property
     def lifespan_enabled(self):
@@ -110,113 +88,24 @@ class Region(db.Model, ModelMixin):
 
     @property
     def owner_group_name(self):
-        return di.get(KeycloakClient).group_get(self.owner_group)['name']
+        return di.get(KeycloakClient).group_get(self.owner_group_id)['name']
 
     @property
     def users_group_name(self):
-        if self.users_group:
-            return di.get(KeycloakClient).group_get(self.users_group)['name']
+        if self.users_group_id:
+            return di.get(KeycloakClient).group_get(self.users_group_id)['name']
         return None
 
     def to_dict(self):
-        data = {}
+        data = super().to_dict()
 
-        for column in self.__table__.columns:
-            if column.name.endswith('_quota_id'):
-                continue
-            for i in self._INLINE_CHILDS:
-                if column.name.startswith(f'{i}_'):
-                    if i not in data:
-                        data[i] = {}
-                    data[i][column.name[len(i) + 1:]] = getattr(self, column.name)
-                    break
-            else:
-                data[column.name] = getattr(self, column.name)
-
-        for k in ['user_quota', 'total_quota']:
-            data[k] = getattr(self, k).to_dict() if getattr(self, k) else None
+        del data['user_quota_id']
+        del data['total_quota_id']
 
         data['owner_group_name'] = self.owner_group_name
         data['users_group_name'] = self.users_group_name
 
-        if self.location:
-            data['location'] = self.location.to_dict()
-        else:
-            data['location'] = None
-
         return data
-
-    @classmethod
-    def from_dict(cls, data):
-        data = copy.deepcopy(data)
-
-        for k in ['user_quota', 'total_quota']:
-            quota_data = data.pop(k, None)
-            if quota_data:
-                data[k] = Quota.from_dict(quota_data)
-
-        for i in cls._INLINE_CHILDS:
-            for k, v in data[i].items():
-                data[f'{i}_{k}'] = v
-            del data[i]
-
-        return super().from_dict(data)
-
-    def update_from_dict(self, data):
-        data = copy.deepcopy(data)
-
-        for k in ['user_quota', 'total_quota']:
-            if k in data:
-                if data[k]:
-                    if getattr(self, k) is None:
-                        setattr(self, k, Quota.from_dict(data[k]))
-                    else:
-                        getattr(self, k).update_from_dict(data[k])
-                else:
-                    setattr(self, k, None)
-                del data[k]
-
-        for i in self._INLINE_CHILDS:
-            if i in data:
-                for k, v in data[i].items():
-                    setattr(self, f'{i}_{k}', v)
-                del data[i]
-
-        super().update_from_dict(data)
-
-    def create_openstack_client(self, project=None):
-        """
-        Create OpenStack SDK connection (client). Optional `project` argument
-        can be used to change project, default is project from the region
-        (:attr:`Region.project`).
-
-        Returns:
-            openstack.connection.Connection
-        """
-        vault = di.get(Vault)
-        credentials = vault.read(self.openstack_credentials)
-        if not credentials:
-            raise RuntimeError(
-                f'Missing credentials in vault; {vault!r} {self.openstack_credentials}'
-            )
-        connection = openstack.connection.Connection(
-            auth=dict(
-                auth_url=self.openstack_url,
-                username=credentials['username'],
-                password=credentials['password'],
-                project_name=project or self.openstack_project,
-                domain_name=self.openstack_domain_name,
-            ),
-            region_name="regionOne",
-            interface="public",
-            identity_api_version=3,
-        )
-        connection.authorize()
-        return connection
-
-    def get_user_project_name(self, user_id):
-        user_name = di.get(KeycloakClient).user_get(user_id)['username']
-        return f'ql_{user_name}'
 
     def get_user_quota_usage(self, user_id):
         query = (
@@ -258,10 +147,6 @@ class Region(db.Model, ModelMixin):
         result = query.first()
 
         return dict(zip(['num_vcpus', 'ram_mb', 'num_volumes', 'volumes_gb'], result))
-
-    def get_openstack_limits(self, project):
-        os_client = self.create_openstack_client(project)
-        return os_client.compute.get_limits()
 
     def is_product_enabled(self, product_id):
         """Check if the product is configured and enabled in the region."""
@@ -381,6 +266,10 @@ class Cluster(db.Model, ModelMixin):
                           nullable=False)
     #: :type: :class:`Region`
     region = db.relationship('Region', back_populates='clusters')
+
+    project_id = db.Column(db.Integer, db.ForeignKey('openstack_project.id'),
+                           nullable=False)
+    project = db.relationship(openstack_model.Project)
 
     reservation_expiration = db.Column(db.DateTime(timezone=True), nullable=True)
     #: Cluster lifespan expiration (hard-limit), see
