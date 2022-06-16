@@ -21,6 +21,7 @@ from rhub.api.vault import Vault, VaultModule
 from rhub.auth.keycloak import KeycloakModule
 from rhub.scheduler import SchedulerModule
 
+
 logger = logging.getLogger(__name__)
 
 di = injector.Injector()

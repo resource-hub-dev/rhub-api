@@ -2,21 +2,18 @@ import logging
 
 import sqlalchemy
 import sqlalchemy.exc
-from flask import request, url_for
 from connexion import problem
+from flask import request, url_for
 from werkzeug.exceptions import Forbidden
-import dpath.util as dpath
 
-from rhub.lab import model
-from rhub.tower import model as tower_model
-from rhub.api import db, DEFAULT_PAGE_LIMIT
+from rhub.api import DEFAULT_PAGE_LIMIT, db
+from rhub.api.lab.cluster import _user_can_access_region
 from rhub.api.utils import db_sort
 from rhub.api.vault import Vault
-from rhub.api.lab.cluster import _user_can_access_region
 from rhub.auth import ADMIN_ROLE
-from rhub.auth.keycloak import (
-    KeycloakClient, KeycloakGetError, problem_from_keycloak_error,
-)
+from rhub.auth.keycloak import KeycloakClient, KeycloakGetError
+from rhub.lab import model
+from rhub.tower import model as tower_model
 
 
 logger = logging.getLogger(__name__)
@@ -37,11 +34,13 @@ def _region_href(region):
         'tower': url_for('.rhub_api_tower_get_server',
                          server_id=region.tower_id),
         'owner_group': url_for('.rhub_api_auth_group_get_group',
-                               group_id=region.owner_group)
+                               group_id=region.owner_group_id),
+        'openstack': url_for('.rhub_api_openstack_cloud_get',
+                             cloud_id=region.openstack_id),
     }
-    if region.users_group:
+    if region.users_group_id:
         href['users_group'] = url_for('.rhub_api_auth_group_get_group',
-                                      group_id=region.users_group)
+                                      group_id=region.users_group_id)
     return href
 
 
@@ -52,9 +51,9 @@ def list_regions(keycloak: KeycloakClient,
     else:
         user_groups = [group['id'] for group in keycloak.user_group_list(user)]
         regions = model.Region.query.filter(sqlalchemy.or_(
-            model.Region.users_group.is_(None),
-            model.Region.users_group.in_(user_groups),
-            model.Region.owner_group.in_(user_groups),
+            model.Region.users_group_id.is_(None),
+            model.Region.users_group_id.in_(user_groups),
+            model.Region.owner_group_id.in_(user_groups),
         ))
 
     if 'name' in filter_:
@@ -88,18 +87,19 @@ def list_regions(keycloak: KeycloakClient,
 
 
 def create_region(keycloak: KeycloakClient, vault: Vault, body, user):
-    try:
-        if body.get('users_group'):
-            keycloak.group_get(body['users_group'])
-    except KeycloakGetError as e:
-        logger.exception(e)
-        return problem(400, 'Users group does not exist',
-                       f'Users group {body["users_group"]} does not exist in Keycloak, '
-                       'you have to create group first or use existing group.')
+    for key in ['owner_group_id', 'users_group_id']:
+        try:
+            if group_id := body.get(key):
+                keycloak.group_get(group_id)
+        except KeycloakGetError as e:
+            logger.exception(e)
+            return problem(400, 'Group does not exist',
+                           f'Group {body[key]} does not exist in Keycloak, '
+                           'you have to create group first or use existing group.')
 
     tower = tower_model.Server.query.get(body['tower_id'])
     if not tower:
-        return problem(404, 'Not Found',
+        return problem(400, 'Not Found',
                        f'Tower instance with ID {body["tower_id"]} does not exist')
 
     query = model.Region.query.filter(model.Region.name == body['name'])
@@ -109,52 +109,11 @@ def create_region(keycloak: KeycloakClient, vault: Vault, body, user):
             f'Region with name {body["name"]!r} already exists',
         )
 
-    try:
-        owners_id = keycloak.group_create({
-            'name': f'{body["name"]}-owners',
-        })
-        logger.info(f'Created owners group {owners_id}')
-        body['owner_group'] = owners_id
-
-        keycloak.group_user_add(user, owners_id)
-        logger.info(f'Added {user} to owners group {owners_id}')
-
-    except KeycloakGetError as e:
-        logger.exception(e)
-        return problem_from_keycloak_error(e)
-    except Exception as e:
-        logger.exception(e)
-        return problem(500, 'Unknown Error',
-                       f'Failed to create owner group in Keycloak, {e}')
-
-    openstack_credentials = dpath.get(body, 'openstack/credentials')
-    if not isinstance(openstack_credentials, str):
-        openstack_credentials_path = f'{VAULT_PATH_PREFIX}/{body["name"]}/openstack'
-        vault.write(openstack_credentials_path, openstack_credentials)
-        dpath.set(body, 'openstack/credentials', openstack_credentials_path)
-
-    satellite_credentials = dpath.get(body, 'satellite/credentials')
-    if not isinstance(satellite_credentials, str):
-        satellite_credentials_path = f'{VAULT_PATH_PREFIX}/{body["name"]}/satellite'
-        vault.write(satellite_credentials_path, satellite_credentials)
-        dpath.set(body, 'satellite/credentials', satellite_credentials_path)
-
-    dns_server_key = dpath.get(body, 'dns_server/key')
-    if not isinstance(dns_server_key, str):
-        dns_server_key_path = f'{VAULT_PATH_PREFIX}/{body["name"]}/dns_server'
-        vault.write(dns_server_key_path, dns_server_key)
-        dpath.set(body, 'dns_server/key', dns_server_key_path)
-
     region = model.Region.from_dict(body)
 
-    try:
-        db.session.add(region)
-        db.session.commit()
-        logger.info(f'Region {region.name} (id {region.id}) created by user {user}')
-    except sqlalchemy.exc.SQLAlchemyError:
-        # If database transaction failed remove group in Keycloak.
-        keycloak.group_delete(owners_id)
-        raise
+    db.session.add(region)
+    db.session.commit()
+    logger.info(f'Region {region.name} (id {region.id}) created by user {user}')
 
     return region.to_dict() | {'_href': _region_href(region)}
 
@@ -164,10 +123,10 @@ def get_region(keycloak: KeycloakClient, region_id, user):
     if not region:
         return problem(404, 'Not Found', f'Region {region_id} does not exist')
 
-    if region.users_group is not None:
+    if region.users_group_id is not None:
         if not keycloak.user_check_role(user, ADMIN_ROLE):
             if not keycloak.user_check_group_any(
-                    user, [region.users_group, region.owner_group]):
+                    user, [region.users_group_id, region.owner_group_id]):
                 raise Forbidden("You don't have access to this region.")
 
     return region.to_dict() | {'_href': _region_href(region)}
@@ -179,46 +138,18 @@ def update_region(keycloak: KeycloakClient, vault: Vault, region_id, body, user)
         return problem(404, 'Not Found', f'Region {region_id} does not exist')
 
     if not keycloak.user_check_role(user, ADMIN_ROLE):
-        if not keycloak.user_check_group(user, region.owner_group):
+        if not keycloak.user_check_group(user, region.owner_group_id):
             raise Forbidden("You don't have write access to this region.")
 
-    try:
-        if body.get('users_group'):
-            keycloak.group_get(body['users_group'])
-    except KeycloakGetError as e:
-        logger.exception(e)
-        return problem(400, 'Users group does not exist',
-                       f'Users group {body["users_group"]} does not exist in Keycloak, '
-                       'you have to create group first or use existing group.')
-
-    if 'quota' in body:
-        if body['quota']:
-            if region.quota is None:
-                region.quota = model.Quota(**body['quota'])
-            else:
-                for k, v in body['quota'].items():
-                    setattr(region.quota, k, v)
-        else:
-            region.quota = None
-        del body['quota']
-
-    openstack_credentials = dpath.get(body, 'openstack/credentials',
-                                      default=region.openstack_credentials)
-    if not isinstance(openstack_credentials, str):
-        vault.write(region.openstack_credentials, openstack_credentials)
-        dpath.delete(body, 'openstack/credentials')
-
-    satellite_credentials = dpath.get(body, 'satellite/credentials',
-                                      default=region.satellite_credentials)
-    if not isinstance(satellite_credentials, str):
-        vault.write(region.satellite_credentials, satellite_credentials)
-        dpath.delete(body, 'satellite/credentials')
-
-    dns_server_key = dpath.get(body, 'dns_server/key',
-                               default=region.dns_server_key)
-    if not isinstance(dns_server_key, str):
-        vault.write(region.dns_server_key, dns_server_key)
-        dpath.delete(body, 'dns_server/key')
+    for key in ['owner_group_id', 'users_group_id']:
+        try:
+            if group_id := body.get(key):
+                keycloak.group_get(group_id)
+        except KeycloakGetError as e:
+            logger.exception(e)
+            return problem(400, 'Group does not exist',
+                           f'Group {body[key]} does not exist in Keycloak, '
+                           'you have to create group first or use existing group.')
 
     region.update_from_dict(body)
 
@@ -234,7 +165,7 @@ def delete_region(keycloak: KeycloakClient, region_id, user):
         return problem(404, 'Not Found', f'Region {region_id} does not exist')
 
     if not keycloak.user_check_role(user, ADMIN_ROLE):
-        if not keycloak.user_check_group(user, region.owner_group):
+        if not keycloak.user_check_group(user, region.owner_group_id):
             raise Forbidden("You don't have write access to this region.")
 
     q = model.RegionProduct.query.filter(
@@ -247,19 +178,6 @@ def delete_region(keycloak: KeycloakClient, region_id, user):
 
     db.session.delete(region)
 
-    try:
-        owner_group = keycloak.group_get(region.owner_group)
-        keycloak.group_delete(owner_group['id'])
-        logger.info(f'Deleted owners group {owner_group["id"]}')
-
-    except KeycloakGetError as e:
-        logger.exception(e)
-        return problem_from_keycloak_error(e)
-    except Exception as e:
-        logger.exception(e)
-        return problem(500, 'Unknown Error',
-                       f'Failed to delete owner group in Keycloak, {e}')
-
     db.session.commit()
     logger.info(f'Region {region.name} (id {region.id}) deleted by user {user}')
 
@@ -269,10 +187,10 @@ def list_region_products(keycloak: KeycloakClient, region_id, user, filter_):
     if not region:
         return problem(404, 'Not Found', f'Region {region_id} does not exist')
 
-    if region.users_group is not None:
+    if region.users_group_id is not None:
         if not keycloak.user_check_role(user, ADMIN_ROLE):
             if not keycloak.user_check_group_any(
-                    user, [region.users_group, region.owner_group]):
+                    user, [region.users_group_id, region.owner_group_id]):
                 raise Forbidden("You don't have access to this region.")
 
     products_relation = region.products_relation
@@ -307,7 +225,7 @@ def add_region_product(keycloak: KeycloakClient, region_id, body, user):
         return problem(404, 'Not Found', f'Region {region_id} does not exist')
 
     if not keycloak.user_check_role(user, ADMIN_ROLE):
-        if not keycloak.user_check_group(user, region.owner_group):
+        if not keycloak.user_check_group(user, region.owner_group_id):
             raise Forbidden("You don't have write access to this region.")
 
     product = model.Product.query.get(body['id'])
@@ -342,7 +260,7 @@ def delete_region_product(keycloak: KeycloakClient, region_id, user):
         return problem(404, 'Not Found', f'Region {region_id} does not exist')
 
     if not keycloak.user_check_role(user, ADMIN_ROLE):
-        if not keycloak.user_check_group(user, region.owner_group):
+        if not keycloak.user_check_group(user, region.owner_group_id):
             raise Forbidden("You don't have write access to this region.")
 
     product = model.Product.query.get(request.json['id'])
@@ -367,15 +285,9 @@ def get_usage(region_id, user, with_openstack_limits=None):
     if not _user_can_access_region(region, user):
         raise Forbidden("You don't have access to this region.")
 
-    data = {
+    return {
         'user_quota': region.user_quota.to_dict() if region.user_quota else None,
         'user_quota_usage': region.get_user_quota_usage(user),
         'total_quota': region.total_quota.to_dict() if region.total_quota else None,
         'total_quota_usage': region.get_total_quota_usage(),
     }
-
-    if with_openstack_limits:
-        os_project = region.get_user_project_name(user)
-        data['openstack_limits'] = region.get_openstack_limits(os_project)
-
-    return data
