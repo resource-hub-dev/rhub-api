@@ -14,17 +14,14 @@ services:
       context: .
     image: quay.io/resource-hub-dev/rhub-api
     volumes:
-      - .:/opt/app-root/src/rhub/:delegated,z
+      - .:/opt/app-root/src/rhub_api/:delegated,z
+      - ./data/vault.yml:/srv/vault.yml:delegated,z
       - ./data/vault-data.yml:/srv/vault-data.yml:delegated,z
     environment:
       FLASK_APP: ${FLASK_APP:-rhub.api:create_app()}
       FLASK_ENV: ${FLASK_ENV:-development}
       FLASK_RUN_HOST: ${FLASK_RUN_HOST:-0.0.0.0}
       FLASK_RUN_PORT: ${FLASK_RUN_PORT:-8081}
-      HOME: /opt/app-root/home
-      PYTHONPATH: /opt/app-root/src/rhub/src:/opt/app-root/src/rhub/src/rhub:/opt/app-root/packages
-      PYTHONDONTWRITEBYTECODE: please
-      # don't pollute /opt/app-root/src with home crap
       RHUB_SKIP_INIT: ${RHUB_SKIP_INIT:-False}
       RHUB_RETURN_INITIAL_FLASK_APP: ${RHUB_RETURN_INITIAL_FLASK_APP:-False}
       REQUESTS_CA_BUNDLE: /etc/pki/tls/certs/ca-bundle.crt
@@ -39,7 +36,8 @@ services:
       context: .
     image: quay.io/resource-hub-dev/rhub-api
     volumes:
-      - .:/opt/app-root/src/rhub/:delegated,z
+      - .:/opt/app-root/src/rhub_api/:delegated,z
+      - ./data/vault.yml:/srv/vault.yml:delegated,z
       - ./data/vault-data.yml:/srv/vault-data.yml:delegated,z
     environment:
       FLASK_ENV: ${FLASK_ENV:-development}
@@ -62,7 +60,8 @@ services:
       context: .
     image: quay.io/resource-hub-dev/rhub-api
     volumes:
-      - .:/opt/app-root/src/rhub/:delegated,z
+      - .:/opt/app-root/src/rhub_api/:delegated,z
+      - ./data/vault.yml:/srv/vault.yml:delegated,z
       - ./data/vault-data.yml:/srv/vault-data.yml:delegated,z
     environment:
       FLASK_ENV: ${FLASK_ENV:-development}

@@ -33,5 +33,5 @@ docs:
 clean:
 	$(MAKE) -C docs clean
 
-requirements.txt: requirements.in
-	pip-compile
+requirements.txt: setup.py
+	pip-compile setup.py

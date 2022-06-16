@@ -77,7 +77,7 @@ def hook_init(app):
 
     logger.info('Building OpenAPI spec file')
     sh.prance.compile(
-        src_path / 'openapi' / 'openapi.yml',
+        src_path / 'rhub' / 'openapi' / 'openapi.yml',
         docs_path / '_static' / 'swaggerui' / 'openapi.json',
         _fg=True,
     )
