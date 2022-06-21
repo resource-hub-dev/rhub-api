@@ -13,6 +13,7 @@ def test_bm_list_hosts(client):
     )
 
     assert rv.status_code == 200
+    assert "data" in rv.json
 
 
 def test_bm_power_states(client):
@@ -22,6 +23,7 @@ def test_bm_power_states(client):
     )
 
     assert rv.status_code == 200
+    assert "data" in rv.json
 
 
 def test_bm_metrics(client):
@@ -31,6 +33,7 @@ def test_bm_metrics(client):
     )
 
     assert rv.status_code == 200
+    assert "data" in rv.json
 
     
 def test_vm_metrics(client):
@@ -40,6 +43,7 @@ def test_vm_metrics(client):
     )
 
     assert rv.status_code == 200
+    assert "data" in rv.json
 
 
 def test_lab_metrics(client):
@@ -49,6 +53,7 @@ def test_lab_metrics(client):
     )
 
     assert rv.status_code == 200
+    assert "data" in rv.json
 
     
 

@@ -45,7 +45,9 @@ def mock_power(type):
 
         r.append(r_platform)
 
-    return r
+    wrapper = {"data": r}
+
+    return wrapper
 
 
 def mock_availability(type):
@@ -85,7 +87,9 @@ def mock_availability(type):
 
         r.append(r_platform)
 
-    return r
+    wrapper = {"data": r}
+
+    return wrapper
 
 
 def vm_metrics():
@@ -105,15 +109,16 @@ def bm_power_states():
 
 
 def bm_hosts_to_monitor(target_type="node"):
+    nodes = [{"name": "no.nodes.specified"}]
+
     if target_type == "node":
         nodes_files = read_local_yaml("monitoring_sample_nodes.yml")
-        nodes = nodes_files["nodes"]
+        read_nodes = nodes_files["nodes"]
+        nodes = []
+        for node in read_nodes:
+            nodes.append({"name": node})
 
     r = {}
-    r["targets"] = nodes
-    r["labels"] = {
-        "__meta_prometheus_job": target_type,
-        "job": target_type
-    }
+    r["data"] = nodes
 
     return r
