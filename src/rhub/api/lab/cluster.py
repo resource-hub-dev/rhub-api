@@ -33,7 +33,7 @@ def _user_can_access_cluster(cluster, user_id):
     keycloak = di.get(KeycloakClient)
     if _user_is_cluster_admin(user_id):
         return True
-    if cluster.user_id == user_id:
+    if cluster.owner_id == user_id:
         return True
     if cluster.group_id is not None:
         return keycloak.user_check_group(user_id, cluster.group_id)
@@ -114,8 +114,8 @@ def _cluster_href(cluster):
                           region_id=cluster.region_id),
         'product': url_for('.rhub_api_lab_product_get_product',
                            product_id=cluster.product_id),
-        'user': url_for('.rhub_api_auth_user_get_user',
-                        user_id=cluster.user_id),
+        'owner': url_for('.rhub_api_auth_user_get_user',
+                         user_id=cluster.owner_id),
         'openstack': url_for('.rhub_api_openstack_cloud_get',
                              cloud_id=cluster.region.openstack_id),
         'project': url_for('.rhub_api_openstack_project_get',
@@ -162,7 +162,7 @@ def list_clusters(keycloak: KeycloakClient,
         if sharedcluster_group_id := _get_sharedcluster_group_id():
             user_groups.append(sharedcluster_group_id)
         clusters = model.Cluster.query.filter(sqlalchemy.or_(
-            model.Cluster.user_id == user,
+            model.Cluster.owner_id == user,
             model.Cluster.group_id.in_(user_groups),
         ))
 
@@ -172,8 +172,8 @@ def list_clusters(keycloak: KeycloakClient,
     if 'region_id' in filter_:
         clusters = clusters.filter(model.Cluster.region_id == filter_['region_id'])
 
-    if 'user_id' in filter_:
-        clusters = clusters.filter(model.Cluster.user_id == filter_['user_id'])
+    if 'owner_id' in filter_:
+        clusters = clusters.filter(model.Cluster.owner_id == filter_['owner_id'])
 
     if 'group_id' in filter_:
         clusters = clusters.filter(model.Cluster.group_id == filter_['group_id'])
@@ -260,7 +260,6 @@ def create_cluster(keycloak: KeycloakClient, body, user):
                        f'Product {product.id} is not enabled in the region')
 
     cluster_data = body.copy()
-    cluster_data['user_id'] = user
     cluster_data['created'] = date_now()
 
     shared = cluster_data.pop('shared', False)
@@ -278,7 +277,6 @@ def create_cluster(keycloak: KeycloakClient, body, user):
                 f'Only users with role {SHAREDCLUSTER_ROLE} can create shared clusters.'
             )
 
-        cluster_data['group_id'] = sharedcluster_group_id
         cluster_data['lifespan_expiration'] = None
         cluster_data['reservation_expiration'] = None
 
@@ -345,6 +343,7 @@ def create_cluster(keycloak: KeycloakClient, body, user):
                 name=project_name,
                 description='Project created by QuickCluster playbooks',
                 owner_id=user,
+                group_id=_get_sharedcluster_group_id() if shared else None
             )
             db.session.add(project)
             db.session.flush()
@@ -703,7 +702,7 @@ def reboot_hosts(cluster_id, body, user):
     rebooted_hosts = []
 
     try:
-        os_project_name = cluster.region.get_user_project_name(cluster.user_id)
+        os_project_name = cluster.region.get_user_project_name(cluster.owner_id)
         os_client = cluster.region.create_openstack_client(os_project_name)
         for server in os_client.compute.servers():
             if server.hostname in hosts_to_reboot:

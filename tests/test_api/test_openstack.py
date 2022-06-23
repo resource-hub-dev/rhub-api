@@ -233,6 +233,8 @@ def test_list_projects(client, keycloak_mock):
                 'description': '',
                 'owner_id': '00000000-0000-0000-0000-000000000000',
                 'owner_name': 'test-user',
+                'group_id': None,
+                'group_name': None,
                 '_href': ANY,
             }
         ],
@@ -280,6 +282,8 @@ def test_get_cloud(client, keycloak_mock):
         'description': '',
         'owner_id': '00000000-0000-0000-0000-000000000000',
         'owner_name': 'test-user',
+        'group_id': None,
+        'group_name': None,
         '_href': ANY,
     }
 

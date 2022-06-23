@@ -51,15 +51,23 @@ class Project(db.Model, ModelMixin):
     name = db.Column(db.String(64), nullable=False)
     description = db.Column(db.Text, nullable=False, default='')
     owner_id = db.Column(postgresql.UUID, nullable=False)
+    group_id = db.Column(postgresql.UUID, nullable=True)
 
     @property
     def owner_name(self):
         return di.get(KeycloakClient).user_get(self.owner_id)['username']
 
+    @property
+    def group_name(self):
+        if self.group_id:
+            return di.get(KeycloakClient).group_get(self.group_id)['name']
+        return None
+
     def to_dict(self):
         data = super().to_dict()
         data['cloud_name'] = self.cloud.name
         data['owner_name'] = self.owner_name
+        data['group_name'] = self.group_name
         return data
 
     def create_openstack_client(self):
