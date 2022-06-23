@@ -180,17 +180,18 @@ model:
         maxLength: 20
       description:
         type: string
-      user_id:
+      owner_id:
         type: string
         format: uuid
         readOnly: true
-      user_name:
+      owner_name:
         type: string
         readOnly: true
       group_id:
         type: string
         format: uuid
         nullable: true
+        readOnly: true
       group_name:
         type: string
         nullable: true

@@ -3,6 +3,7 @@ import enum
 import re
 
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import validates
 
 from rhub.api import db, di
@@ -121,7 +122,7 @@ class Region(db.Model, ModelMixin):
             .where(
                 db.and_(
                     Cluster.region_id == self.id,
-                    Cluster.user_id == user_id,
+                    Cluster.owner_id == user_id,
                 )
             )
         )
@@ -258,8 +259,6 @@ class Cluster(db.Model, ModelMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(32), nullable=False)
     description = db.Column(db.Text, nullable=False, default='')
-    user_id = db.Column(postgresql.UUID, nullable=False)
-    group_id = db.Column(postgresql.UUID, nullable=True)
     created = db.Column(db.DateTime(timezone=True))
 
     region_id = db.Column(db.Integer, db.ForeignKey('lab_region.id'),
@@ -339,15 +338,21 @@ class Cluster(db.Model, ModelMixin):
                 usage[k] += getattr(host, k)
         return usage
 
+    @hybrid_property
+    def owner_id(self):
+        return self.project.owner_id
+
     @property
-    def user_name(self):
-        return di.get(KeycloakClient).user_get(self.user_id)['username']
+    def owner_name(self):
+        return self.project.owner_name
+
+    @hybrid_property
+    def group_id(self):
+        return self.project.group_id
 
     @property
     def group_name(self):
-        if self.group_id:
-            return di.get(KeycloakClient).group_get(self.group_id)['name']
-        return None
+        return self.project.group_name
 
     @property
     def shared(self):
@@ -362,8 +367,8 @@ class Cluster(db.Model, ModelMixin):
             'rhub_product_name': self.product.name,
             'rhub_region_id': self.region.id,
             'rhub_region_name': self.region.name,
-            'rhub_user_id': self.user_id,
-            'rhub_user_name': self.user_name,
+            'rhub_user_id': self.owner_id,
+            'rhub_user_name': self.owner_name,
         }
         return rhub_extra_vars | self.product_params
 
@@ -371,7 +376,9 @@ class Cluster(db.Model, ModelMixin):
         data = super().to_dict()
 
         data['region_name'] = self.region.name
-        data['user_name'] = self.user_name
+        data['owner_id'] = self.owner_id
+        data['owner_name'] = self.owner_name
+        data['group_id'] = self.group_id
         data['group_name'] = self.group_name
         data['shared'] = self.shared
 

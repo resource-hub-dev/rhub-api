@@ -83,6 +83,14 @@ model:
       owner_name:
         type: string
         readOnly: true
+      group_id:
+        type: string
+        format: uuid
+        nullable: true
+      group_name:
+        type: string
+        nullable: true
+        readOnly: true
 
 
 parameters:
