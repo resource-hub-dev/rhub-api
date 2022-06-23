@@ -15,7 +15,7 @@ from flask_sqlalchemy import SQLAlchemy
 from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
 from ruamel import yaml
 
-import rhub
+from rhub import ROOT_PKG_PATH
 from rhub.api.extensions import celery
 from rhub.api.vault import Vault, VaultModule
 from rhub.auth.keycloak import KeycloakModule
@@ -59,8 +59,6 @@ def create_app():
             logger.addHandler(flask.logging.default_handler)
             logger.setLevel(log_level)
 
-    root = os.path.dirname(rhub.__path__[0])
-
     connexion_app = connexion.App(__name__)
 
     flask_app = connexion_app.app
@@ -71,7 +69,7 @@ def create_app():
     from . import _config
     flask_app.config.from_object(_config)
 
-    parser = prance.ResolvingParser(os.path.join(root, 'openapi', 'openapi.yml'))
+    parser = prance.ResolvingParser(str(ROOT_PKG_PATH / 'openapi' / 'openapi.yml'))
     connexion_app.add_api(
         parser.specification,
         validate_responses=True,

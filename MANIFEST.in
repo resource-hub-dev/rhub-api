@@ -1,0 +1,9 @@
+include .env.defaults
+include config.py
+include LICENSE
+include migrations/alembic.ini
+include migrations/script.py.mako
+include requirements.txt
+
+recursive-include migrations *.py
+recursive-include src/rhub/openapi *.yml
