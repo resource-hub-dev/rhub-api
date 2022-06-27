@@ -367,6 +367,8 @@ class Cluster(db.Model, ModelMixin):
             'rhub_product_name': self.product.name,
             'rhub_region_id': self.region.id,
             'rhub_region_name': self.region.name,
+            'rhub_project_id': self.project.id,
+            'rhub_project_name': self.project.name,
             'rhub_user_id': self.owner_id,
             'rhub_user_name': self.owner_name,
         }
