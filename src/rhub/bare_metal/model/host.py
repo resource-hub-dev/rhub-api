@@ -54,6 +54,8 @@ class BareMetalHost(db.Model, ModelMixin, TimestampMixin):
         db.Boolean, server_default=expression.true(), nullable=False
     )
 
+    ipxe_support = db.Column(db.Boolean, server_default=expression.true(), nullable=False)
+
     #: :type: :class:`BareMetalHostStatus`
     status = db.Column(
         db.Enum(BareMetalHostStatus),
@@ -72,10 +74,10 @@ class BareMetalHost(db.Model, ModelMixin, TimestampMixin):
     handler_uuid = db.Column(postgresql.UUID)
     handler_data = db.Column(db.JSON)
 
-    ipmi_address = db.Column(db.String(128), nullable=False)
-    ipmi_password = db.Column(db.String(128), nullable=False)
-    ipmi_port = db.Column(db.String(128), nullable=False)
     ipmi_username = db.Column(db.String(128), nullable=False)
+    ipmi_password = db.Column(db.String(128), nullable=False)
+    ipmi_address = db.Column(db.String(128), nullable=False)
+    ipmi_port = db.Column(db.String(128), nullable=False)
 
     #: :type: :class:`BareMetalProvision`
     deployments = db.relationship("BareMetalProvision", back_populates="host")
@@ -139,9 +141,9 @@ class BareMetalHostRedfish(BareMetalHost):
     )
 
     redfish_address = db.Column(db.String(128), nullable=False)
+    redfish_username = db.Column(db.String(128), nullable=False)
     redfish_password = db.Column(db.String(128), nullable=False)
     redfish_system_id = db.Column(db.String(128), nullable=False)
-    redfish_username = db.Column(db.String(128), nullable=False)
     redfish_verify_ca = db.Column(
         db.Boolean, server_default=expression.true(), nullable=False
     )
@@ -169,9 +171,9 @@ class BareMetalHostDrac(BareMetalHost):
     )
 
     redfish_address = db.Column(db.String(128))
+    redfish_username = db.Column(db.String(128))
     redfish_password = db.Column(db.String(128))
     redfish_system_id = db.Column(db.String(128))
-    redfish_username = db.Column(db.String(128))
     redfish_verify_ca = db.Column(db.Boolean, server_default=expression.true())
 
     drac_address = db.Column(db.String(128), nullable=False)
