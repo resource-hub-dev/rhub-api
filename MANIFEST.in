@@ -7,4 +7,4 @@ include requirements.txt
 
 recursive-include migrations *.py
 recursive-include src/rhub/openapi *.yml
-recursive-include src/rhub/monitor *.yml
+recursive-include src/rhub/api/monitor *.yml
