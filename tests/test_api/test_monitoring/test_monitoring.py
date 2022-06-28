@@ -16,9 +16,9 @@ def test_bm_list_hosts(client):
     assert "data" in rv.json
 
 
-def test_bm_power_states(client):
+def test_bm_power_states_metrics(client):
     rv = client.get(
-        f'{API_BASE}/monitor/bm/power_states',
+        f'{API_BASE}/monitor/bm/power_states_metrics',
         headers={'Authorization': 'Bearer foobar'},
     )
 
@@ -35,7 +35,7 @@ def test_bm_metrics(client):
     assert rv.status_code == 200
     assert "data" in rv.json
 
-    
+
 def test_vm_metrics(client):
     rv = client.get(
         f'{API_BASE}/monitor/vm/metrics',
@@ -55,7 +55,7 @@ def test_lab_metrics(client):
     assert rv.status_code == 200
     assert "data" in rv.json
 
-    
+
 
 @contextmanager
 def does_not_raise():

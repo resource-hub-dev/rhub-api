@@ -69,7 +69,7 @@ endpoints:
     security:
       - oauth2: []
 
-  bm_power_states_metrics:
+  bm_power_states_metrics_get:
     summary: Get summarized power states from Bare Metal hosts
     operationId: rhub.api.monitor.metrics.bm_power_states_metrics
     tags: [monitoring, power]
@@ -90,7 +90,7 @@ endpoints:
     security:
       - oauth2: []
 
-  bm_metrics:
+  bm_metrics_get:
     summary: Bare Metal usage metrics
     operationId: rhub.api.monitor.metrics.bm_metrics
     tags: [monitoring, bm]
@@ -111,7 +111,7 @@ endpoints:
     security:
       - oauth2: []
 
-  vm_metrics:
+  vm_metrics_get:
     summary: VM (QuickVM) usage metrics
     operationId: rhub.api.monitor.metrics.vm_metrics
     tags: [monitoring, vm]
@@ -133,7 +133,7 @@ endpoints:
       - oauth2: []
 
 
-  lab_metrics:
+  lab_metrics_get:
     summary: Lab (QuickLab) usage metrics
     operationId: rhub.api.monitor.metrics.lab_metrics
     tags: [monitoring, lab]
