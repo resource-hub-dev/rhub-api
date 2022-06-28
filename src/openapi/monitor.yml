@@ -48,9 +48,9 @@ model:
 
 
 endpoints:
-  bm_hosts_to_monitor:
+  bm_hosts_to_monitor_list:
     summary: Get a list of Bare Metal hosts to monitor for the IPMI exporter
-    operationId: rhub.api.monitor.bm_hosts_to_monitor
+    operationId: rhub.api.monitor.metrics.bm_hosts_to_monitor_list
     tags: [monitoring, ipmi]
     responses:
       '200':
@@ -69,9 +69,9 @@ endpoints:
     security:
       - oauth2: []
 
-  bm_power_states:
+  bm_power_states_metrics:
     summary: Get summarized power states from Bare Metal hosts
-    operationId: rhub.api.monitor.bm_power_states
+    operationId: rhub.api.monitor.metrics.bm_power_states_metrics
     tags: [monitoring, power]
     responses:
       '200':
@@ -92,7 +92,7 @@ endpoints:
 
   bm_metrics:
     summary: Bare Metal usage metrics
-    operationId: rhub.api.monitor.bm_metrics
+    operationId: rhub.api.monitor.metrics.bm_metrics
     tags: [monitoring, bm]
     responses:
       '200':
@@ -113,7 +113,7 @@ endpoints:
 
   vm_metrics:
     summary: VM (QuickVM) usage metrics
-    operationId: rhub.api.monitor.vm_metrics
+    operationId: rhub.api.monitor.metrics.vm_metrics
     tags: [monitoring, vm]
     responses:
       '200':
@@ -135,7 +135,7 @@ endpoints:
 
   lab_metrics:
     summary: Lab (QuickLab) usage metrics
-    operationId: rhub.api.monitor.lab_metrics
+    operationId: rhub.api.monitor.metrics.lab_metrics
     tags: [monitoring, lab]
     responses:
       '200':

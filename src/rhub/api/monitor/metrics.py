@@ -1,8 +1,7 @@
 import os
+import random
 
 import yaml
-
-from rhub.api.utils import choose_from
 
 
 def read_local_yaml(filename):
@@ -33,7 +32,7 @@ def mock_power(type):
 
         r_platform["all"] = available_platform
 
-        on = choose_from(available_platform)
+        on = random.randrange(1, available_platform)
 
         off = available_platform - on
 
@@ -63,11 +62,11 @@ def mock_availability(type):
 
         r_platform["all"] = available_platform
 
-        random_requested = choose_from(available_platform)
+        random_requested = random.randrange(1, available_platform)
 
         available_platform -= random_requested
 
-        random_provisioned = choose_from(available_platform)
+        random_provisioned = random.randrange(1, available_platform)
 
         available_platform -= random_provisioned
 
@@ -104,11 +103,11 @@ def bm_metrics():
     return mock_availability("platforms")
 
 
-def bm_power_states():
+def bm_power_states_metrics():
     return mock_power("platforms")
 
 
-def bm_hosts_to_monitor(target_type="node"):
+def bm_hosts_to_monitor_list(target_type="node"):
     nodes = [{"name": "no.nodes.specified"}]
 
     if target_type == "node":

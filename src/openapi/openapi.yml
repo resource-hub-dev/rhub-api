@@ -285,10 +285,10 @@ paths:
 
   /monitor/bm/hosts:
     get:
-      $ref: 'monitor.yml#/endpoints/bm_hosts_to_monitor'
+      $ref: 'monitor.yml#/endpoints/bm_hosts_to_monitor_list'
   /monitor/bm/power_states:
     get:
-      $ref: 'monitor.yml#/endpoints/bm_power_states'
+      $ref: 'monitor.yml#/endpoints/bm_power_states_metrics'
   /monitor/bm/metrics:
     get:
       $ref: 'monitor.yml#/endpoints/bm_metrics'

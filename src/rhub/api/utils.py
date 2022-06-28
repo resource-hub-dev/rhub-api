@@ -1,5 +1,4 @@
 import datetime
-import random
 
 from rhub.api import db
 
@@ -65,7 +64,3 @@ def condition_eval(expr, params):
     elif expr[0] == 'param_in':
         return expr[1] in params and expr[2] in params[expr[1]]
     raise ValueError(f'Unknown operation {expr[0]!r}')
-
-
-def choose_from(number):
-    return random.choice(range(0, number))
