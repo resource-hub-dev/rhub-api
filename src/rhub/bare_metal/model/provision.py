@@ -116,8 +116,7 @@ class BareMetalProvisionISO(BareMetalProvision):
     def kickstart_file(self) -> Path:
         return BARE_METAL_KICKSTART_BASE_PATH / f"kickstart_{self.id}.cfg"
 
-    # TODO: rename
-    def get_ansible_playbook_variables(
+    def write_kickstart_content(
         self, kickstart_local_file: TextIO
     ) -> dict[str, str]:
         kickstart_local_file.write(self.kickstart_rendered)

@@ -24,7 +24,8 @@ def _ironic_sync_image(provision: BareMetalProvision):
     with NamedTemporaryFile(mode="w") as temp_file:  # TODO: only for ISO
         extra_variables = image.ansible_playbook_variables
         if isinstance(provision, BareMetalProvisionISO):
-            extra_variables.update(provision.get_ansible_playbook_variables(temp_file))
+            kickstart_variables = provision.write_kickstart_content(temp_file)
+            extra_variables.update(kickstart_variables)
 
         logger.debug(f"ansible-playbook extra variables: {extra_variables}")
         extra_variables = " ".join(
