@@ -1,0 +1,465 @@
+model:
+
+  Cloud:
+    type: object
+    properties:
+      id:
+        allOf:
+          - $ref: 'common.yml#/model/ID'
+          - readOnly: true
+      name:
+        type: string
+        maxLength: 32
+        example: rhub-rdu
+      description:
+        type: string
+        nullable: true
+        example: Private cloud for RHub located in RDU.
+      owner_group_id:
+        type: string
+        format: uuid
+      owner_group_name:
+        type: string
+        readOnly: true
+      url:
+        type: string
+        maxLength: 256
+        example: https://rhub-cloud.rdu.example.com:13000
+      credentials:
+        oneOf:
+          - description: Credentials to store in Vault
+            type: object
+            properties:
+              username:
+                type: string
+              password:
+                type: string
+            writeOnly: true
+          - description: Credentials path in Vault
+            type: string
+            maxLength: 256
+        example: kv/openstack/rhub-rdu
+      domain_name:
+        type: string
+        maxLength: 64
+        example: Default
+      domain_id:
+        type: string
+        maxLength: 64
+        example: default
+      networks:
+        description: Network providers that can be used in the cloud
+        type: array
+        items:
+          type: string
+          maxLength: 64
+        minItems: 1
+        uniqueItems: true
+        example: [provider_net_rhub]
+
+  Project:
+    type: object
+    properties:
+      id:
+        allOf:
+          - $ref: 'common.yml#/model/ID'
+          - readOnly: true
+      cloud_id:
+        $ref: 'common.yml#/model/ID'
+      cloud_name:
+        type: string
+        readOnly: true
+      name:
+        type: string
+        maxLength: 64
+        example: myproject
+      description:
+        type: string
+        nullable: true
+      owner_id:
+        type: string
+        format: uuid
+        description: Defaults to user who created a project.
+      owner_name:
+        type: string
+        readOnly: true
+
+
+parameters:
+
+  cloud_id:
+    name: cloud_id
+    in: path
+    description: ID of the cloud
+    required: true
+    schema:
+      $ref: 'common.yml#/model/ID'
+
+  project_id:
+    name: project_id
+    in: path
+    description: ID of the project
+    required: true
+    schema:
+      $ref: 'common.yml#/model/ID'
+
+
+endpoints:
+
+  cloud_list:
+    summary: Get OpenStack cloud list
+    tags: [openstack]
+    operationId: rhub.api.openstack.cloud_list
+    parameters:
+      - name: filter
+        in: query
+        description: Filter clouds by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: >
+                Name of a cloud. Wildcard ``%`` can be used to match zero, one,
+                or multiple characters
+            owner_group_id:
+              type: string
+              format: uuid
+              nullable: true
+      - name: sort
+        in: query
+        description: Sort clouds by attribute.
+        schema:
+          type: string
+          enum:
+            - name
+            - -name
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+    responses:
+      '200':
+        description: List of Clouds
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/Cloud'
+                total:
+                  type: integer
+                  minimum: 0
+                  description: The total number of items
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cloud_create:
+    summary: Create OpenStack cloud
+    tags: [openstack]
+    operationId: rhub.api.openstack.cloud_create
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/model/Cloud'
+              - required:
+                  - credentials
+                  - domain_id
+                  - domain_name
+                  - name
+                  - networks
+                  - owner_group_id
+                  - url
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Cloud'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cloud_get:
+    summary: Get OpenStack cloud
+    tags: [openstack]
+    operationId: rhub.api.openstack.cloud_get
+    parameters:
+      - $ref: '#/parameters/cloud_id'
+    responses:
+      '200':
+        description: Cloud
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Cloud'
+      '404':
+        description: Not found
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cloud_update:
+    summary: Update OpenStack cloud
+    tags: [openstack]
+    operationId: rhub.api.openstack.cloud_update
+    parameters:
+      - $ref: '#/parameters/cloud_id'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/model/Cloud'
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  cloud_delete:
+    summary: Delete OpenStack cloud
+    tags: [openstack]
+    operationId: rhub.api.openstack.cloud_delete
+    parameters:
+      - $ref: '#/parameters/cloud_id'
+    responses:
+      '204':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  project_list:
+    summary: Get OpenStack project list
+    tags: [openstack]
+    operationId: rhub.api.openstack.project_list
+    parameters:
+      - name: filter
+        in: query
+        description: Filter project by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            cloud_id:
+              type: integer
+              minimum: 1
+              description: ID of the cloud.
+            name:
+              type: string
+              description: >
+                Name of a project. Wildcard ``%`` can be used to match zero, one,
+                or multiple characters
+            owner_id:
+              type: string
+              format: uuid
+              nullable: true
+      - name: sort
+        in: query
+        description: Sort projects by attribute.
+        schema:
+          type: string
+          enum:
+            - name
+            - -name
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+    responses:
+      '200':
+        description: List of Projects
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/Project'
+                total:
+                  type: integer
+                  minimum: 0
+                  description: The total number of items
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  project_create:
+    summary: Create OpenStack project
+    tags: [openstack]
+    operationId: rhub.api.openstack.project_create
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/model/Project'
+              - required:
+                  - cloud_id
+                  - name
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Project'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  project_get:
+    summary: Get OpenStack project
+    tags: [openstack]
+    operationId: rhub.api.openstack.project_get
+    parameters:
+      - $ref: '#/parameters/project_id'
+    responses:
+      '200':
+        description: Project
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Project'
+      '404':
+        description: Not found
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  project_update:
+    summary: Update OpenStack project
+    tags: [openstack]
+    operationId: rhub.api.openstack.project_update
+    parameters:
+      - $ref: '#/parameters/project_id'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/model/Project'
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  project_delete:
+    summary: Delete OpenStack project
+    tags: [openstack]
+    operationId: rhub.api.openstack.project_delete
+    parameters:
+      - $ref: '#/parameters/project_id'
+    responses:
+      '204':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  project_limits_get:
+    summary: Get OpenStack project limits
+    tags: [openstack]
+    operationId: rhub.api.openstack.project_limits_get
+    parameters:
+      - $ref: '#/parameters/project_id'
+    responses:
+      '200':
+        description: Project limits from the OpenStack API
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                absolute:
+                  type: object
+                rate:
+                  type: array
+                  items:
+                    type: object
+            example: {
+              "absolute": {
+                "floating_ips": 10,
+                "floating_ips_used": 0,
+                "id": null,
+                "image_meta": 128,
+                "instances": 20,
+                "instances_used": 1,
+                "keypairs": 100,
+                "location": null,
+                "name": null,
+                "personality": 5,
+                "personality_size": 10240,
+                "security_group_rules": 20,
+                "security_groups": 10,
+                "security_groups_used": 1,
+                "server_group_members": 10,
+                "server_groups": 10,
+                "server_groups_used": 1,
+                "server_meta": 128,
+                "total_cores": 40,
+                "total_cores_used": 4,
+                "total_ram": 200000,
+                "total_ram_used": 8192
+              },
+              "id": null,
+              "location": {
+                "cloud": "defaults",
+                "project": {
+                  "domain_id": null,
+                  "domain_name": "Default",
+                  "id": "00000000000000000000000000000000",
+                  "name": "rhub_example"
+                },
+                "region_name": "regionOne",
+                "zone": null
+              },
+              "name": null,
+              "rate": []
+            }
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []

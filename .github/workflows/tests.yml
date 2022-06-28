@@ -9,7 +9,7 @@ jobs:
 
     strategy:
       matrix:
-        toxenv: [py3, flake8, yamllint, openapi]
+        toxenv: [py3, flake8, yamllint, openapi, package_build]
 
     steps:
       - uses: actions/checkout@v2

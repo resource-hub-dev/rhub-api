@@ -53,6 +53,21 @@ paths:
       $ref: 'openstack.yml#/endpoints/cloud_update'
     delete:
       $ref: 'openstack.yml#/endpoints/cloud_delete'
+  /openstack/project:
+    get:
+      $ref: 'openstack.yml#/endpoints/project_list'
+    post:
+      $ref: 'openstack.yml#/endpoints/project_create'
+  /openstack/project/{project_id}:
+    get:
+      $ref: 'openstack.yml#/endpoints/project_get'
+    patch:
+      $ref: 'openstack.yml#/endpoints/project_update'
+    delete:
+      $ref: 'openstack.yml#/endpoints/project_delete'
+  /openstack/project/{project_id}/limits:
+    get:
+      $ref: 'openstack.yml#/endpoints/project_limits_get'
 
   /lab/location:
     get:

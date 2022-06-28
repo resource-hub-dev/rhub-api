@@ -4,10 +4,11 @@ from unittest.mock import ANY
 import pytest
 from dateutil.tz import tzutc
 
-from rhub.lab import model, SHAREDCLUSTER_USER, SHAREDCLUSTER_GROUP
-from rhub.tower import model as tower_model
 from rhub.api.vault import Vault
 from rhub.auth.keycloak import KeycloakClient
+from rhub.lab import SHAREDCLUSTER_GROUP, SHAREDCLUSTER_USER, model
+from rhub.openstack import model as openstack_model
+from rhub.tower import model as tower_model
 
 
 API_BASE = '/v0'
@@ -45,24 +46,42 @@ def _create_test_region():
         lifespan_length=None,
         reservations_enabled=True,
         reservation_expiration_max=None,
-        owner_group='00000000-0000-0000-0000-000000000000',
-        users_group=None,
+        owner_group_id='00000000-0000-0000-0000-000000000000',
+        users_group_id=None,
         tower_id=1,
-        openstack_url='https://openstack.example.com:13000',
-        openstack_credentials='kv/example/openstack',
-        openstack_project='rhub',
-        openstack_domain_name='Default',
-        openstack_domain_id='default',
-        openstack_networks=['provider_net_rhub'],
-        openstack_keyname='rhub_key',
-        satellite_hostname='satellite.example.com',
-        satellite_insecure=False,
-        satellite_credentials='kv/example/satellite',
-        dns_server_hostname='ns.example.com',
-        dns_server_zone='example.com.',
-        dns_server_key='kv/example/key',
-        vault_server='https://vault.example.com/',
-        download_server='https://download.example.com',
+        openstack_id=1,
+        openstack=openstack_model.Cloud(
+            id=1,
+            name='test',
+            description='',
+            owner_group_id='00000000-0000-0000-0000-000000000000',
+            url='https://openstack.example.com:13000',
+            credentials='kv/test',
+            domain_name='Default',
+            domain_id='default',
+            networks=['test_net'],
+        ),
+    )
+
+
+def _create_test_project():
+    return openstack_model.Project(
+        id=1,
+        cloud_id=1,
+        cloud=openstack_model.Cloud(
+            id=1,
+            name='test',
+            description='',
+            owner_group_id='00000000-0000-0000-0000-000000000000',
+            url='https://openstack.example.com:13000',
+            credentials='kv/test',
+            domain_name='Default',
+            domain_id='default',
+            networks=['test_net'],
+        ),
+        name='test_project',
+        description='',
+        owner_id='00000000-0000-0000-0000-000000000000',
     )
 
 
@@ -81,6 +100,7 @@ def _create_test_product():
 def test_list_clusters(client, keycloak_mock, mocker):
     user_id = '00000000-0000-0000-0000-000000000000'
     sample_region = _create_test_region()
+    sample_project = _create_test_project()
     sample_product = _create_test_product()
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
     model.Cluster.query.filter.return_value.limit.return_value.offset.return_value = [
@@ -93,6 +113,8 @@ def test_list_clusters(client, keycloak_mock, mocker):
             created=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
             region_id=1,
             region=sample_region,
+            project_id=1,
+            project=sample_project,
             reservation_expiration=None,
             lifespan_expiration=None,
             status=model.ClusterStatus.ACTIVE,
@@ -122,6 +144,7 @@ def test_list_clusters(client, keycloak_mock, mocker):
                 'group_id': None,
                 'created': '2021-01-01T01:00:00+00:00',
                 'region_id': 1,
+                'project_id': 1,
                 'reservation_expiration': None,
                 'lifespan_expiration': None,
                 'status': model.ClusterStatus.ACTIVE.value,
@@ -146,6 +169,7 @@ def test_list_clusters(client, keycloak_mock, mocker):
 def test_get_cluster(client, keycloak_mock, mocker):
     user_id = '00000000-0000-0000-0000-000000000000'
     sample_region = _create_test_region()
+    sample_project = _create_test_project()
     sample_product = _create_test_product()
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
 
@@ -158,6 +182,8 @@ def test_get_cluster(client, keycloak_mock, mocker):
         created=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
         region_id=1,
         region=sample_region,
+        project_id=1,
+        project=sample_project,
         reservation_expiration=None,
         lifespan_expiration=None,
         status=model.ClusterStatus.ACTIVE,
@@ -213,6 +239,7 @@ def test_get_cluster(client, keycloak_mock, mocker):
         'group_id': None,
         'created': '2021-01-01T01:00:00+00:00',
         'region_id': 1,
+        'project_id': 1,
         'reservation_expiration': None,
         'lifespan_expiration': None,
         'status': model.ClusterStatus.ACTIVE.value,
@@ -264,10 +291,17 @@ def test_get_cluster(client, keycloak_mock, mocker):
 
 def test_create_cluster(client, keycloak_mock, db_session_mock, mocker):
     user_id = '00000000-0000-0000-0000-000000000000'
+
     model.Region.query.get.return_value = region = _create_test_region()
     model.Product.query.get.return_value = product = _create_test_product()
+
+    project_query = openstack_model.Project.query.filter.return_value
+    project_query.count.return_value = 1
+    project_query.first.return_value = _create_test_project()
+
     keycloak_mock.user_list.return_value = []
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
+
     cluster_data = {
         'name': 'testcluster',
         'description': 'test cluster',
@@ -299,6 +333,8 @@ def test_create_cluster(client, keycloak_mock, db_session_mock, mocker):
     tower_client_mock.template_get.return_value = {'id': 123, 'name': 'dummy-create'}
     tower_client_mock.template_launch.return_value = {'id': 321}
 
+    mocker.patch('rhub.api.lab.cluster._cluster_href').return_value = {}
+
     rv = client.post(
         f'{API_BASE}/lab/cluster',
         headers={'Authorization': 'Bearer foobar'},
@@ -327,7 +363,7 @@ def test_create_cluster(client, keycloak_mock, db_session_mock, mocker):
 
     cluster = db_session_mock.add.call_args_list[0].args[0]
     for k, v in cluster_data.items():
-        assert getattr(cluster, k) == v
+        assert getattr(cluster, k) == v, k
 
     cluster_event = db_session_mock.add.call_args_list[1].args[0]
     assert cluster_event.cluster_id == 1
@@ -344,6 +380,10 @@ def test_create_cluster_shared(client, keycloak_mock, db_session_mock, mocker):
 
     model.Region.query.get.return_value = region = _create_test_region()
     model.Product.query.get.return_value = product = _create_test_product()
+
+    project_query = openstack_model.Project.query.filter.return_value
+    project_query.count.return_value = 1
+    project_query.first.return_value = _create_test_project()
 
     mocker.patch.object(model.Region, 'is_product_enabled').return_value = True
 
@@ -382,6 +422,8 @@ def test_create_cluster_shared(client, keycloak_mock, db_session_mock, mocker):
 
     tower_client_mock.template_get.return_value = {'id': 123, 'name': 'dummy-create'}
     tower_client_mock.template_launch.return_value = {'id': 321}
+
+    mocker.patch('rhub.api.lab.cluster._cluster_href').return_value = {}
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
@@ -428,10 +470,17 @@ def test_create_cluster_shared(client, keycloak_mock, db_session_mock, mocker):
 def test_create_cluster_in_disabled_region(client, db_session_mock, mocker):
     region = _create_test_region()
     region.enabled = False
+
     model.Region.query.get.return_value = region
     model.Cluster.query.filter.return_value.count.return_value = 0
 
+    project_query = openstack_model.Project.query.filter.return_value
+    project_query.count.return_value = 1
+    project_query.first.return_value = _create_test_project()
+
     mocker.patch.object(model.Region, 'is_product_enabled').return_value = True
+
+    mocker.patch('rhub.api.lab.cluster._cluster_href').return_value = {}
 
     cluster_data = {
         'name': 'testcluster',
@@ -465,7 +514,13 @@ def test_create_cluster_invalid_name(client, cluster_name, mocker):
     model.Region.query.get.return_value = region
     model.Cluster.query.filter.return_value.count.return_value = 0
 
+    project_query = openstack_model.Project.query.filter.return_value
+    project_query.count.return_value = 1
+    project_query.first.return_value = _create_test_project()
+
     mocker.patch.object(model.Region, 'is_product_enabled').return_value = True
+
+    mocker.patch('rhub.api.lab.cluster._cluster_href').return_value = {}
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
@@ -488,7 +543,13 @@ def test_create_cluster_exceeded_reservation(client, mocker):
     model.Region.query.get.return_value = region
     model.Cluster.query.filter.return_value.count.return_value = 0
 
+    project_query = openstack_model.Project.query.filter.return_value
+    project_query.count.return_value = 1
+    project_query.first.return_value = _create_test_project()
+
     mocker.patch.object(model.Region, 'is_product_enabled').return_value = True
+
+    mocker.patch('rhub.api.lab.cluster._cluster_href').return_value = {}
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
@@ -514,7 +575,13 @@ def test_create_cluster_set_lifespan_forbidden(client, mocker):
     model.Region.query.get.return_value = region
     model.Cluster.query.filter.return_value.count.return_value = 0
 
+    project_query = openstack_model.Project.query.filter.return_value
+    project_query.count.return_value = 1
+    project_query.first.return_value = _create_test_project()
+
     mocker.patch.object(model.Region, 'is_product_enabled').return_value = True
+
+    mocker.patch('rhub.api.lab.cluster._cluster_href').return_value = {}
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
@@ -543,6 +610,12 @@ def test_create_cluster_with_disabled_product(
 
     m = mocker.patch.object(model.Region, 'products_relation')
     model.Region.query.get.return_value = region = _create_test_region()
+
+    project_query = openstack_model.Project.query.filter.return_value
+    project_query.count.return_value = 1
+    project_query.first.return_value = _create_test_project()
+
+    mocker.patch('rhub.api.lab.cluster._cluster_href').return_value = {}
 
     region.products_relation.filter.return_value.first.return_value = (
         model.RegionProduct(
@@ -588,6 +661,10 @@ def test_create_cluster_with_disabled_product_in_region(
     m = mocker.patch.object(model.Region, 'products_relation')
     model.Region.query.get.return_value = region = _create_test_region()
 
+    project_query = openstack_model.Project.query.filter.return_value
+    project_query.count.return_value = 1
+    project_query.first.return_value = _create_test_project()
+
     region.products_relation.filter.return_value.first.return_value = (
         model.RegionProduct(
             region_id=region.id,
@@ -596,6 +673,8 @@ def test_create_cluster_with_disabled_product_in_region(
             product=product,
         )
     )
+
+    mocker.patch('rhub.api.lab.cluster._cluster_href').return_value = {}
 
     cluster_data = {
         'name': 'testcluster',
@@ -620,7 +699,7 @@ def test_create_cluster_with_disabled_product_in_region(
     db_session_mock.commit.assert_not_called()
 
 
-def test_update_cluster(client, keycloak_mock, db_session_mock):
+def test_update_cluster(client, keycloak_mock, db_session_mock, mocker):
     region = _create_test_region()
     product = _create_test_product()
     user_id = '00000000-0000-0000-0000-000000000000'
@@ -643,6 +722,8 @@ def test_update_cluster(client, keycloak_mock, db_session_mock):
         product=product,
     )
     model.Cluster.query.get.return_value = cluster
+
+    mocker.patch('rhub.api.lab.cluster._cluster_href').return_value = {}
 
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
@@ -668,7 +749,7 @@ def test_update_cluster(client, keycloak_mock, db_session_mock):
         pytest.param({'region_id': 2}, id='region'),
     ],
 )
-def test_update_cluster_ro_field(client, cluster_data):
+def test_update_cluster_ro_field(client, cluster_data, mocker):
     region = _create_test_region()
     product = _create_test_product()
     cluster = model.Cluster(
@@ -689,6 +770,8 @@ def test_update_cluster_ro_field(client, cluster_data):
     )
     model.Cluster.query.get.return_value = cluster
 
+    mocker.patch('rhub.api.lab.cluster._cluster_href').return_value = {}
+
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
         headers={'Authorization': 'Bearer foobar'},
@@ -698,7 +781,7 @@ def test_update_cluster_ro_field(client, cluster_data):
     assert rv.status_code == 400
 
 
-def test_update_cluster_reservation(client, keycloak_mock, db_session_mock):
+def test_update_cluster_reservation(client, keycloak_mock, db_session_mock, mocker):
     user_id = '00000000-0000-0000-0000-000000000000'
     keycloak_mock.user_get.return_value = {'id': user_id, 'username': 'test-user'}
     region = _create_test_region()
@@ -725,6 +808,8 @@ def test_update_cluster_reservation(client, keycloak_mock, db_session_mock):
     )
     model.Cluster.query.get.return_value = cluster
 
+    mocker.patch('rhub.api.lab.cluster._cluster_href').return_value = {}
+
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
         headers={'Authorization': 'Bearer foobar'},
@@ -742,7 +827,7 @@ def test_update_cluster_reservation(client, keycloak_mock, db_session_mock):
     assert event.new_value == new_expiration
 
 
-def test_update_cluster_exceeded_reservation(client):
+def test_update_cluster_exceeded_reservation(client, mocker):
     region = _create_test_region()
     region.reservation_expiration_max = 1
     product = _create_test_product()
@@ -765,6 +850,8 @@ def test_update_cluster_exceeded_reservation(client):
     model.Cluster.query.get.return_value = cluster
 
     new_expiration = datetime.datetime(2100, 1, 1, 0, 0, tzinfo=tzutc())
+
+    mocker.patch('rhub.api.lab.cluster._cluster_href').return_value = {}
 
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
@@ -801,6 +888,8 @@ def test_update_cluster_set_lifespan_forbidden(client, mocker):
         product=product,
     )
     model.Cluster.query.get.return_value = cluster
+
+    mocker.patch('rhub.api.lab.cluster._cluster_href').return_value = {}
 
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',

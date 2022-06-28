@@ -2,5 +2,12 @@
 !bin/
 !migrations/
 !src/
-!requirements.txt
 !.env.defaults
+!config.py
+!LICENSE
+!MANIFEST.in
+!pyproject.toml
+!README.md
+!requirements.txt
+!setup.cfg
+!setup.py
