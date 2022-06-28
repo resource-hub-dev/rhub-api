@@ -39,7 +39,7 @@ def ironic_enroll_host_task(host_id):
     node_creation_data = dict(
         # TODO: discuss automated_clean - no need to disable on yoga
         automated_clean=False,
-        boot_interface="ipxe",
+        boot_interface="ipxe" if host.ipxe_support else "pxe",
         driver_info=host.get_credentials(),
         driver="ipmi",
         name=host.name,

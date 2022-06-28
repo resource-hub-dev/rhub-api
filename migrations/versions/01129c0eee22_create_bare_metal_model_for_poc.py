@@ -3,7 +3,7 @@ Create bare metal model for PoC
 
 Revision ID: 01129c0eee22
 Revises: d17e28bbb0c3
-Create Date: 2022-06-27 23:55:17.610763
+Create Date: 2022-06-28 20:26:02.338953
 """
 
 from alembic import op
@@ -90,15 +90,16 @@ def upgrade():
     sa.Column('legacy_bios', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('uefi', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('secure_boot', sa.Boolean(), server_default=sa.text('true'), nullable=False),
+    sa.Column('ipxe_support', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('status', sa.Enum('AVAILABLE', 'ENROLLING', 'FAILED_ENROLLING', 'MAINTENANCE', 'NON_ENROLLED', 'RESERVED', name='baremetalhoststatus'), server_default='NON_ENROLLED', nullable=False),
     sa.Column('type', sa.Enum('GENERIC', 'DRAC', 'REDFISH', name='baremetalhardwaretype'), nullable=False),
     sa.Column('handler_id', sa.Integer(), nullable=False),
     sa.Column('handler_uuid', postgresql.UUID(), nullable=True),
     sa.Column('handler_data', sa.JSON(), nullable=True),
-    sa.Column('ipmi_address', sa.String(length=128), nullable=False),
-    sa.Column('ipmi_password', sa.String(length=128), nullable=False),
-    sa.Column('ipmi_port', sa.String(length=128), nullable=False),
     sa.Column('ipmi_username', sa.String(length=128), nullable=False),
+    sa.Column('ipmi_password', sa.String(length=128), nullable=False),
+    sa.Column('ipmi_address', sa.String(length=128), nullable=False),
+    sa.Column('ipmi_port', sa.String(length=128), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['handler_id'], ['bare_metal_handler.id'], ),
@@ -108,9 +109,9 @@ def upgrade():
     op.create_table('bare_metal_host_drac',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('redfish_address', sa.String(length=128), nullable=True),
+    sa.Column('redfish_username', sa.String(length=128), nullable=True),
     sa.Column('redfish_password', sa.String(length=128), nullable=True),
     sa.Column('redfish_system_id', sa.String(length=128), nullable=True),
-    sa.Column('redfish_username', sa.String(length=128), nullable=True),
     sa.Column('redfish_verify_ca', sa.Boolean(), server_default=sa.text('true'), nullable=True),
     sa.Column('drac_address', sa.String(length=128), nullable=False),
     sa.Column('drac_username', sa.String(length=128), nullable=False),
@@ -121,9 +122,9 @@ def upgrade():
     op.create_table('bare_metal_host_redfish',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('redfish_address', sa.String(length=128), nullable=False),
+    sa.Column('redfish_username', sa.String(length=128), nullable=False),
     sa.Column('redfish_password', sa.String(length=128), nullable=False),
     sa.Column('redfish_system_id', sa.String(length=128), nullable=False),
-    sa.Column('redfish_username', sa.String(length=128), nullable=False),
     sa.Column('redfish_verify_ca', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.ForeignKeyConstraint(['id'], ['bare_metal_host.id'], ),
     sa.PrimaryKeyConstraint('id')
