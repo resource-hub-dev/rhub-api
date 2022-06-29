@@ -117,12 +117,17 @@ class Region(db.Model, ModelMixin):
                 db.func.coalesce(db.func.sum(ClusterHost.volumes_gb), 0),
             )
             .join(
-                ClusterHost.cluster,
+                Cluster,
+                ClusterHost.cluster_id == Cluster.id
+            )
+            .join(
+                openstack_model.Project,
+                Cluster.project_id == openstack_model.Project.id
             )
             .where(
                 db.and_(
                     Cluster.region_id == self.id,
-                    Cluster.owner_id == user_id,
+                    openstack_model.Project.owner_id == user_id,
                 )
             )
         )
