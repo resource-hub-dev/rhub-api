@@ -32,6 +32,10 @@ def mock_power(type):
 
         r_platform["all"] = available_platform
 
+        # to prevent a randrange empty range
+        if available_platform == 1:
+            available_platform += 1
+
         on = random.randrange(1, available_platform)
 
         off = available_platform - on
@@ -62,9 +66,16 @@ def mock_availability(type):
 
         r_platform["all"] = available_platform
 
+        # again, to prevent a randrange empty range
+        if available_platform == 1:
+            available_platform += 1
+
         random_requested = random.randrange(1, available_platform)
 
         available_platform -= random_requested
+
+        if available_platform == 1:
+            available_platform += 1
 
         random_provisioned = random.randrange(1, available_platform)
 
