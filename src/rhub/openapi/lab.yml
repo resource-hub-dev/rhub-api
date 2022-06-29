@@ -253,6 +253,11 @@ model:
         readOnly: true
       product_params:
         type: object
+      project_id:
+        $ref: 'common.yml#/model/ID'
+      project_name:
+        type: string
+        readOnly: true
 
   ClusterEvent:
     type: object
