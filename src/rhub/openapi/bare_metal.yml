@@ -1,0 +1,283 @@
+parameters:
+
+  host_id:
+    name: host_id
+    in: path
+    description: ID of the host
+    required: true
+    schema:
+      $ref: 'common.yml#/model/ID'
+
+  handler_id:
+    name: handler_id
+    in: path
+    description: ID of the handler
+    required: true
+    schema:
+      $ref: 'common.yml#/model/ID'
+
+  image_id:
+    name: image_id
+    in: path
+    description: ID of the image
+    required: true
+    schema:
+      $ref: 'common.yml#/model/ID'
+
+  provision_id:
+    name: provision_id
+    in: path
+    description: ID of the provision
+    required: true
+    schema:
+      $ref: 'common.yml#/model/ID'
+
+endpoints:
+
+  handler_list:
+    summary: Get host's handler list
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.handler.handler_list
+    responses:
+      '200':
+        description: List of hosts' handlers
+        content:
+          application/json:
+            schema:
+              type: object
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  handler_create:
+    summary: Create host handler
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.handler.handler_create
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  handler_get:
+    summary: Get handler
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.handler.handler_get
+    parameters:
+      - $ref: '#/parameters/handler_id'
+    responses:
+      '200':
+        description: handler
+        content:
+          application/json:
+            schema:
+              type: object
+      '404':
+        description: Not found
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  host_list:
+    summary: Get host list
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.host.host_list
+    responses:
+      '200':
+        description: List of hosts
+        content:
+          application/json:
+            schema:
+              type: object
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  host_create:
+    summary: Create bare metal host
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.host.host_create
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  host_get:
+    summary: Get host
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.host.host_get
+    parameters:
+      - $ref: '#/parameters/host_id'
+    responses:
+      '200':
+        description: host
+        content:
+          application/json:
+            schema:
+              type: object
+      '404':
+        description: Not found
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  host_get_power_state:
+    summary: Get host power state
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.host.host_get_power_state
+    parameters:
+      - $ref: '#/parameters/host_id'
+    responses:
+      '200':
+        description: host power state
+        content:
+          application/json:
+            schema:
+              type: object
+      '404':
+        description: Not found
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  image_list:
+    summary: Get image list
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.image.image_list
+    responses:
+      '200':
+        description: List of images
+        content:
+          application/json:
+            schema:
+              type: object
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  image_create:
+    summary: Add bare metal image
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.image.image_create
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  image_get:
+    summary: Get image
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.image.image_get
+    parameters:
+      - $ref: '#/parameters/image_id'
+    responses:
+      '200':
+        description: image
+        content:
+          application/json:
+            schema:
+              type: object
+      '404':
+        description: Not found
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  provision_list:
+    summary: Get provision list
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.provision.provision_list
+    responses:
+      '200':
+        description: List of provisions
+        content:
+          application/json:
+            schema:
+              type: object
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  provision_create:
+    summary: Add bare metal provision
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.provision.provision_create
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+    responses:
+      '200':
+        description: Success
+      '404':
+        description: Not found
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  provision_get:
+    summary: Get provision
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.provision.provision_get
+    parameters:
+      - $ref: '#/parameters/provision_id'
+    responses:
+      '200':
+        description: provision
+        content:
+          application/json:
+            schema:
+              type: object
+      '404':
+        description: Not found
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  provision_finish:
+    summary: Finish provision
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.provision.provision_finish
+    parameters:
+      - $ref: '#/parameters/provision_id'
+    responses:
+      '200':
+        description: provision
+        content:
+          application/json:
+            schema:
+              type: object
+      '404':
+        description: Not found
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  provision_get_kickstart:
+    summary: Get provision's kickstart file
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.provision.provision_get_kickstart
+    parameters:
+      - $ref: '#/parameters/provision_id'
+    responses:
+      '200':
+        description: kickstart file
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Not found
+      default:
+        $ref: 'common.yml#/responses/problem'

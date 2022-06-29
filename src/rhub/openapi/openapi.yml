@@ -24,10 +24,12 @@ components:
       x-basicInfoFunc: rhub.api.tower.webhook_auth
 
 tags:
-  - name: lab
-    description: Clusters for testing purposes.
   - name: auth
     description: Authentication related functions.
+  - name: bare_metal
+    description: Bare metal related functions.
+  - name: lab
+    description: Clusters for testing purposes.
   - name: openstack
     description: OpenStack clouds, projects, etc.
   - name: monitoring
@@ -313,3 +315,48 @@ paths:
   /monitor/lab/metrics:
     get:
       $ref: 'monitor.yml#/endpoints/lab_metrics_get'
+
+  /bare_metal/handler:
+    get:
+      $ref: 'bare_metal.yml#/endpoints/handler_list'
+    post:
+      $ref: 'bare_metal.yml#/endpoints/handler_create'
+  /bare_metal/handler/{handler_id}:
+    get:
+      $ref: 'bare_metal.yml#/endpoints/handler_get'
+
+  /bare_metal/host:
+    get:
+      $ref: 'bare_metal.yml#/endpoints/host_list'
+    post:
+      $ref: 'bare_metal.yml#/endpoints/host_create'
+  /bare_metal/host/{host_id}:
+    get:
+      $ref: 'bare_metal.yml#/endpoints/host_get'
+  /bare_metal/host/{host_id}/power_state:
+    get:
+      $ref: 'bare_metal.yml#/endpoints/host_get_power_state'
+
+  /bare_metal/image:
+    get:
+      $ref: 'bare_metal.yml#/endpoints/image_list'
+    post:
+      $ref: 'bare_metal.yml#/endpoints/image_create'
+  /bare_metal/image/{image_id}:
+    get:
+      $ref: 'bare_metal.yml#/endpoints/image_get'
+
+  /bare_metal/provision:
+    get:
+      $ref: 'bare_metal.yml#/endpoints/provision_list'
+    post:
+      $ref: 'bare_metal.yml#/endpoints/provision_create'
+  /bare_metal/provision/{provision_id}:
+    get:
+      $ref: 'bare_metal.yml#/endpoints/provision_get'
+  /bare_metal/provision/{provision_id}/finish:
+    post:
+      $ref: 'bare_metal.yml#/endpoints/provision_finish'
+  /bare_metal/provision/{provision_id}/kickstart:
+    get:
+      $ref: 'bare_metal.yml#/endpoints/provision_get_kickstart'
