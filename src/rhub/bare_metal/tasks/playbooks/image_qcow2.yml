@@ -1,0 +1,38 @@
+---
+- hosts: all
+  remote_user: root
+  tasks:
+    - name: Create image directory
+      file:
+        path: '{{ image_directory }}'
+        state: directory
+        mode: 0755
+        owner: ironic
+        group: ironic
+
+    - name: Download image
+      get_url:
+        url: '{{ image_url }}'
+        dest: '{{ image_file }}'
+        checksum: 'sha256:{{ image_sha256 }}'
+        mode: 0644
+        owner: ironic
+        group: ironic
+
+    - name: Download kernel
+      get_url:
+        url: '{{ kernel_url }}'
+        dest: '{{ kernel_file }}'
+        checksum: 'sha256:{{ kernel_sha256 }}'
+        mode: 0644
+        owner: ironic
+        group: ironic
+
+    - name: Download initramfs
+      get_url:
+        url: '{{ initramfs_url }}'
+        dest: '{{ initramfs_file }}'
+        checksum: 'sha256:{{ initramfs_sha256 }}'
+        mode: 0644
+        owner: ironic
+        group: ironic
