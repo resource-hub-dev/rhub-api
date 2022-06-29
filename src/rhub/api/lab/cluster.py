@@ -325,7 +325,17 @@ def create_cluster(keycloak: KeycloakClient, body, user):
         product.parameters_defaults | body['product_params']
     )
 
-    try:
+    if 'project_id' in cluster_data:
+        project_id = cluster_data['project_id']
+        project = openstack_model.Project.query.get(project_id)
+        if not project:
+            return problem(404, 'Not Found', f'Project {project_id} does not exist')
+        if project.cloud_id != region.openstack.id:
+            return problem(400, 'Bad Request', 'TODO')
+        if project.owner_id != user and not _user_is_cluster_admin(user):
+            return problem(403, 'Forbidden', 'TODO')
+
+    else:
         user_name = keycloak.user_get(user)['username']
         project_name = f'ql_{user_name}'
 
@@ -350,10 +360,10 @@ def create_cluster(keycloak: KeycloakClient, body, user):
 
         cluster_data['project_id'] = project.id
 
+    try:
         cluster = model.Cluster.from_dict(cluster_data)
         db.session.add(cluster)
         db.session.flush()
-
     except ValueError as e:
         return problem(400, 'Bad Request', str(e))
 

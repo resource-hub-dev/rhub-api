@@ -382,6 +382,8 @@ class Cluster(db.Model, ModelMixin):
         data['owner_name'] = self.owner_name
         data['group_id'] = self.group_id
         data['group_name'] = self.group_name
+        data['project_id'] = self.project.id
+        data['project_name'] = self.project.name
         data['shared'] = self.shared
 
         if self.hosts:
