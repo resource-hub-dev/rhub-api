@@ -1025,6 +1025,36 @@ endpoints:
     security:
       - oauth2: []
 
+  region_get_all_usage:
+    summary: Get all region usage
+    description: Get user's usage across all regions they have access to
+    tags: [lab]
+    operationId: rhub.api.lab.region.get_all_usage
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_quota:
+                  anyOf:
+                    - $ref: '#/model/Quota'
+                    - nullable: true
+                user_quota_usage:
+                  $ref: '#/model/Quota'
+                total_quota:
+                  anyOf:
+                    - $ref: '#/model/Quota'
+                    - nullable: true
+                total_quota_usage:
+                  $ref: '#/model/Quota'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
   product_list:
     summary: Get product list
     tags: [lab]

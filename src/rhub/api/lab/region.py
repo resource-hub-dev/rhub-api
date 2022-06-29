@@ -44,17 +44,22 @@ def _region_href(region):
     return href
 
 
-def list_regions(keycloak: KeycloakClient,
-                 user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
+def list_regions_with_permissions(keycloak, user):
+    # list regions for users with valid permissions
     if keycloak.user_check_role(user, ADMIN_ROLE):
-        regions = model.Region.query
+        return model.Region.query
     else:
         user_groups = [group['id'] for group in keycloak.user_group_list(user)]
-        regions = model.Region.query.filter(sqlalchemy.or_(
+        return model.Region.query.filter(sqlalchemy.or_(
             model.Region.users_group_id.is_(None),
             model.Region.users_group_id.in_(user_groups),
             model.Region.owner_group_id.in_(user_groups),
         ))
+
+
+def list_regions(keycloak: KeycloakClient,
+                 user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
+    regions = list_regions_with_permissions(keycloak, user)
 
     if 'name' in filter_:
         regions = regions.filter(model.Region.name.ilike(filter_['name']))
@@ -277,6 +282,15 @@ def delete_region_product(keycloak: KeycloakClient, region_id, user):
         db.session.commit()
 
 
+def region_to_usage(region, user):
+    return {
+        'user_quota': region.user_quota.to_dict() if region.user_quota else None,
+        'user_quota_usage': region.get_user_quota_usage(user),
+        'total_quota': region.total_quota.to_dict() if region.total_quota else None,
+        'total_quota_usage': region.get_total_quota_usage(),
+    }
+
+
 def get_usage(region_id, user, with_openstack_limits=None):
     region = model.Region.query.get(region_id)
     if not region:
@@ -285,9 +299,37 @@ def get_usage(region_id, user, with_openstack_limits=None):
     if not _user_can_access_region(region, user):
         raise Forbidden("You don't have access to this region.")
 
-    return {
-        'user_quota': region.user_quota.to_dict() if region.user_quota else None,
-        'user_quota_usage': region.get_user_quota_usage(user),
-        'total_quota': region.total_quota.to_dict() if region.total_quota else None,
-        'total_quota_usage': region.get_total_quota_usage(),
-    }
+    data = region_to_usage(region, user)
+
+    return data
+
+
+def get_all_usage(keycloak: KeycloakClient, user):
+    regions = [
+        region for region in list_regions_with_permissions(keycloak, user)
+    ]
+    if not regions:
+        return problem(404, 'Not Found', 'No regions exist')
+    data = region_to_usage(regions[0], user)
+
+    def add_usage(usage1, usage2):
+        result = {}
+        for key in usage1.keys():
+            try:
+                result[key] = usage1[key] + usage2[key]
+            except Exception as e:
+                if usage1[key]:
+                    result[key] = usage1[key]
+                elif usage2[key]:
+                    result[key] = usage2[key]
+                else:
+                    result[key] = None
+        return result
+
+    for i in range(1, len(regions)):
+        current_region_usage = region_to_usage(regions[i], user)
+        data['user_quota'] = add_usage(data['user_quota'], current_region_usage['user_quota'])
+        data['user_quota_usage'] = add_usage(data['user_quota_usage'], current_region_usage['user_quota_usage'])
+        data['total_quota'] = add_usage(data['total_quota'], current_region_usage['total_quota'])
+        data['total_quota_usage'] = add_usage(data['total_quota_usage'], current_region_usage['total_quota_usage'])
+    return data
