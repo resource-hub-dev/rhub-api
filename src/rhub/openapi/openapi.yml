@@ -32,6 +32,8 @@ tags:
     description: Clusters for testing purposes.
   - name: openstack
     description: OpenStack clouds, projects, etc.
+  - name: monitoring
+    description: Internal monitoring functions.
 
 paths:
   /cowsay:
@@ -297,6 +299,22 @@ paths:
       $ref: 'scheduler.yml#/endpoints/cron_job_update'
     delete:
       $ref: 'scheduler.yml#/endpoints/cron_job_delete'
+
+  /monitor/bm/hosts:
+    get:
+      $ref: 'monitor.yml#/endpoints/bm_hosts_to_monitor_list'
+  /monitor/bm/power_states_metrics:
+    get:
+      $ref: 'monitor.yml#/endpoints/bm_power_states_metrics_get'
+  /monitor/bm/metrics:
+    get:
+      $ref: 'monitor.yml#/endpoints/bm_metrics_get'
+  /monitor/vm/metrics:
+    get:
+      $ref: 'monitor.yml#/endpoints/vm_metrics_get'
+  /monitor/lab/metrics:
+    get:
+      $ref: 'monitor.yml#/endpoints/lab_metrics_get'
 
   /bare_metal/handler:
     get:

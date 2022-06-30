@@ -1,0 +1,155 @@
+model:
+  SimpleListItem:
+    type: object
+    properties:
+      name:
+        type: string
+        maxLength: 250
+
+  BareMetalPowerMetric:
+    type: object
+    properties:
+      platform:
+        type: string
+        maxLength: 50
+      all:
+        type: integer
+      on:
+        type: integer
+      off:
+        type: integer
+      wattage_on:
+        type: integer
+      wattage_off:
+        type: integer
+
+  UsageMetric:
+    type: object
+    properties:
+      platform:
+        type: string
+        maxLength: 20
+      all:
+        type: integer
+      requested:
+        type: integer
+      provisioned:
+        type: integer
+      available:
+        type: integer
+      cpus_available:
+        type: integer
+      memory_available:
+        type: integer
+      cpus_used:
+        type: integer
+      memory_used:
+        type: integer
+
+
+endpoints:
+  bm_hosts_to_monitor_list:
+    summary: Get a list of Bare Metal hosts to monitor for the IPMI exporter
+    operationId: rhub.api.monitor.metrics.bm_hosts_to_monitor_list
+    tags: [monitoring, ipmi]
+    responses:
+      '200':
+        description: List of Hostnames
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/SimpleListItem'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  bm_power_states_metrics_get:
+    summary: Get summarized power states from Bare Metal hosts
+    operationId: rhub.api.monitor.metrics.bm_power_states_metrics
+    tags: [monitoring, power]
+    responses:
+      '200':
+        description: Bare Metal power states metrics
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/BareMetalPowerMetric'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  bm_metrics_get:
+    summary: Bare Metal usage metrics
+    operationId: rhub.api.monitor.metrics.bm_metrics
+    tags: [monitoring, bm]
+    responses:
+      '200':
+        description: Bare Metal usage metrics
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/UsageMetric'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  vm_metrics_get:
+    summary: VM (QuickVM) usage metrics
+    operationId: rhub.api.monitor.metrics.vm_metrics
+    tags: [monitoring, vm]
+    responses:
+      '200':
+        description: VM usage metrics
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/UsageMetric'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+
+  lab_metrics_get:
+    summary: Lab (QuickLab) usage metrics
+    operationId: rhub.api.monitor.metrics.lab_metrics
+    tags: [monitoring, lab]
+    responses:
+      '200':
+        description: VM usage metrics
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/UsageMetric'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []

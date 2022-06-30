@@ -9,3 +9,4 @@ include src/rhub/bare_metal/tasks/playbooks/*.yml
 
 recursive-include migrations *.py
 recursive-include src/rhub/openapi *.yml
+recursive-include src/rhub/api/monitor *.yml

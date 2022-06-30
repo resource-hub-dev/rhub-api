@@ -41,11 +41,12 @@ client for the API with the following configuration:
 
 * "Access Type" of the client must be set to "confidential", otherwise it is not
   possible to make changes in realm (manage users, groups and roles)
-* "Service Accounts Enabled" set to "on" and under tab "Service Account Roles"
-  select "realm-management" in "Client Roles" dropdown and assign "manage-user"
-  and "manage-realm" roles.
 * "Standard Flow Enabled" set to "off" because this client is not used to
   authenticate end-users but only from API.
+* "Service Accounts Enabled" set to "on".
+* Upon saving, under tab "Service Account Roles" select "realm-management" in 
+  "Client Roles" dropdown and assign "manage-user"
+  and "manage-realm" roles.
 * Other parameters may remain at the default values.
 
 Once you have configured the Keycloak, go to your client configuration, open the
@@ -60,6 +61,11 @@ variables in `.env` file (see below).
 * `KEYCLOAK_RESOURCE` - .resource from OIDC JSON
 * `KEYCLOAK_SECRET` - .credentials.secret from OIDC JSON
 * `KEYCLOAK_SERVER` - .auth-server-url from OIDC JSON
+
+You might need to restart the API container after the first restart since it needs
+to pick up the newer values in the .env file that you just modified. Just reloading
+the container is not enough since these variables are in the originating shell
+environment that started the container.
 
 ### PostgreSQL
 
