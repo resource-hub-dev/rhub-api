@@ -45,10 +45,10 @@ def _user_can_access_region(region, user_id):
     keycloak = di.get(KeycloakClient)
     if keycloak.user_check_role(user_id, ADMIN_ROLE):
         return True
-    if region.users_group is None:  # shared region
+    if region.users_group_id is None:  # shared region
         return True
     return keycloak.user_check_group_any(
-        user_id, [region.users_group, region.owner_group]
+        user_id, [region.users_group_id, region.owner_group_id]
     )
 
 
@@ -59,7 +59,7 @@ def _user_can_create_reservation(region, user_id):
         return True
     if region.reservations_enabled:
         return True
-    return keycloak.user_check_group(user_id, region.owner_group)
+    return keycloak.user_check_group(user_id, region.owner_group_id)
 
 
 def _user_can_set_lifespan(region, user_id):
@@ -69,7 +69,7 @@ def _user_can_set_lifespan(region, user_id):
         return True
     if keycloak.user_check_role(user_id, SHAREDCLUSTER_ROLE):
         return True
-    return keycloak.user_check_group(user_id, region.owner_group)
+    return keycloak.user_check_group(user_id, region.owner_group_id)
 
 
 def _user_can_disable_expiration(region, user_id):
@@ -79,7 +79,7 @@ def _user_can_disable_expiration(region, user_id):
         return True
     if keycloak.user_check_role(user_id, SHAREDCLUSTER_ROLE):
         return True
-    return keycloak.user_check_group(user_id, region.owner_group)
+    return keycloak.user_check_group(user_id, region.owner_group_id)
 
 
 @functools.lru_cache()
