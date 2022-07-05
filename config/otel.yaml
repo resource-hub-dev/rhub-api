@@ -1,0 +1,60 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+  # in this case we have a prometheus-like (hence the 'prometheus' section)
+  # exporter which will be located at this address.
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: "internal-rhub-exporter"
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["prometheus-exporter:9100"]
+
+exporters:
+  # in this case we have a prometheus-like endpoint so other readers
+  # can grab its metrics via federation.
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+
+  # logging exporter will be turned on when we have a fluent-bit proxy
+  # in the middle.
+  logging:
+
+processors:
+  # the regular batch processor, which doesn't really change any of the data.
+  batch:
+
+extensions:
+  # basic extensions to assess health.
+  health_check:
+  pprof:
+    endpoint: :1888
+  zpages:
+    endpoint: :55679
+
+service:
+  # here we tie all services, input (receivers), processors and output (exporters)
+  # using the forementioned endpoints.
+
+  # notice how we have already something that forwards metrics but nothing really
+  # defined on traces.
+  extensions: [pprof, zpages, health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging]
+
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [batch]
+      exporters: [logging, prometheus]
+
+  # metrics from itself.
+  telemetry:
+    metrics:
+      level: detailed
+      address: 0.0.0.0:8888
