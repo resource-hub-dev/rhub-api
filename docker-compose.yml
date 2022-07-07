@@ -15,6 +15,7 @@ services:
     image: quay.io/resource-hub-dev/rhub-api
     volumes:
       - .:/opt/app-root/src/rhub_api/:delegated,z
+      - ./data/bare_metal_logs/:/srv/bare_metal_logs/:delegated,z
       - ./data/vault.yml:/srv/vault.yml:delegated,z
       - ./data/vault-data.yml:/srv/vault-data.yml:delegated,z
     environment:

@@ -1,15 +1,18 @@
 import enum
 import json
 import logging
-import pathlib
 from abc import abstractmethod
+from copy import deepcopy
 from pathlib import Path
 from typing import TextIO
+
+from flask import url_for
 
 from rhub.api import db, jinja_env
 from rhub.api.utils import ModelMixin, TimestampMixin
 from rhub.bare_metal.model.common import (
     BARE_METAL_KICKSTART_BASE_PATH,
+    BARE_METAL_UTILS_PATH,
     BareMetalBootType,
     _BM_TABLE_NAME_HOST,
     _BM_TABLE_NAME_IMAGE_ISO,
@@ -21,8 +24,11 @@ from rhub.bare_metal.model.common import (
 
 logger = logging.getLogger(__name__)
 
+GET_KS_DEBUG_SCRIPT_ENDPOINT = "/v0.rhub_api_bare_metal_provision_provision_kickstart_debug_script_get"
+UPLOAD_LOGS_ENDPOINT = "/v0.rhub_api_bare_metal_provision_provision_logs_upload"
+
 # https://opendev.org/openstack/ironic/src/branch/stable/yoga/ironic/drivers/modules/ks.cfg.template
-with (pathlib.Path(__file__).parent / "ironic_template_data.json").open() as json_file:
+with (BARE_METAL_UTILS_PATH / "ironic_template_data.json").open(encoding="utf-8") as json_file:
     IRONIC_TEMPLATE_DATA = json.load(json_file)
 
 
@@ -64,9 +70,7 @@ class BareMetalProvision(db.Model, ModelMixin, TimestampMixin):
         nullable=False,
     )
 
-    host_id = db.Column(
-        db.Integer, db.ForeignKey(f"{_BM_TABLE_NAME_HOST}.id"), nullable=False
-    )
+    host_id = db.Column(db.Integer, db.ForeignKey(f"{_BM_TABLE_NAME_HOST}.id"), nullable=False)
     #: :type: :class:`BareMetalHost`
     host = db.relationship("BareMetalHost", back_populates="deployments")
     host_reservation_expires_at = db.Column(db.DateTime(timezone=True))
@@ -94,9 +98,7 @@ class BareMetalProvisionISO(BareMetalProvision):
     )
     kickstart = db.Column(db.Text)
 
-    image_id = db.Column(
-        db.Integer, db.ForeignKey(f"{_BM_TABLE_NAME_IMAGE_ISO}.id"), nullable=False
-    )
+    image_id = db.Column(db.Integer, db.ForeignKey(f"{_BM_TABLE_NAME_IMAGE_ISO}.id"), nullable=False)
     #: :type: :class:`BareMetalImageISO`
     image = db.relationship("BareMetalImageISO", back_populates="deployments")
 
@@ -106,9 +108,14 @@ class BareMetalProvisionISO(BareMetalProvision):
 
     @property
     def kickstart_rendered(self) -> str:
+        template_data = deepcopy(IRONIC_TEMPLATE_DATA)
+
+        url = url_for(GET_KS_DEBUG_SCRIPT_ENDPOINT, provision_id=self.id, _external=True)
+        template_data["on_error"] = f"/usr/bin/curl {url} | bash\n" + template_data["on_error"]
+
         data = {
             "hostname": self.host.name,
-            "resource_hub": IRONIC_TEMPLATE_DATA,
+            "resource_hub": template_data,
         }
         return jinja_env.from_string(self.kickstart).render(**data)
 
@@ -116,9 +123,25 @@ class BareMetalProvisionISO(BareMetalProvision):
     def kickstart_file(self) -> Path:
         return BARE_METAL_KICKSTART_BASE_PATH / f"kickstart_{self.id}.cfg"
 
-    def write_kickstart_content(
-        self, kickstart_local_file: TextIO
-    ) -> dict[str, str]:
+    @property
+    def debug_script(self) -> str:
+        """
+        Once the kickstart provisioning hits an error, it will call an endpoint (GET_KS_DEBUG_SCRIPT_ENDPOINT) to get
+        this debug script.
+
+        This method should be improved to:
+            - provide a proper token for uploading the debug logs;
+            - provide different debug scripts based on the provisioning (arch, OS, ...);
+        """
+
+        url = url_for(UPLOAD_LOGS_ENDPOINT, provision_id=self.id, _external=True)
+        script = (BARE_METAL_UTILS_PATH / "kickstart_debug_script.sh").read_text(encoding="utf-8")
+
+        # TODO: create temp token and put it on this curl call
+        script += f'\n/usr/bin/curl -F "file=@/tmp/install-logs-$date.tbz" {url}\n'
+        return script
+
+    def write_kickstart_content(self, kickstart_local_file: TextIO) -> dict[str, str]:
         kickstart_local_file.write(self.kickstart_rendered)
         kickstart_local_file.flush()
         return {
@@ -174,9 +197,7 @@ class BareMetalProvisionQCOW2(BareMetalProvision):
         primary_key=True,
     )
 
-    image_id = db.Column(
-        db.Integer, db.ForeignKey(f"{_BM_TABLE_NAME_IMAGE_QCOW2}.id"), nullable=False
-    )
+    image_id = db.Column(db.Integer, db.ForeignKey(f"{_BM_TABLE_NAME_IMAGE_QCOW2}.id"), nullable=False)
     #: :type: :class:`BareMetalImageQCOW2`
     image = db.relationship("BareMetalImageQCOW2", back_populates="deployments")
 

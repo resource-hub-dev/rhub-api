@@ -4,7 +4,8 @@ include LICENSE
 include migrations/alembic.ini
 include migrations/script.py.mako
 include requirements.txt
-include src/rhub/bare_metal/model/ironic_template_data.json
+include src/rhub/bare_metal/model/data/ironic_template_data.json
+include src/rhub/bare_metal/model/data/kickstart_debug_script.sh
 include src/rhub/bare_metal/tasks/playbooks/*.yml
 
 recursive-include migrations *.py

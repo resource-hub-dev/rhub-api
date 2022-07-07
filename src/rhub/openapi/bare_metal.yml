@@ -228,6 +228,27 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
 
+  provision_logs_upload:
+    summary: Endpoint to upload provision logs
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.provision.provision_logs_upload
+    parameters:
+      - $ref: '#/parameters/provision_id'
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            properties:
+              file:
+                type: string
+                format: binary
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+
   provision_get:
     summary: Get provision
     tags: [bare_metal]
@@ -273,6 +294,24 @@ endpoints:
     responses:
       '200':
         description: kickstart file
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Not found
+      default:
+        $ref: 'common.yml#/responses/problem'
+
+  provision_kickstart_debug_script_get:
+    summary: Get provision's kickstart debug script
+    tags: [bare_metal]
+    operationId: rhub.api.bare_metal.provision.provision_kickstart_debug_script_get
+    parameters:
+      - $ref: '#/parameters/provision_id'
+    responses:
+      '200':
+        description: Debug script
         content:
           text/plain:
             schema:
