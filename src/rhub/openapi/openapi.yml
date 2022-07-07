@@ -357,6 +357,12 @@ paths:
   /bare_metal/provision/{provision_id}/finish:
     post:
       $ref: 'bare_metal.yml#/endpoints/provision_finish'
+  /bare_metal/provision/{provision_id}/logs:
+    post:
+      $ref: 'bare_metal.yml#/endpoints/provision_logs_upload'
   /bare_metal/provision/{provision_id}/kickstart:
     get:
       $ref: 'bare_metal.yml#/endpoints/provision_get_kickstart'
+  /bare_metal/provision/{provision_id}/kickstart/debug_script:
+    get:
+      $ref: 'bare_metal.yml#/endpoints/provision_kickstart_debug_script_get'
