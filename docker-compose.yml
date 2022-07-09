@@ -121,6 +121,17 @@ services:
       retries: 5
       timeout: 30s
 
+  otel:
+    image: otel/opentelemetry-collector-contrib-dev:latest
+    ports:
+      - "8889:8889" # prometheus federation
+      - "8888:8888" # metrics from otel itself
+      - "1888:1888" # pprof extension
+      - "55679:55679" # zpages extension
+    volumes:
+      - ./config/otel.yaml:/etc/otel/config.yaml:ro
+    healthcheck:
+      disable: true
 
 volumes:
   postgres_data:
