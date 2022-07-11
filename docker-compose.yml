@@ -15,6 +15,7 @@ services:
     image: quay.io/resource-hub-dev/rhub-api
     volumes:
       - .:/opt/app-root/src/rhub_api/:delegated,z
+      - ./data/bare_metal_logs/:/srv/bare_metal_logs/:delegated,z
       - ./data/vault.yml:/srv/vault.yml:delegated,z
       - ./data/vault-data.yml:/srv/vault-data.yml:delegated,z
     environment:
@@ -120,6 +121,17 @@ services:
       retries: 5
       timeout: 30s
 
+  otel:
+    image: otel/opentelemetry-collector-contrib-dev:latest
+    ports:
+      - "8889:8889" # prometheus federation
+      - "8888:8888" # metrics from otel itself
+      - "1888:1888" # pprof extension
+      - "55679:55679" # zpages extension
+    volumes:
+      - ./config/otel.yaml:/etc/otel/config.yaml:ro
+    healthcheck:
+      disable: true
 
 volumes:
   postgres_data:

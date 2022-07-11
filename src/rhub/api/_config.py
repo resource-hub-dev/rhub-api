@@ -1,6 +1,7 @@
 import os
 import urllib.parse
 from datetime import timedelta
+from pathlib import Path
 
 KEYCLOAK_SERVER = os.getenv('KEYCLOAK_SERVER')
 KEYCLOAK_RESOURCE = os.getenv('KEYCLOAK_RESOURCE')
@@ -61,3 +62,9 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(hours=1),
     },
 }
+
+# required on celery worker to generate external urls
+# https://flask.palletsprojects.com/en/2.1.x/config/#SERVER_NAME
+SERVER_NAME = os.getenv('FLASK_SERVER_NAME')
+
+BARE_METAL_LOGS_PATH = Path(os.getenv('RHUB_BARE_METAL_LOGS_DIR', ''))
