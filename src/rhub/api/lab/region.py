@@ -310,14 +310,15 @@ def get_all_usage(keycloak: KeycloakClient, user):
     ]
     if not regions:
         return problem(404, 'Not Found', 'No regions exist')
-    data = region_to_usage(regions[0], user)
+    data = {"all": region_to_usage(regions[0], user)}
+    data[str(regions[0].id)] = region_to_usage(regions[0], user)
 
     def add_usage(usage1, usage2):
         result = {}
         for key in usage1.keys():
             try:
                 result[key] = usage1[key] + usage2[key]
-            except Exception as e:
+            except Exception:
                 if usage1[key]:
                     result[key] = usage1[key]
                 elif usage2[key]:
@@ -328,8 +329,15 @@ def get_all_usage(keycloak: KeycloakClient, user):
 
     for i in range(1, len(regions)):
         current_region_usage = region_to_usage(regions[i], user)
-        data['user_quota'] = add_usage(data['user_quota'], current_region_usage['user_quota'])
-        data['user_quota_usage'] = add_usage(data['user_quota_usage'], current_region_usage['user_quota_usage'])
-        data['total_quota'] = add_usage(data['total_quota'], current_region_usage['total_quota'])
-        data['total_quota_usage'] = add_usage(data['total_quota_usage'], current_region_usage['total_quota_usage'])
+        data[str(regions[i].id)] = current_region_usage
+        current_usage_all_region = {}
+        current_usage_all_region['user_quota'] = add_usage(
+            data['all']['user_quota'], current_region_usage['user_quota'])
+        current_usage_all_region['user_quota_usage'] = add_usage(
+            data['all']['user_quota_usage'], current_region_usage['user_quota_usage'])
+        current_usage_all_region['total_quota'] = add_usage(
+            data['all']['total_quota'], current_region_usage['total_quota'])
+        current_usage_all_region['total_quota_usage'] = add_usage(
+            data['all']['total_quota_usage'], current_region_usage['total_quota_usage'])
+        data['all'] = current_usage_all_region
     return data
