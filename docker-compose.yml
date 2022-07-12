@@ -133,5 +133,24 @@ services:
     healthcheck:
       disable: true
 
+  blackbox_exporter:
+    image: prom/blackbox-exporter:master
+    privileged: yes # needs to be privileged because of ICMP
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./config/blackbox.yaml:/config/blackbox.yml:ro
+    command:
+      - "--config.file=/config/blackbox.yml"
+    healthcheck:
+      disable: true
+
+  snmp_exporter:
+    image: prom/snmp-exporter
+    ports:
+      - "9116:9116"
+    healthcheck:
+      disable: true
+
 volumes:
   postgres_data:
