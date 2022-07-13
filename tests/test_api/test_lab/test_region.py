@@ -63,6 +63,8 @@ def test_to_dict(keycloak_mock):
         tower_id=1,
         openstack_id=openstack.id,
         openstack=openstack,
+        satellite_id=None,
+        satellite=None,
     )
 
     keycloak_mock.group_get.return_value = {'name': 'foobar-group'}
@@ -107,6 +109,8 @@ def test_to_dict(keycloak_mock):
             'domain_id': 'default',
             'networks': ['test_net'],
         },
+        'satellite_id': None,
+        'satellite': None,
     }
 
 
@@ -144,6 +148,8 @@ def test_list_regions(client, keycloak_mock):
                 domain_id='default',
                 networks=['test_net'],
             ),
+            satellite_id=None,
+            satellite=None,
         ),
     ]
     model.Region.query.count.return_value = 1
@@ -193,6 +199,8 @@ def test_list_regions(client, keycloak_mock):
                     'domain_id': 'default',
                     'networks': ['test_net'],
                 },
+                'satellite_id': None,
+                'satellite': None,
                 '_href': ANY,
             },
         ],
@@ -233,6 +241,8 @@ def test_get_region(client, keycloak_mock):
             domain_id='default',
             networks=['test_net'],
         ),
+        satellite_id=None,
+        satellite=None,
     )
 
     keycloak_mock.group_get.return_value = {'name': 'foobar-group'}
@@ -281,6 +291,8 @@ def test_get_region(client, keycloak_mock):
             'domain_id': 'default',
             'networks': ['test_net'],
         },
+        'satellite_id': None,
+        'satellite': None,
         '_href': ANY,
     }
 
@@ -408,6 +420,8 @@ def test_update_region(client):
             domain_id='default',
             networks=['test_net'],
         ),
+        satellite_id=None,
+        satellite=None,
     )
     model.Region.query.get.return_value = region
 
@@ -479,6 +493,8 @@ def test_update_region_quota(client, keycloak_mock, quota_data):
             domain_id='default',
             networks=['test_net'],
         ),
+        satellite_id=None,
+        satellite=None,
     )
     model.Region.query.get.return_value = region
 
@@ -529,6 +545,8 @@ def test_delete_region(client, db_session_mock):
             domain_id='default',
             networks=['test_net'],
         ),
+        satellite_id=None,
+        satellite=None,
     )
     model.Region.query.get.return_value = region
     model.RegionProduct.query.filter.return_value.count.return_value = 0
@@ -595,6 +613,8 @@ def test_region_list_products(client):
             domain_id='default',
             networks=['test_net'],
         ),
+        satellite_id=None,
+        satellite=None,
         products_relation=products_relation
     )
 
@@ -657,6 +677,8 @@ def test_region_add_product(client, db_session_mock):
             domain_id='default',
             networks=['test_net'],
         ),
+        satellite_id=None,
+        satellite=None,
         products_relation=[],
     )
 
@@ -721,6 +743,8 @@ def test_region_disable_product(client, db_session_mock):
             domain_id='default',
             networks=['test_net'],
         ),
+        satellite_id=None,
+        satellite=None,
         products_relation=[],
     )
 
@@ -784,6 +808,8 @@ def test_region_delete_product(client, db_session_mock):
             domain_id='default',
             networks=['test_net'],
         ),
+        satellite_id=None,
+        satellite=None,
         products_relation=[],
     )
 

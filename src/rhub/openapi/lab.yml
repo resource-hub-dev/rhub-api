@@ -119,6 +119,15 @@ model:
         description: SSH key name
         type: string
         maxLength: 64
+      satellite_id:
+        anyOf:
+          - $ref: 'common.yml#/model/ID'
+          - nullable: true
+      satellite:
+        anyOf:
+          - $ref: 'satellite.yml#/model/Server'
+          - nullable: true
+        readOnly: true
 
   ClusterStatus:
     type: string
