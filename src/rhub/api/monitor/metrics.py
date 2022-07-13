@@ -118,10 +118,10 @@ def bm_power_states_metrics():
     return mock_power("platforms")
 
 
-def bm_hosts_to_monitor_list(target_type="node"):
+def bm_hosts_to_monitor_list(host_type="node", user=None):
     nodes = [{"name": "no.nodes.specified"}]
 
-    if target_type == "node":
+    if host_type == "node":
         nodes_files = read_local_yaml("monitoring_sample_nodes.yml")
         read_nodes = nodes_files["nodes"]
         nodes = []

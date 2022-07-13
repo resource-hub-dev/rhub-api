@@ -300,7 +300,7 @@ paths:
     delete:
       $ref: 'scheduler.yml#/endpoints/cron_job_delete'
 
-  /monitor/bm/hosts:
+  /monitor/bm/hosts/{host_type}:
     get:
       $ref: 'monitor.yml#/endpoints/bm_hosts_to_monitor_list'
   /monitor/bm/power_states_metrics:
