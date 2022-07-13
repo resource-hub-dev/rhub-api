@@ -9,6 +9,8 @@ BARE_METAL_IMAGES_BASE_PATH = Path("/var/lib/ironic/httpboot/images")
 BARE_METAL_KICKSTART_BASE_PATH = Path("/var/lib/ironic/httpboot/kickstart_files")
 IRONIC_HTTP_IMAGES_URL = "http://192.168.1.1:8080/images"
 
+BARE_METAL_UTILS_PATH = Path(__file__).parent / "data"
+
 # TODO: fix.
 #  May use: https://docs.sqlalchemy.org/en/14/orm/declarative_mixins.html
 #           #mixing-in-relationships

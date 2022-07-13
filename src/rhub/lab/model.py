@@ -118,16 +118,12 @@ class Region(db.Model, ModelMixin):
             )
             .join(
                 Cluster,
-                ClusterHost.cluster_id == Cluster.id
-            )
-            .join(
-                openstack_model.Project,
-                Cluster.project_id == openstack_model.Project.id
+                ClusterHost.cluster_id == Cluster.id,
             )
             .where(
                 db.and_(
                     Cluster.region_id == self.id,
-                    openstack_model.Project.owner_id == user_id,
+                    Cluster.owner_id == user_id,
                 )
             )
         )
@@ -144,7 +140,8 @@ class Region(db.Model, ModelMixin):
                 db.func.coalesce(db.func.sum(ClusterHost.volumes_gb), 0),
             )
             .join(
-                ClusterHost.cluster,
+                Cluster,
+                ClusterHost.cluster_id == Cluster.id,
             )
             .where(
                 Cluster.region_id == self.id,
@@ -347,6 +344,10 @@ class Cluster(db.Model, ModelMixin):
     def owner_id(self):
         return self.project.owner_id
 
+    @owner_id.expression
+    def owner_id(self):
+        return openstack_model.Project.owner_id
+
     @property
     def owner_name(self):
         return self.project.owner_name
@@ -354,6 +355,10 @@ class Cluster(db.Model, ModelMixin):
     @hybrid_property
     def group_id(self):
         return self.project.group_id
+
+    @group_id.expression
+    def group_id(self):
+        return openstack_model.Project.group_id
 
     @property
     def group_name(self):
