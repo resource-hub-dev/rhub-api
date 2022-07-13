@@ -1,0 +1,198 @@
+model:
+
+  Server:
+    type: object
+    properties:
+      id:
+        allOf:
+          - $ref: 'common.yml#/model/ID'
+          - readOnly: true
+      name:
+        type: string
+        maxLength: 32
+        example: satellite-rdu
+      description:
+        type: string
+        nullable: true
+        example: Satellite server for RDU site.
+      owner_group_id:
+        type: string
+        format: uuid
+      owner_group_name:
+        type: string
+        readOnly: true
+      hostname:
+        type: string
+        maxLength: 256
+      insecure:
+        type: boolean
+      credentials:
+        oneOf:
+          - description: Credentials to store in Vault
+            type: object
+            properties:
+              username:
+                type: string
+              password:
+                type: string
+            writeOnly: true
+          - description: Credentials path in Vault
+            type: string
+            maxLength: 256
+
+
+parameters:
+
+  server_id:
+    name: server_id
+    in: path
+    description: ID of the Satellite server
+    required: true
+    schema:
+      $ref: 'common.yml#/model/ID'
+
+
+endpoints:
+
+  server_list:
+    summary: Get Satellite server list
+    tags: [satellite]
+    operationId: rhub.api.satellite.server_list
+    parameters:
+      - name: filter
+        in: query
+        description: Filter servers by attributes.
+        explode: false
+        schema:
+          type: object
+          properties:
+            hostname:
+              type: string
+              description: >
+                Hostname of a server. Wildcard ``%`` can be used to match zero,
+                one, or multiple characters
+            owner_group_id:
+              type: string
+              format: uuid
+              nullable: true
+      - name: sort
+        in: query
+        description: Sort servers by attribute.
+        schema:
+          type: string
+          enum:
+            - name
+            - -name
+      - name: page
+        in: query
+        description: Page number (``0`` indexed).
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+    responses:
+      '200':
+        description: List of Satellite servers
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/model/Server'
+                total:
+                  type: integer
+                  minimum: 0
+                  description: The total number of items
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  server_create:
+    summary: Create Satellite server
+    tags: [satellite]
+    operationId: rhub.api.satellite.server_create
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            allOf:
+              - $ref: '#/model/Server'
+              - required:
+                  - name
+                  - hostname
+                  - credentials
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Server'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  server_get:
+    summary: Get Satellite server
+    tags: [satellite]
+    operationId: rhub.api.satellite.server_get
+    parameters:
+      - $ref: '#/parameters/server_id'
+    responses:
+      '200':
+        description: Server
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Server'
+      '404':
+        description: Not found
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  server_update:
+    summary: Update Satellite server
+    tags: [satellite]
+    operationId: rhub.api.satellite.server_update
+    parameters:
+      - $ref: '#/parameters/server_id'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/model/Server'
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
+
+  server_delete:
+    summary: Delete Satellite server
+    tags: [satellite]
+    operationId: rhub.api.satellite.server_delete
+    parameters:
+      - $ref: '#/parameters/server_id'
+    responses:
+      '204':
+        description: Success
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - oauth2: []
