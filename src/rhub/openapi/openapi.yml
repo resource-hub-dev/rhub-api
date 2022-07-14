@@ -121,6 +121,9 @@ paths:
   /lab/region/{region_id}/usage:
     get:
       $ref: 'lab.yml#/endpoints/region_get_usage'
+  /lab/region/all/usage:
+    get:
+      $ref: 'lab.yml#/endpoints/region_get_all_usage'
   /lab/product:
     get:
       $ref: 'lab.yml#/endpoints/product_list'
