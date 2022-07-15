@@ -35,9 +35,15 @@ def _region_href(region):
                          server_id=region.tower_id),
         'owner_group': url_for('.rhub_api_auth_group_get_group',
                                group_id=region.owner_group_id),
-        'openstack': url_for('.rhub_api_openstack_cloud_get',
-                             cloud_id=region.openstack_id),
+        'openstack_cloud': url_for('.rhub_api_openstack_cloud_get',
+                                   cloud_id=region.openstack_id),
     }
+    if region.satellite_id:
+        href['satellite_server'] = url_for('.rhub_api_satellite_server_get',
+                                           server_id=region.satellite_id)
+    if region.dns_id:
+        href['dns_server'] = url_for('.rhub_api_dns_server_get',
+                                     server_id=region.dns_id)
     if region.users_group_id:
         href['users_group'] = url_for('.rhub_api_auth_group_get_group',
                                       group_id=region.users_group_id)
