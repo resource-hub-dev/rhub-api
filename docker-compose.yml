@@ -130,6 +130,8 @@ services:
       - "55679:55679" # zpages extension
     volumes:
       - ./config/otel.yaml:/etc/otel/config.yaml:ro
+      - ./config/otel-internal-rhub-exporter.json:/etc/otel/otel-internal-rhub-exporter.json:ro
+      - ./config/otel-all-nodes.json:/etc/otel/otel-all-nodes.json:ro
     healthcheck:
       disable: true
 

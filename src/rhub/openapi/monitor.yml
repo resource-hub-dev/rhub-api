@@ -14,7 +14,7 @@ model:
     enum:
       - node
       - app
-  
+
   SimpleListItem:
     type: object
     properties:
