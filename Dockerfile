@@ -7,9 +7,7 @@ RUN dnf install openssh-clients; \
     dnf clean all
 
 RUN mkdir -p ~/.ssh \
-    && chmod 700 ~/.ssh \
-    && printf "Host *.redhat.com\n\tStrictHostKeyChecking no\n" > ~/.ssh/config \
-    && chmod 600 ~/.ssh/config
+    && chmod 755 ~/.ssh
 
 WORKDIR /opt/app-root/src/rhub_api/
 
@@ -29,6 +27,7 @@ RUN export RHUB_DB_TYPE='postgresql'; \
     export RHUB_RETURN_INITIAL_FLASK_APP=True; \
     python3 -m flask routes;
 
-CMD ["./bin/entrypoint.sh"]
+ENTRYPOINT ["./bin/entrypoint.sh"]
+CMD ["rhub-api"]
 
-HEALTHCHECK --interval=10s --retries=5 --timeout=5s CMD ["curl", "-f", "http://localhost:8081/v0/ping"]
+HEALTHCHECK --interval=10s --retries=5 --timeout=5s CMD ["./bin/healthcheck.sh", "rhub-api"]

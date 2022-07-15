@@ -11,6 +11,7 @@ from rhub.api.utils import ModelMixin, condition_eval
 from rhub.auth.keycloak import KeycloakClient
 from rhub.lab import SHAREDCLUSTER_GROUP
 from rhub.openstack import model as openstack_model
+from rhub.satellite import model as satellite_model
 from rhub.tower import model as tower_model
 
 
@@ -59,6 +60,10 @@ class Region(db.Model, ModelMixin):
                              nullable=False)
     openstack = db.relationship(openstack_model.Cloud)
 
+    satellite_id = db.Column(db.Integer, db.ForeignKey('satellite_server.id'),
+                             nullable=True)
+    satellite = db.relationship(satellite_model.SatelliteServer)
+
     #: :type: list of :class:`Cluster`
     clusters = db.relationship('Cluster', back_populates='region')
 
@@ -67,7 +72,7 @@ class Region(db.Model, ModelMixin):
                                         lazy='dynamic')
 
     __embedded__ = ['user_quota', 'total_quota']
-    __embedded_ro__ = ['location', 'openstack']
+    __embedded_ro__ = ['location', 'openstack', 'satellite']
 
     @property
     def lifespan_enabled(self):

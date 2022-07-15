@@ -71,6 +71,19 @@ paths:
     get:
       $ref: 'openstack.yml#/endpoints/project_limits_get'
 
+  /satellite/server:
+    get:
+      $ref: 'satellite.yml#/endpoints/server_list'
+    post:
+      $ref: 'satellite.yml#/endpoints/server_create'
+  /satellite/server/{server_id}:
+    get:
+      $ref: 'satellite.yml#/endpoints/server_get'
+    patch:
+      $ref: 'satellite.yml#/endpoints/server_update'
+    delete:
+      $ref: 'satellite.yml#/endpoints/server_delete'
+
   /lab/location:
     get:
       $ref: 'lab.yml#/endpoints/location_list'
@@ -108,6 +121,9 @@ paths:
   /lab/region/{region_id}/usage:
     get:
       $ref: 'lab.yml#/endpoints/region_get_usage'
+  /lab/region/all/usage:
+    get:
+      $ref: 'lab.yml#/endpoints/region_get_all_usage'
   /lab/product:
     get:
       $ref: 'lab.yml#/endpoints/product_list'
