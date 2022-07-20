@@ -130,7 +130,7 @@ def bm_hosts_to_monitor_list(host_type="node", user=None):
     nodes = []
 
     if host_type == "node":
-        all_hosts = host_list()
+        all_hosts = host_list()["data"]
 
         for host in all_hosts:
             exporter_port = "9100"
