@@ -13,3 +13,6 @@ include src/rhub/api/monitor/monitoring_sample_nodes.yml
 recursive-include migrations *.py
 recursive-include src/rhub/openapi *.yml
 recursive-include src/rhub/api/monitor *.yml
+recursive-include config otel*json
+recursive-include config otel*yaml
+recursive-include config blackbox.yaml
