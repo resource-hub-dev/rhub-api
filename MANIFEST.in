@@ -7,9 +7,9 @@ include requirements.txt
 include src/rhub/bare_metal/model/data/ironic_template_data.json
 include src/rhub/bare_metal/model/data/kickstart_debug_script.sh
 include src/rhub/bare_metal/tasks/playbooks/*.yml
+include src/rhub/config/otel.yaml
+include src/rhub/api/monitor/monitoring_sample_nodes.yml
 
 recursive-include migrations *.py
-recursive-include config *.yaml
-recursive-include config *.json
 recursive-include src/rhub/openapi *.yml
 recursive-include src/rhub/api/monitor *.yml

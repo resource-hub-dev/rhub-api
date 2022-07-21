@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-sleep 10
-
 application="$1"
 command=(echo "Select one of: 'rhub-api', 'rhub-worker', 'rhub-cron'")
 

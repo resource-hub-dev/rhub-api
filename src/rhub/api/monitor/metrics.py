@@ -124,7 +124,7 @@ def bm_power_states_metrics():
     return mock_power("platforms")
 
 
-def bm_hosts_to_monitor_list(host_type="node", user=None):
+def bm_hosts_to_monitor_list(host_type="node"):
     nodes_empty = [{"name": "no.nodes.specified"}]
 
     nodes = []
@@ -136,13 +136,13 @@ def bm_hosts_to_monitor_list(host_type="node", user=None):
             exporter_port = "9100"
             if isinstance(host, BareMetalHostDrac):
                 exporter_port = "9101"
-
-            if isinstance(host, BareMetalHostRedfish):
+            elif isinstance(host, BareMetalHostRedfish):
                 exporter_port = "9102"
+
             host_name = f"{host.name}:{exporter_port}"
             nodes.append({"name": host_name})
 
-    if not len(nodes):
+    if not nodes:
         nodes = nodes_empty
 
     r = {}
