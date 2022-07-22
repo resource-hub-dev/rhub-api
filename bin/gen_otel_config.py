@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # This program writes configs for OTEL so we can start that with
 # the right list of exporters for Prometheus-like federation.
 import os
