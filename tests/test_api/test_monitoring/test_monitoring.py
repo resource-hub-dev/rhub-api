@@ -8,7 +8,15 @@ API_BASE = '/v0'
 
 def test_bm_list_hosts(client):
     rv = client.get(
-        f'{API_BASE}/monitor/bm/hosts',
+        f'{API_BASE}/monitor/bm/hosts/node',
+        headers={'Authorization': 'Bearer foobar'},
+    )
+
+    assert rv.status_code == 200
+    assert "data" in rv.json
+
+    rv = client.get(
+        f'{API_BASE}/monitor/bm/hosts/app',
         headers={'Authorization': 'Bearer foobar'},
     )
 
@@ -54,7 +62,6 @@ def test_lab_metrics(client):
 
     assert rv.status_code == 200
     assert "data" in rv.json
-
 
 
 @contextmanager

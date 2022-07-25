@@ -1,4 +1,20 @@
+parameters:
+
+  host_type:
+    name: host_type
+    in: path
+    description: Type of Host List to fetch
+    required: true
+    schema:
+      $ref: '#/model/HostType'
+
 model:
+  HostType:
+    type: string
+    enum:
+      - node
+      - app
+
   SimpleListItem:
     type: object
     properties:
@@ -51,7 +67,9 @@ endpoints:
   bm_hosts_to_monitor_list:
     summary: Get a list of Bare Metal hosts to monitor for the IPMI exporter
     operationId: rhub.api.monitor.metrics.bm_hosts_to_monitor_list
-    tags: [monitoring, ipmi]
+    tags: [monitoring, endpoints, prometheus, ipmi]
+    parameters:
+      - $ref: '#/parameters/host_type'
     responses:
       '200':
         description: List of Hostnames

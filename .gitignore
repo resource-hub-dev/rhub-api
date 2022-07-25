@@ -59,10 +59,13 @@ ENV/
 env.bak/
 venv.bak/
 
-
+# Monitoring files
+otel-all-nodes.json
+otel-internal-rhub-exporter.json
 
 .DS_Store
 .idea
 /packages
 config/logging.yml
 keycloak-config.json
+

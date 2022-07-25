@@ -3,6 +3,12 @@ import random
 
 import yaml
 
+from rhub.api.bare_metal.host import host_list
+from rhub.bare_metal.model import (
+    BareMetalHostDrac,
+    BareMetalHostRedfish,
+)
+
 
 def read_local_yaml(filename):
     this_filename = os.path.realpath(__file__)
@@ -118,15 +124,26 @@ def bm_power_states_metrics():
     return mock_power("platforms")
 
 
-def bm_hosts_to_monitor_list(target_type="node"):
-    nodes = [{"name": "no.nodes.specified"}]
+def bm_hosts_to_monitor_list(host_type="node"):
+    nodes_empty = [{"name": "no.nodes.specified"}]
 
-    if target_type == "node":
-        nodes_files = read_local_yaml("monitoring_sample_nodes.yml")
-        read_nodes = nodes_files["nodes"]
-        nodes = []
-        for node in read_nodes:
-            nodes.append({"name": node})
+    nodes = []
+
+    if host_type == "node":
+        all_hosts = host_list()["data"]
+
+        for host in all_hosts:
+            exporter_port = "9100"
+            if isinstance(host, BareMetalHostDrac):
+                exporter_port = "9101"
+            elif isinstance(host, BareMetalHostRedfish):
+                exporter_port = "9102"
+
+            host_name = f"{host.name}:{exporter_port}"
+            nodes.append({"name": host_name})
+
+    if not nodes:
+        nodes = nodes_empty
 
     r = {}
     r["data"] = nodes
