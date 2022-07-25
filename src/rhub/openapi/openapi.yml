@@ -84,6 +84,19 @@ paths:
     delete:
       $ref: 'satellite.yml#/endpoints/server_delete'
 
+  /dns/server:
+    get:
+      $ref: 'dns.yml#/endpoints/server_list'
+    post:
+      $ref: 'dns.yml#/endpoints/server_create'
+  /dns/server/{server_id}:
+    get:
+      $ref: 'dns.yml#/endpoints/server_get'
+    patch:
+      $ref: 'dns.yml#/endpoints/server_update'
+    delete:
+      $ref: 'dns.yml#/endpoints/server_delete'
+
   /lab/location:
     get:
       $ref: 'lab.yml#/endpoints/location_list'
