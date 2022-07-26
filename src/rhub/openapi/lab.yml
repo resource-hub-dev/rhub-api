@@ -54,10 +54,10 @@ model:
           - $ref: 'common.yml#/model/ID'
           - nullable: true
       location:
+        readOnly: true
         anyOf:
           - $ref: '#/model/Location'
           - nullable: true
-            readOnly: true
       description:
         type: string
       banner:

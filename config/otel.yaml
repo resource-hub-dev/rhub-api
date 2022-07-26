@@ -8,10 +8,19 @@ receivers:
   prometheus:
     config:
       scrape_configs:
+        # app exporter and metrics exporter
         - job_name: "internal-rhub-exporter"
-          scrape_interval: 15s
-          static_configs:
-            - targets: ["prometheus-exporter:9100"]
+          scrape_interval: 60s
+          file_sd_configs:
+            - files:
+                - /etc/otel/otel-internal-rhub-exporter.json
+
+        # additional nodes exporter: blackbox, snmp, etc.
+        - job_name: "all-nodes"
+          scrape_interval: 60s
+          file_sd_configs:
+            - files:
+                - /etc/otel/otel-all-nodes.json
 
 exporters:
   # in this case we have a prometheus-like endpoint so other readers
