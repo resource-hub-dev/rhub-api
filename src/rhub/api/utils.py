@@ -75,9 +75,13 @@ def date_now():
     return datetime.datetime.now().astimezone(datetime.timezone.utc)
 
 
-def db_sort(query, sort_by):
+def db_sort(query, sort_by, column_remap=None):
     direction = 'DESC' if sort_by.startswith('-') else 'ASC'
     column = sort_by.removeprefix('-')
+
+    if column_remap and column in column_remap:
+        column = column_remap[column]
+
     return query.order_by(db.text(f'{column} {direction}'))
 
 

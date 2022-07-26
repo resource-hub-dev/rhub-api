@@ -211,7 +211,9 @@ def list_clusters(keycloak: KeycloakClient,
         )
 
     if sort:
-        clusters = db_sort(clusters, sort)
+        clusters = db_sort(clusters, sort, {
+            'name': 'lab_cluster.name',
+        })
 
     return {
         'data': [

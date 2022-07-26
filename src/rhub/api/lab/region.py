@@ -67,15 +67,16 @@ def list_regions(keycloak: KeycloakClient,
                  user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
     regions = list_regions_with_permissions(keycloak, user)
 
+    regions = regions.outerjoin(
+        model.Location,
+        model.Location.id == model.Region.location_id,
+    )
+
     if 'name' in filter_:
         regions = regions.filter(model.Region.name.ilike(filter_['name']))
 
     if 'location' in filter_:
-        regions = (
-            regions
-            .outerjoin(model.Location)
-            .filter(model.Location.name.ilike(filter_['location']))
-        )
+        regions = regions.filter(model.Location.name.ilike(filter_['location']))
 
     if 'enabled' in filter_:
         regions = regions.filter(model.Region.enabled == filter_['enabled'])
@@ -86,7 +87,10 @@ def list_regions(keycloak: KeycloakClient,
         )
 
     if sort:
-        regions = db_sort(regions, sort)
+        regions = db_sort(regions, sort, {
+            'name': 'lab_region.name',
+            'location': 'lab_location.name',
+        })
 
     return {
         'data': [

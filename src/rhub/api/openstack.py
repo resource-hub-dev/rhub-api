@@ -175,7 +175,9 @@ def project_list(keycloak: KeycloakClient,
         projects = projects.filter(model.Project.owner_id == filter_['owner_id'])
 
     if sort:
-        projects = db_sort(projects, sort)
+        projects = db_sort(projects, sort, {
+            'name': 'openstack_project.name'
+        })
 
     return {
         'data': [
