@@ -119,7 +119,7 @@ def test_to_dict(keycloak_mock):
 
 
 def test_list_regions(client, keycloak_mock):
-    model.Region.query.limit.return_value.offset.return_value = [
+    model.Region.query.outerjoin.return_value.limit.return_value.offset.return_value = [
         model.Region(
             id=1,
             name='test',
@@ -158,7 +158,7 @@ def test_list_regions(client, keycloak_mock):
             dns=None,
         ),
     ]
-    model.Region.query.count.return_value = 1
+    model.Region.query.outerjoin.return_value.count.return_value = 1
 
     keycloak_mock.group_get.return_value = {'name': 'foobar-group'}
 
