@@ -474,7 +474,7 @@ def test_update_region(client):
         ),
     ]
 )
-def test_update_region_quota(client, keycloak_mock, quota_data):
+def test_update_region_quota(client, keycloak_mock, db_session_mock, quota_data):
     region = model.Region(
         id=1,
         name='test',
@@ -487,7 +487,14 @@ def test_update_region_quota(client, keycloak_mock, quota_data):
         description='',
         banner='',
         enabled=True,
-        user_quota_id=None,
+        user_quota_id=1,
+        user_quota=model.Quota(
+            id=1,
+            num_vcpus=40,
+            ram_mb=200000,
+            num_volumes=40,
+            volumes_gb=540,
+        ),
         total_quota_id=None,
         lifespan_length=None,
         reservations_enabled=True,
@@ -525,6 +532,10 @@ def test_update_region_quota(client, keycloak_mock, quota_data):
     model.Region.query.get.assert_called_with(1)
 
     assert rv.json['user_quota'] == quota_data
+
+    if quota_data is None:
+        deleted_row = db_session_mock.delete.call_args.args[0]
+        assert isinstance(deleted_row, model.Quota)
 
 
 def test_delete_region(client, db_session_mock):

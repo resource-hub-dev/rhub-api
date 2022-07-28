@@ -40,12 +40,14 @@ class Region(db.Model, ModelMixin):
                               nullable=True)
     #: :type: :class:`Quota` resources limit that single user can use, if
     #: exceeded the user should not be able to create new reservations
-    user_quota = db.relationship('Quota', uselist=False, foreign_keys=[user_quota_id])
+    user_quota = db.relationship('Quota', uselist=False, foreign_keys=[user_quota_id],
+                                 cascade='all,delete')
     total_quota_id = db.Column(db.Integer, db.ForeignKey('lab_quota.id'),
                                nullable=True)
     #: :type: :class:`Quota` total region resources limits, if exceeded no user
     #: should be able to create new reservations
-    total_quota = db.relationship('Quota', uselist=False, foreign_keys=[total_quota_id])
+    total_quota = db.relationship('Quota', uselist=False, foreign_keys=[total_quota_id],
+                                  cascade='all,delete')
     lifespan_length = db.Column(db.Integer, nullable=True)
     reservations_enabled = db.Column(db.Boolean, default=True)
     reservation_expiration_max = db.Column(db.Integer, nullable=True)

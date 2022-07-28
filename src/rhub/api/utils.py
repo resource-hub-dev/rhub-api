@@ -65,7 +65,11 @@ class ModelMixin:
                 else:
                     getattr(self, embedded_name).update_from_dict(embedded_data)
             else:
+                old_embedded_data = getattr(self, embedded_name)
                 setattr(self, embedded_name, None)
+                if old_embedded_data is not None:
+                    db.session.delete(old_embedded_data)
+                    db.session.flush()
 
         for k, v in data.items():
             setattr(self, k, v)
