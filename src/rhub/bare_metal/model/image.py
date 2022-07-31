@@ -26,7 +26,7 @@ class BareMetalImageType(str, enum.Enum):
 class ImageBaseOS(str, enum.Enum):
     CENTOS = "CentOS"
     FEDORA = "Fedora"
-    RED_HAT = "Red_Hat"
+    RHEL = "RHEL"
 
 
 class BareMetalImage(db.Model, ModelMixin, TimestampMixin):
@@ -47,13 +47,9 @@ class BareMetalImage(db.Model, ModelMixin, TimestampMixin):
     arch = db.Column(db.Enum(BareMetalArch), nullable=False)
 
     # boot type - TODO: think of some bitwise operation
-    legacy_bios = db.Column(
-        db.Boolean, server_default=expression.true(), nullable=False
-    )
+    legacy_bios = db.Column(db.Boolean, server_default=expression.true(), nullable=False)
     uefi = db.Column(db.Boolean, server_default=expression.true(), nullable=False)
-    secure_boot = db.Column(
-        db.Boolean, server_default=expression.true(), nullable=False
-    )
+    uefi_secure_boot = db.Column(db.Boolean, server_default=expression.true(), nullable=False)
 
     __mapper_args__ = {
         "polymorphic_on": type,
@@ -72,8 +68,8 @@ class BareMetalImage(db.Model, ModelMixin, TimestampMixin):
 
     @property
     def boot_type(self) -> str:
-        if self.secure_boot:
-            return BareMetalBootType.SECURE_BOOT
+        if self.uefi_secure_boot:
+            return BareMetalBootType.UEFI_SECURE_BOOT
 
         if self.uefi:
             return BareMetalBootType.UEFI

@@ -46,13 +46,9 @@ class BareMetalHost(db.Model, ModelMixin, TimestampMixin):
     arch = db.Column(db.Enum(BareMetalArch), nullable=False)
 
     # boot type - TODO: think of some bitwise operation
-    legacy_bios = db.Column(
-        db.Boolean, server_default=expression.true(), nullable=False
-    )
+    legacy_bios = db.Column(db.Boolean, server_default=expression.true(), nullable=False)
     uefi = db.Column(db.Boolean, server_default=expression.true(), nullable=False)
-    secure_boot = db.Column(
-        db.Boolean, server_default=expression.true(), nullable=False
-    )
+    uefi_secure_boot = db.Column(db.Boolean, server_default=expression.true(), nullable=False)
 
     ipxe_support = db.Column(db.Boolean, server_default=expression.true(), nullable=False)
 
@@ -86,6 +82,11 @@ class BareMetalHost(db.Model, ModelMixin, TimestampMixin):
         "polymorphic_on": type,
         "polymorphic_identity": BareMetalHardwareType.GENERIC,
     }
+
+    def to_dict_with_super(self) -> dict[str, str]:
+        data = super().to_dict_with_super()
+        del data['ipmi_password']
+        return data
 
     @classmethod
     def _credential_columns(cls) -> [str]:
@@ -123,8 +124,8 @@ class BareMetalHost(db.Model, ModelMixin, TimestampMixin):
 
     @property
     def boot_type(self) -> str:
-        if self.secure_boot:
-            return BareMetalBootType.SECURE_BOOT
+        if self.uefi_secure_boot:
+            return BareMetalBootType.UEFI_SECURE_BOOT
 
         if self.uefi:
             return BareMetalBootType.UEFI
@@ -147,6 +148,11 @@ class BareMetalHostRedfish(BareMetalHost):
     redfish_verify_ca = db.Column(
         db.Boolean, server_default=expression.true(), nullable=False
     )
+
+    def to_dict_with_super(self) -> dict[str, str]:
+        data = super().to_dict_with_super()
+        del data['redfish_password']
+        return data
 
     @classmethod
     def _credential_columns(cls) -> [str]:
@@ -179,6 +185,12 @@ class BareMetalHostDrac(BareMetalHost):
     drac_address = db.Column(db.String(128), nullable=False)
     drac_username = db.Column(db.String(128), nullable=False)
     drac_password = db.Column(db.String(128), nullable=False)
+
+    def to_dict_with_super(self) -> dict[str, str]:
+        data = super().to_dict_with_super()
+        del data['redfish_password']
+        del data['drac_password']
+        return data
 
     @classmethod
     def _credential_columns(cls) -> [str]:

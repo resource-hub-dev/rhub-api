@@ -15,7 +15,7 @@ FLASK_RUN_PORT = os.getenv('FLASK_RUN_PORT', 8081)
 
 bind = f'{FLASK_RUN_HOST}:{FLASK_RUN_PORT}'
 reload = FLASK_ENV == 'development'
-reload_extra_files = [str(path.resolve()) for path in pathlib.Path('src/rhub/openapi/').glob('*.yml')]
+reload_extra_files = [str(path.resolve()) for path in pathlib.Path('src/rhub/openapi/').glob('**/*.yml')]
 
 if LOG_CONFIG and os.path.exists(LOG_CONFIG):
     with open(LOG_CONFIG, 'r') as f:

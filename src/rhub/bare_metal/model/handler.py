@@ -42,7 +42,7 @@ class IronicClient(Client):
         return self.node.get(node_uuid)
 
     @staticmethod
-    def operation_for_secure_boot() -> dict:
+    def operation_for_uefi_secure_boot() -> dict:
         return {
             "op": "add",
             "path": "/instance_info/capabilities",
@@ -132,3 +132,8 @@ class BareMetalIronicHandler(BareMetalHandler):
         )
         client.__class__ = IronicClient
         return client
+
+    def to_dict_with_super(self) -> dict[str, str]:
+        data = super().to_dict_with_super()
+        del data['password']
+        return data
