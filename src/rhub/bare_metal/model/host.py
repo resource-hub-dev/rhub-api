@@ -83,8 +83,8 @@ class BareMetalHost(db.Model, ModelMixin, TimestampMixin):
         "polymorphic_identity": BareMetalHardwareType.GENERIC,
     }
 
-    def to_dict_with_super(self) -> dict[str, str]:
-        data = super().to_dict_with_super()
+    def to_dict(self) -> dict[str, str]:
+        data = super().to_dict()
         del data['ipmi_password']
         return data
 
@@ -101,16 +101,10 @@ class BareMetalHost(db.Model, ModelMixin, TimestampMixin):
         return data
 
     def is_available(self) -> bool:
-        return (
-            self.status is BareMetalHostStatus.AVAILABLE and self.handler.is_available()
-        )
+        return self.status is BareMetalHostStatus.AVAILABLE and self.handler.is_available()
 
     def can_be_enrolled(self) -> bool:
-
-        return (
-            self.status is BareMetalHostStatus.NON_ENROLLED
-            and self.handler.is_available()
-        )
+        return self.status is BareMetalHostStatus.NON_ENROLLED and self.handler.is_available()
 
     def _get_handler_node(self) -> IronicNode:
         # TODO: make this handler-agnostic
@@ -149,8 +143,8 @@ class BareMetalHostRedfish(BareMetalHost):
         db.Boolean, server_default=expression.true(), nullable=False
     )
 
-    def to_dict_with_super(self) -> dict[str, str]:
-        data = super().to_dict_with_super()
+    def to_dict(self) -> dict[str, str]:
+        data = super().to_dict()
         del data['redfish_password']
         return data
 
@@ -186,8 +180,8 @@ class BareMetalHostDrac(BareMetalHost):
     drac_username = db.Column(db.String(128), nullable=False)
     drac_password = db.Column(db.String(128), nullable=False)
 
-    def to_dict_with_super(self) -> dict[str, str]:
-        data = super().to_dict_with_super()
+    def to_dict(self) -> dict[str, str]:
+        data = super().to_dict()
         del data['redfish_password']
         del data['drac_password']
         return data

@@ -15,10 +15,10 @@ class ModelMixin:
     __embedded_ro__ = []    # read-only embedding
 
     def to_dict(self):
-        """Covert to `dict`."""
+        """Covert a model's object to `dict`, with parent's columns."""
         data = {}
 
-        for column in self.__table__.columns:
+        for column in inspect(self.__class__).columns:
             data[column.name] = getattr(self, column.name)
 
         for embedded_name in self.__embedded__ + self.__embedded_ro__:
@@ -28,12 +28,6 @@ class ModelMixin:
                 data[embedded_name] = None
 
         return data
-
-    def to_dict_with_super(self) -> dict[str, str]:
-        return {
-            column.name: getattr(self, column.name)
-            for column in inspect(self.__class__).columns
-        }
 
     @classmethod
     def from_dict(cls, data):
