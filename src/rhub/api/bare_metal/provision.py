@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 def provision_list():
     provisions = db.session.query(bare_metal_provision_full)
     return {
-        "data": [i.to_dict_with_super() for i in provisions.all()],
+        "data": [i.to_dict() for i in provisions.all()],
         "total": provisions.count(),
     }
 
@@ -61,14 +61,14 @@ def provision_create(body):
     ret = ironic_provision_task.delay(provision.id)
     logger.debug(f"Queued background task {ret}")
 
-    return provision.to_dict_with_super()
+    return provision.to_dict()
 
 
 def provision_get(provision_id):
     provision = BareMetalProvision.query.get(provision_id)
     if not provision:
         return problem(404, "Not Found", f"Provision {provision_id} does not exist")
-    return provision.to_dict_with_super()
+    return provision.to_dict()
 
 
 def provision_finish(provision_id):
@@ -79,7 +79,7 @@ def provision_finish(provision_id):
     ret = ironic_provision_stop_task.delay(provision.id)
     logger.debug(f"Queued background task {ret}")
 
-    return provision.to_dict_with_super()
+    return provision.to_dict()
 
 
 def provision_logs_upload(provision_id):
