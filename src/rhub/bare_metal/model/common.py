@@ -40,4 +40,4 @@ class BareMetalArch(str, enum.Enum):
 class BareMetalBootType(str, enum.Enum):
     LEGACY_BIOS = "legacy_bios"
     UEFI = "UEFI"
-    SECURE_BOOT = "secure_boot"
+    UEFI_SECURE_BOOT = "UEFI_secure_boot"

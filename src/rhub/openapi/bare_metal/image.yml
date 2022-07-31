@@ -1,0 +1,190 @@
+model:
+  BareMetalImage:
+    type: object
+    properties:
+      id:
+        allOf:
+          - $ref: '../common.yml#/model/ReadOnlyID'
+      version:
+        example: '36'
+        allOf:
+          - $ref: '../common.yml#/model/String128'
+      description:
+        type: string
+      base_os:
+        example: 'Fedora'
+        allOf:
+          - $ref: 'common.yml#/components/ImageBaseOS'
+      arch:
+        allOf:
+          - $ref: 'common.yml#/components/BareMetalArch'
+      legacy_bios:
+        allOf:
+          - $ref: '../common.yml#/model/BooleanDefaultTrue'
+      uefi:
+        allOf:
+          - $ref: '../common.yml#/model/BooleanDefaultTrue'
+      uefi_secure_boot:
+        allOf:
+          - $ref: '../common.yml#/model/BooleanDefaultTrue'
+    allOf:
+      - $ref: '../common.yml#/model/TimestampModel'
+    required:
+      - version
+      - base_os
+      - arch
+
+  BareMetalImageISO:
+    title: ISO image
+    description: A representation of an ISO image
+    type: object
+    properties:
+      download_url:
+        example: 'https://download.fedoraproject.org/pub/fedora/linux/releases/36/Server/x86_64/iso/Fedora-Server-dvd-x86_64-36-1.5.iso'
+        allOf:
+          - $ref: '../common.yml#/model/String1024'
+      iso_sha256:
+        example: 'a387f3230acf87ee38707ee90d3c88f44d7bf579e6325492f562f0f1f9449e89'
+        allOf:
+          - $ref: '../common.yml#/model/String64'
+      kernel_sub_path:
+        example: 'images/pxeboot/vmlinuz'
+        allOf:
+          - $ref: '../common.yml#/model/String128'
+      initramfs_sub_path:
+        example: 'images/pxeboot/initrd.img'
+        allOf:
+          - $ref: '../common.yml#/model/String128'
+      source_sub_path:
+        example: 'images/pxeboot/initrd.img'
+        allOf:
+          - $ref: '../common.yml#/model/String128'
+      stage2_sub_path:
+        example: 'images/install.img'
+        allOf:
+          - $ref: '../common.yml#/model/String128'
+    required:
+      - download_url
+      - iso_sha256
+      - kernel_sub_path
+      - initramfs_sub_path
+      - source_sub_path
+      - stage2_sub_path
+    allOf:
+      - $ref: '#/model/BareMetalImage'
+
+  BareMetalImageQCOW2:
+    title: QCOW2 image
+    description: A representation of a QCOW2 image
+    type: object
+    properties:
+      image_download_url:
+        allOf:
+          - $ref: '../common.yml#/model/String1024'
+      image_sha256:
+        allOf:
+          - $ref: '../common.yml#/model/String64'
+      kernel_download_url:
+        allOf:
+          - $ref: '../common.yml#/model/String1024'
+      kernel_sha256:
+        allOf:
+          - $ref: '../common.yml#/model/String64'
+      initramfs_download_url:
+        allOf:
+          - $ref: '../common.yml#/model/String1024'
+      initramfs_sha256:
+        allOf:
+          - $ref: '../common.yml#/model/String64'
+    required:
+      - image_download_url
+      - image_sha256
+      - kernel_download_url
+      - kernel_sha256
+      - initramfs_download_url
+      - initramfs_sha256
+    allOf:
+      - $ref: '#/model/BareMetalImage'
+
+  PossibleBareMetalImages:
+    oneOf:
+      - $ref: '#/model/BareMetalImageISO'
+      - $ref: '#/model/BareMetalImageQCOW2'
+
+  BareMetalImageList:
+    type: object
+    properties:
+      data:
+        type: array
+        items:
+          $ref: '#/model/PossibleBareMetalImages'
+        readOnly: true
+      total:
+        type: integer
+        minimum: 0
+        description: The total number of items
+        readOnly: true
+
+
+parameters:
+
+  image_id:
+    name: image_id
+    in: path
+    description: ID of the image
+    required: true
+    schema:
+      $ref: '../common.yml#/model/ID'
+
+endpoints:
+
+  image_list:
+    summary: Get image list
+    tags:
+      - bare_metal
+    operationId: rhub.api.bare_metal.image.image_list
+    responses:
+      '200':
+        description: List of images
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/BareMetalImageList'
+      default:
+        $ref: '../common.yml#/responses/problem'
+
+  image_create:
+    summary: Add bare metal image
+    tags:
+      - bare_metal
+    operationId: rhub.api.bare_metal.image.image_create
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/model/PossibleBareMetalImages'
+    responses:
+      '200':
+        description: Success
+      default:
+        $ref: '../common.yml#/responses/problem'
+
+  image_get:
+    summary: Get image
+    tags:
+      - bare_metal
+    operationId: rhub.api.bare_metal.image.image_get
+    parameters:
+      - $ref: '#/parameters/image_id'
+    responses:
+      '200':
+        description: image
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/PossibleBareMetalImages'
+      '404':
+        description: Not found
+      default:
+        $ref: '../common.yml#/responses/problem'

@@ -56,8 +56,8 @@ def ironic_provision_task(provision_id):
         operations = provision.ironic_operations
 
         # TODO: do it with other types
-        if provision.boot_type is BareMetalBootType.SECURE_BOOT:
-            operations.append(ironic_client.operation_for_secure_boot())
+        if provision.boot_type is BareMetalBootType.UEFI_SECURE_BOOT:
+            operations.append(ironic_client.operation_for_uefi_secure_boot())
 
         logger.debug(f"Ironic node creation data: {operations}")
 

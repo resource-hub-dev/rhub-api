@@ -3,12 +3,7 @@ import logging
 from connexion import problem
 
 from rhub.api import db
-from rhub.bare_metal.model import (
-    BareMetalHost,
-    BareMetalHostDrac,
-    bare_metal_host_full,
-    BareMetalHostRedfish,
-)
+from rhub.bare_metal.model import BareMetalHost, BareMetalHostDrac, BareMetalHostRedfish, bare_metal_host_full
 from rhub.bare_metal.tasks import ironic_enroll_host_task
 
 logger = logging.getLogger(__name__)
@@ -22,13 +17,8 @@ def host_list():
     }
 
 
-def host_create(body):
-    if "drac_username" in body:  # TODO: improve
-        host = BareMetalHostDrac.from_dict(body)
-    elif "redfish_username" in body:  # TODO: improve
-        host = BareMetalHostRedfish.from_dict(body)
-    else:
-        host = BareMetalHost.from_dict(body)
+def _host_create(host_model_cls, body):
+    host = host_model_cls.from_dict(body)
     db.session.add(host)
     db.session.commit()
 
@@ -36,6 +26,18 @@ def host_create(body):
     logger.debug(f"Queued background task {ret}")
 
     return host.to_dict_with_super()
+
+
+def host_create_ipmi(body):
+    return _host_create(host_model_cls=BareMetalHost, body=body)
+
+
+def host_create_redfish(body):
+    return _host_create(host_model_cls=BareMetalHostRedfish, body=body)
+
+
+def host_create_drac(body):
+    return _host_create(host_model_cls=BareMetalHostDrac, body=body)
 
 
 def host_get(host_id):

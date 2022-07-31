@@ -1,18 +1,19 @@
 include .env.defaults
+include bare_metal_how_to.md
 include config.py
 include LICENSE
 include migrations/alembic.ini
 include migrations/script.py.mako
 include requirements.txt
+include src/rhub/api/monitor/monitoring_sample_nodes.yml
 include src/rhub/bare_metal/model/data/ironic_template_data.json
 include src/rhub/bare_metal/model/data/kickstart_debug_script.sh
 include src/rhub/bare_metal/tasks/playbooks/*.yml
 include src/rhub/config/otel.yaml
-include src/rhub/api/monitor/monitoring_sample_nodes.yml
 
-recursive-include migrations *.py
-recursive-include src/rhub/openapi *.yml
-recursive-include src/rhub/api/monitor *.yml
+recursive-include config blackbox.yaml
 recursive-include config otel*json
 recursive-include config otel*yaml
-recursive-include config blackbox.yaml
+recursive-include migrations *.py
+recursive-include src/rhub/api/monitor *.yml
+recursive-include src/rhub/openapi *.yml
