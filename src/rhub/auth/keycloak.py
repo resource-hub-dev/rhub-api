@@ -1,9 +1,9 @@
 import json
 import logging
 
-from connexion import problem
-from keycloak import KeycloakOpenID, KeycloakAdmin, KeycloakGetError  # noqa: F401
 import injector
+from connexion import problem
+from keycloak import KeycloakAdmin, KeycloakGetError, KeycloakOpenID  # noqa: F401
 
 
 logger = logging.getLogger(__name__)
@@ -64,6 +64,16 @@ class KeycloakClient:
 
     def user_get(self, user_id):
         return self.admin.get_user(user_id)
+
+    def user_get_name(self, user_id):
+        """Get user name, returns string or `None` if failed."""
+        try:
+            return self.user_get(user_id)['username']
+        except KeycloakGetError:
+            logger.exception(
+                f'Failed to get user name from Keycloak, user_id={user_id}'
+            )
+        return None
 
     def user_create(self, data):
         data = data.copy()
@@ -129,6 +139,16 @@ class KeycloakClient:
 
     def group_get(self, group_id):
         return self.admin.get_group(group_id)
+
+    def group_get_name(self, group_id):
+        """Get group name, returns string or `None` if failed."""
+        try:
+            return self.group_get(group_id)['name']
+        except KeycloakGetError:
+            logger.exception(
+                f'Failed to get group name from Keycloak, group_id={group_id}'
+            )
+        return None
 
     def group_create(self, data):
         # `create_group` always returns b''

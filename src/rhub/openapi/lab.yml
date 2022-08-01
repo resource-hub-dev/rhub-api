@@ -196,6 +196,7 @@ model:
       owner_name:
         type: string
         readOnly: true
+        nullable: true
       group_id:
         type: string
         format: uuid

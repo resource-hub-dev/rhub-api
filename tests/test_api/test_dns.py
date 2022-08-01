@@ -30,7 +30,7 @@ def test_list_servers(client, keycloak_mock):
     ]
     model.DnsServer.query.count.return_value = 1
 
-    keycloak_mock.group_get.return_value = {'name': 'test-group'}
+    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.get(
         f'{API_BASE}/dns/server',
@@ -67,7 +67,7 @@ def test_get_server(client, keycloak_mock):
         credentials='kv/test',
     )
 
-    keycloak_mock.group_get.return_value = {'name': 'test-group'}
+    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.get(
         f'{API_BASE}/dns/server/1',
@@ -102,7 +102,7 @@ def test_create_server(client, db_session_mock, keycloak_mock, mocker):
     model.DnsServer.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
-    keycloak_mock.group_get.return_value = {'name': 'test-group'}
+    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.post(
         f'{API_BASE}/dns/server',
@@ -131,7 +131,7 @@ def test_update_server(client, keycloak_mock):
     )
     model.DnsServer.query.get.return_value = server
 
-    keycloak_mock.group_get.return_value = {'name': 'test-group'}
+    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.patch(
         f'{API_BASE}/dns/server/1',
@@ -162,7 +162,7 @@ def test_delete_server(client, db_session_mock, keycloak_mock):
     )
     model.DnsServer.query.get.return_value = server
 
-    keycloak_mock.group_get.return_value = {'name': 'test-group'}
+    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.delete(
         f'{API_BASE}/dns/server/1',

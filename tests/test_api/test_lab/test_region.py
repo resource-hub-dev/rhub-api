@@ -69,7 +69,7 @@ def test_to_dict(keycloak_mock):
         dns=None,
     )
 
-    keycloak_mock.group_get.return_value = {'name': 'foobar-group'}
+    keycloak_mock.group_get_name.return_value = 'foobar-group'
 
     assert region.to_dict() == {
         'id': 1,
@@ -160,7 +160,7 @@ def test_list_regions(client, keycloak_mock):
     ]
     model.Region.query.outerjoin.return_value.count.return_value = 1
 
-    keycloak_mock.group_get.return_value = {'name': 'foobar-group'}
+    keycloak_mock.group_get_name.return_value = 'foobar-group'
 
     rv = client.get(
         f'{API_BASE}/lab/region',
@@ -255,7 +255,7 @@ def test_get_region(client, keycloak_mock):
         dns=None,
     )
 
-    keycloak_mock.group_get.return_value = {'name': 'foobar-group'}
+    keycloak_mock.group_get_name.return_value = 'foobar-group'
 
     rv = client.get(
         f'{API_BASE}/lab/region/1',
@@ -322,7 +322,7 @@ def test_create_region(client, db_session_mock, keycloak_mock, mocker):
     model.Region.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
-    keycloak_mock.group_get.return_value = {'name': 'foobar-group'}
+    keycloak_mock.group_get_name.return_value = 'foobar-group'
 
     rv = client.post(
         f'{API_BASE}/lab/region',
@@ -368,7 +368,7 @@ def test_create_region_with_quota(client, db_session_mock, keycloak_mock, mocker
     model.Region.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
-    keycloak_mock.group_get.return_value = {'name': 'foobar-group'}
+    keycloak_mock.group_get_name.return_value = 'foobar-group'
 
     rv = client.post(
         f'{API_BASE}/lab/region',

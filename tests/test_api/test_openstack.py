@@ -32,7 +32,7 @@ def test_list_clouds(client, keycloak_mock):
     ]
     model.Cloud.query.count.return_value = 1
 
-    keycloak_mock.group_get.return_value = {'name': 'test-group'}
+    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.get(
         f'{API_BASE}/openstack/cloud',
@@ -73,7 +73,7 @@ def test_get_cloud(client, keycloak_mock):
         networks=['test_net'],
     )
 
-    keycloak_mock.group_get.return_value = {'name': 'test-group'}
+    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.get(
         f'{API_BASE}/openstack/cloud/1',
@@ -113,7 +113,7 @@ def test_create_cloud(client, db_session_mock, keycloak_mock, mocker):
     model.Cloud.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
-    keycloak_mock.group_get.return_value = {'name': 'test-group'}
+    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.post(
         f'{API_BASE}/openstack/cloud',
@@ -144,7 +144,7 @@ def test_update_cloud(client, keycloak_mock):
     )
     model.Cloud.query.get.return_value = cloud
 
-    keycloak_mock.group_get.return_value = {'name': 'test-group'}
+    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.patch(
         f'{API_BASE}/openstack/cloud/1',
@@ -177,7 +177,7 @@ def test_delete_cloud(client, db_session_mock, keycloak_mock):
     )
     model.Cloud.query.get.return_value = cloud
 
-    keycloak_mock.group_get.return_value = {'name': 'test-group'}
+    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.delete(
         f'{API_BASE}/openstack/cloud/1',
@@ -215,7 +215,7 @@ def test_list_projects(client, keycloak_mock):
     ]
     model.Project.query.count.return_value = 1
 
-    keycloak_mock.user_get.return_value = {'username': 'test-user'}
+    keycloak_mock.user_get_name.return_value = 'test-user'
 
     rv = client.get(
         f'{API_BASE}/openstack/project',
@@ -264,7 +264,7 @@ def test_get_cloud(client, keycloak_mock):
         owner_id='00000000-0000-0000-0000-000000000000',
     )
 
-    keycloak_mock.user_get.return_value = {'username': 'test-user'}
+    keycloak_mock.user_get_name.return_value = 'test-user'
 
     rv = client.get(
         f'{API_BASE}/openstack/project/1',
@@ -314,7 +314,7 @@ def test_create_project(client, db_session_mock, keycloak_mock, mocker):
         'cloud': cloud,
     })
 
-    keycloak_mock.user_get.return_value = {'username': 'test-user'}
+    keycloak_mock.user_get_name.return_value = 'test-user'
 
     rv = client.post(
         f'{API_BASE}/openstack/project',
@@ -354,7 +354,7 @@ def test_update_project(client, keycloak_mock):
     )
     model.Project.query.get.return_value = project
 
-    keycloak_mock.user_get.return_value = {'username': 'test-user'}
+    keycloak_mock.user_get_name.return_value = 'test-user'
 
     rv = client.patch(
         f'{API_BASE}/openstack/project/1',

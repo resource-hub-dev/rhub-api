@@ -101,12 +101,12 @@ class Region(db.Model, ModelMixin):
 
     @property
     def owner_group_name(self):
-        return di.get(KeycloakClient).group_get(self.owner_group_id)['name']
+        return di.get(KeycloakClient).group_get_name(self.owner_group_id)
 
     @property
     def users_group_name(self):
         if self.users_group_id:
-            return di.get(KeycloakClient).group_get(self.users_group_id)['name']
+            return di.get(KeycloakClient).group_get_name(self.users_group_id)
         return None
 
     def to_dict(self):
@@ -458,7 +458,7 @@ class ClusterEvent(db.Model, ModelMixin):
     @property
     def user_name(self):
         if self.user_id:
-            return di.get(KeycloakClient).user_get(self.user_id)['username']
+            return di.get(KeycloakClient).user_get_name(self.user_id)
         return None
 
     def to_dict(self):

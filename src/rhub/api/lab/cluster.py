@@ -338,7 +338,7 @@ def create_cluster(keycloak: KeycloakClient, body, user):
             return problem(403, 'Forbidden', 'TODO')
 
     else:
-        user_name = keycloak.user_get(user)['username']
+        user_name = keycloak.user_get_name(user)
         project_name = f'ql_{user_name}'
 
         project_query = openstack_model.Project.query.filter(

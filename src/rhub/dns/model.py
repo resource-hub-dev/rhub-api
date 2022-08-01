@@ -22,7 +22,7 @@ class DnsServer(db.Model, ModelMixin):
 
     @property
     def owner_group_name(self):
-        return di.get(KeycloakClient).group_get(self.owner_group_id)['name']
+        return di.get(KeycloakClient).group_get_name(self.owner_group_id)
 
     def to_dict(self):
         data = super().to_dict()
