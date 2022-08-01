@@ -390,7 +390,7 @@ def test_create_cluster(client, db_session_mock, keycloak_mock, mocker,
     tower_client.template_get.return_value = {'id': 123, 'name': 'dummy-create'}
     tower_client.template_launch.return_value = {'id': 321}
 
-    keycloak_mock.user_get.return_value = {'username': project.owner_name}
+    keycloak_mock.user_get_name.return_value = project.owner_name
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
@@ -457,7 +457,7 @@ def test_create_cluster_shared(client, db_session_mock, keycloak_mock, mocker,
     tower_client.template_get.return_value = {'id': 123, 'name': 'dummy-create'}
     tower_client.template_launch.return_value = {'id': 321}
 
-    keycloak_mock.user_get.return_value = {'username': shared_project.owner_name}
+    keycloak_mock.user_get_name.return_value = shared_project.owner_name
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',

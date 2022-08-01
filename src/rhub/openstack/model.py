@@ -27,7 +27,7 @@ class Cloud(db.Model, ModelMixin):
 
     @property
     def owner_group_name(self):
-        return di.get(KeycloakClient).group_get(self.owner_group_id)['name']
+        return di.get(KeycloakClient).group_get_name(self.owner_group_id)
 
     def to_dict(self):
         data = super().to_dict()
@@ -55,12 +55,12 @@ class Project(db.Model, ModelMixin):
 
     @property
     def owner_name(self):
-        return di.get(KeycloakClient).user_get(self.owner_id)['username']
+        return di.get(KeycloakClient).user_get_name(self.owner_id)
 
     @property
     def group_name(self):
         if self.group_id:
-            return di.get(KeycloakClient).group_get(self.group_id)['name']
+            return di.get(KeycloakClient).group_get_name(self.group_id)
         return None
 
     def to_dict(self):

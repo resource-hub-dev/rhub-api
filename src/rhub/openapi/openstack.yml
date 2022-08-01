@@ -21,6 +21,7 @@ model:
       owner_group_name:
         type: string
         readOnly: true
+        nullable: true
       url:
         type: string
         maxLength: 256
@@ -83,6 +84,7 @@ model:
       owner_name:
         type: string
         readOnly: true
+        nullable: true
       group_id:
         type: string
         format: uuid
