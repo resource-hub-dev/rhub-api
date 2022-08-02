@@ -1,8 +1,8 @@
 import logging
 
-from rhub.lab import model
 from rhub.api import db
 from rhub.api.utils import date_now
+from rhub.lab import model
 
 
 logger = logging.getLogger(__name__)
@@ -45,5 +45,7 @@ def delete_cluster(cluster, user=None):
 
     except Exception as e:
         db.session.rollback()
-        logger.exception(e)
+        logger.exception(
+            f'Failed to trigger cluster ID={cluster.id} deletion in Tower, {e!s}'
+        )
         raise

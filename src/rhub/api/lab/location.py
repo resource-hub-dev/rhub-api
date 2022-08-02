@@ -1,11 +1,16 @@
-from flask import url_for
-from connexion import problem
+import logging
 
-from rhub.api import db, DEFAULT_PAGE_LIMIT
-from rhub.lab import model
+from connexion import problem
+from flask import url_for
+
+from rhub.api import DEFAULT_PAGE_LIMIT, db
+from rhub.api.lab.region import _region_href
 from rhub.api.utils import db_sort
 from rhub.auth.utils import route_require_admin
-from rhub.api.lab.region import _region_href
+from rhub.lab import model
+
+
+logger = logging.getLogger(__name__)
 
 
 def _location_href(location):
@@ -49,6 +54,11 @@ def location_create(body, user):
     db.session.add(location)
     db.session.commit()
 
+    logger.info(
+        f'Location {location.name} (ID {location.id}) created by user {user}',
+        extra={'user_id': user, 'location_id': location.id},
+    )
+
     return location.to_dict() | {'_href': _location_href(location)}
 
 
@@ -68,6 +78,11 @@ def location_update(location_id, body, user):
     location.update_from_dict(body)
     db.session.commit()
 
+    logger.info(
+        f'Location {location.name} (ID {location.id}) updated by user {user}',
+        extra={'user_id': user, 'location_id': location.id},
+    )
+
     return location.to_dict() | {'_href': _location_href(location)}
 
 
@@ -79,6 +94,11 @@ def location_delete(location_id, user):
 
     db.session.delete(location)
     db.session.commit()
+
+    logger.info(
+        f'Location {location.name} (ID {location.id}) deleted by user {user}',
+        extra={'user_id': user, 'location_id': location.id},
+    )
 
 
 def location_region_list(location_id):

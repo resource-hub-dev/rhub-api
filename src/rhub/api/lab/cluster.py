@@ -88,6 +88,9 @@ def _get_sharedcluster_user_id():
     user_search = keycloak.user_list({'username': SHAREDCLUSTER_USER})
     if user_search:
         return user_search[0]['id']
+    logger.error(
+        f'{SHAREDCLUSTER_USER=} does not exist in Keycloak'
+    )
     return None
 
 
@@ -97,6 +100,9 @@ def _get_sharedcluster_group_id():
     for group in keycloak.group_list():
         if group['name'] == SHAREDCLUSTER_GROUP:
             return group['id']
+    logger.error(
+        f'{SHAREDCLUSTER_GROUP=} does not exist in Keycloak'
+    )
     return None
 
 
@@ -360,6 +366,12 @@ def create_cluster(keycloak: KeycloakClient, body, user):
             db.session.add(project)
             db.session.flush()
 
+            logger.info(
+                f'Created default QuickCluster project ID={project.id} in '
+                f'OpenStack ID={region.openstack.id} for user ID={user}',
+                extra={'user_id': user, 'project_id': project.id},
+            )
+
         cluster_data['project_id'] = project.id
 
     try:
@@ -411,7 +423,11 @@ def create_cluster(keycloak: KeycloakClient, body, user):
                 current_user_quota_usage[rsc]
             if (rsc_consumption / user_quota[rsc] >= 1):
                 db.session.rollback()
-                logger.exception('Failed to create cluster. Quota Exceeded')
+                logger.error(
+                    f'Failed to create {product.name} cluster for user ID={user}. '
+                    'Quota Exceeded',
+                    extra={'user_id': user, 'project_id': project.id},
+                )
                 return problem(500, 'Internal Server Error',
                                     'Quota Exceeded. Please resize cluster')
 
@@ -424,7 +440,8 @@ def create_cluster(keycloak: KeycloakClient, body, user):
         logger.info(
             f'Launching Tower template {tower_template["name"]} '
             f'(id={tower_template["id"]}), '
-            f'extra_vars={cluster.tower_launch_extra_vars!r}'
+            f'extra_vars={cluster.tower_launch_extra_vars!r}',
+            extra={'user_id': user},
         )
         tower_job = tower_client.template_launch(
             tower_template['id'],
@@ -445,12 +462,16 @@ def create_cluster(keycloak: KeycloakClient, body, user):
 
     except Exception as e:
         db.session.rollback()
-        logger.exception(e)
+        logger.exception(f'Failed to trigger cluster creation in Tower, {e!s}')
         return problem(500, 'Internal Server Error',
                        'Failed to trigger cluster creation.')
 
     db.session.commit()
-    logger.info(f'Cluster {cluster.name} (id {cluster.id}) created by user {user}')
+
+    logger.info(
+        f'Cluster {cluster.name} (id {cluster.id}) created by user {user}',
+        extra={'user_id': user, 'cluster_id': cluster.id},
+    )
 
     return cluster.to_dict() | {'_href': _cluster_href(cluster)}
 
@@ -510,6 +531,12 @@ def update_cluster(cluster_id, body, user):
         )
         db.session.add(cluster_event)
 
+        logger.info(
+            f'User {user} changed lifespan expiration of cluster ID={cluster.id}'
+            f'from {cluster_event.old_value} to {cluster_event.new_value}',
+            extra={'user_id': user, 'cluster_id': cluster.id},
+        )
+
     if 'reservation_expiration' in cluster_data:
         if cluster_data['reservation_expiration'] is None:
             if not _user_can_disable_expiration(cluster.region, user):
@@ -544,6 +571,12 @@ def update_cluster(cluster_id, body, user):
         )
         db.session.add(cluster_event)
 
+        logger.info(
+            f'User {user} changed reservation expiration of cluster ID={cluster.id}'
+            f'from {cluster_event.old_value} to {cluster_event.new_value}',
+            extra={'user_id': user, 'cluster_id': cluster.id},
+        )
+
     if 'status' in cluster_data:
         if not _user_is_cluster_admin(user):
             return problem(
@@ -562,10 +595,20 @@ def update_cluster(cluster_id, body, user):
         )
         db.session.add(cluster_event)
 
+        logger.info(
+            f'User {user} changed status of cluster ID={cluster.id}'
+            f'from {cluster_event.old_value} to {cluster_event.new_value}',
+            extra={'user_id': user, 'cluster_id': cluster.id},
+        )
+
     cluster.update_from_dict(cluster_data)
 
     db.session.commit()
-    logger.info(f'Cluster {cluster.name} (id {cluster.id}) updated by user {user}')
+
+    logger.info(
+        f'Cluster {cluster.name} (id {cluster.id}) updated by user {user}',
+        extra={'user_id': user, 'cluster_id': cluster.id},
+    )
 
     return cluster.to_dict() | {'_href': _cluster_href(cluster)}
 
@@ -612,7 +655,6 @@ def list_cluster_events(cluster_id, user):
         event.to_dict() | {'_href': _cluster_event_href(event)}
         for event in cluster.events
     ]
-    logger.info(f'Cluster {cluster.name} (id {cluster.id}) deleted by user {user}')
 
 
 def get_cluster_event(event_id, user):
@@ -657,11 +699,19 @@ def create_cluster_hosts(cluster_id, body, user):
     if not cluster:
         return problem(404, 'Not Found', f'Cluster {cluster_id} does not exist')
 
-    hosts = [
-        model.ClusterHost.from_dict({'cluster_id': cluster_id, **host_data})
-        for host_data in body
-    ]
-    db.session.add_all(hosts)
+    hosts = []
+    for host_data in body:
+        host = model.ClusterHost.from_dict({'cluster_id': cluster_id, **host_data})
+        hosts.append(host)
+
+        db.session.add(host)
+        db.session.flush()
+
+        logger.info(
+            f'Adding host ID={host.id} FQDN={host.fqdn} to cluster ID={cluster.id}',
+            extra={'user_id': user, 'cluster_id': cluster.id},
+        )
+
     db.session.commit()
 
     return [
@@ -677,7 +727,13 @@ def delete_cluster_hosts(cluster_id, user):
         return problem(404, 'Not Found', f'Cluster {cluster_id} does not exist')
 
     for host in cluster.hosts:
+        logger.info(
+            f'Deleting host ID={host.id} FQDN={host.fqdn} from cluster ID={cluster.id}',
+            extra={'user_id': user, 'cluster_id': cluster.id},
+        )
         db.session.delete(host)
+        db.session.flush()
+
     db.session.commit()
 
 
@@ -718,8 +774,11 @@ def reboot_hosts(cluster_id, body, user):
         os_client = cluster.region.create_openstack_client(os_project_name)
         for server in os_client.compute.servers():
             if server.hostname in hosts_to_reboot:
-                logger.info(f'Rebooting cluster host {server.hostname}, '
-                            f'cluster_id={cluster.id}')
+                logger.info(
+                    f'Rebooting cluster host {server.hostname}, '
+                    f'cluster_id={cluster.id}',
+                    extra={'user_id': user, 'cluster_id': cluster.id},
+                )
                 os_client.compute.reboot_server(server, reboot_type)
                 rebooted_hosts.append(hosts_to_reboot[server.hostname])
     except Exception as e:

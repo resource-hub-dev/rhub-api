@@ -1114,10 +1114,10 @@ def test_create_cluster_hosts(client, db_session_mock, project):
 
     assert rv.status_code == 200
 
-    db_session_mock.add_all.assert_called()
+    db_session_mock.add.assert_called()
     db_session_mock.commit.assert_called()
 
-    hosts = db_session_mock.add_all.call_args.args[0]
+    hosts = [i.args[0] for i in db_session_mock.add.call_args_list]
     for host_data, host_row in zip(hosts_data, hosts):
         for k, v in host_data.items():
             assert getattr(host_row, k) == v

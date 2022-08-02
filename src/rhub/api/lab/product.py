@@ -1,15 +1,15 @@
 import logging
 
+import sqlalchemy
 from connexion import problem
 from flask import url_for
-import sqlalchemy
 
-from rhub.lab import model
-from rhub.api import db, DEFAULT_PAGE_LIMIT
+from rhub.api import DEFAULT_PAGE_LIMIT, db
 from rhub.api.utils import db_sort
-from rhub.auth.keycloak import KeycloakClient
 from rhub.auth import ADMIN_ROLE
+from rhub.auth.keycloak import KeycloakClient
 from rhub.auth.utils import route_require_admin
+from rhub.lab import model
 
 
 logger = logging.getLogger(__name__)
@@ -62,7 +62,11 @@ def create_product(body, user):
 
     db.session.add(product)
     db.session.commit()
-    logger.info(f'Product {product.name} (id {product.id}) created by user {user}')
+
+    logger.info(
+        f'Product {product.name} (id {product.id}) created by user {user}',
+        extra={'user_id': user, 'product_id': product.id},
+    )
 
     return product.to_dict() | {'_href': _product_href(product)}
 
@@ -83,7 +87,11 @@ def update_product(product_id, body, user):
     product.update_from_dict(body)
 
     db.session.commit()
-    logger.info(f'Product {product.name} (id {product.id}) updated by user {user}')
+
+    logger.info(
+        f'Product {product.name} (id {product.id}) updated by user {user}',
+        extra={'user_id': user, 'product_id': product.id},
+    )
 
     return product.to_dict() | {'_href': _product_href(product)}
 
@@ -109,6 +117,11 @@ def delete_product(product_id, user):
 
     db.session.delete(product)
     db.session.commit()
+
+    logger.info(
+        f'Product {product.name} (id {product.id}) deleted by user {user}',
+        extra={'user_id': user, 'product_id': product.id},
+    )
 
 
 def list_product_regions(keycloak: KeycloakClient, product_id, user, filter_,

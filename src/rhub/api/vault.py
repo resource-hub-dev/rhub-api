@@ -1,9 +1,9 @@
-import logging
 import abc
+import logging
 
 import hvac
-import yaml
 import injector
+import yaml
 
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,7 @@ class HashicorpVault(Vault):
         self._client.auth.approle.login(role_id=role_id, secret_id=secret_id)
 
     def read(self, path):
+        logger.debug(f'Reading credentials from {self!r} at path {path!r}')
         try:
             secret = self._client.read(path)
             # Check if response is kv-v2
@@ -38,10 +39,11 @@ class HashicorpVault(Vault):
             return None
 
     def write(self, path, data):
+        logger.debug(f'Writing credentials to {self!r} at path {path!r}')
         self._client.write(path, **data)
 
     def __repr__(self):
-        return f'HashiCorpVault{self._client.url})'
+        return f'HashiCorpVault({self._client.url})'
 
 
 class FileVault(Vault):
@@ -68,9 +70,11 @@ class FileVault(Vault):
             self._data = yaml.safe_load(f)
 
     def read(self, path):
+        logger.debug(f'Reading credentials from {self!r} at path {path!r}')
         return self._data.get(path)
 
     def write(self, path, data):
+        logger.debug(f'Writing credentials to {self!r} at path {path!r}')
         self._data[path] = data
         with open(self._datafile, 'w') as f:
             yaml.safe_dump(self._data, f)

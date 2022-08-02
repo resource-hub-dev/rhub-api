@@ -81,7 +81,11 @@ def server_create(keycloak: KeycloakClient, vault: Vault, body, user):
 
     db.session.add(server)
     db.session.commit()
-    logger.info(f'Server {server.name} (id {server.id}) created by user {user}')
+
+    logger.info(
+        f'Server {server.name} (id {server.id}) created by user {user}',
+        extra={'user_id': user, 'server_id': server.id},
+    )
 
     return server.to_dict() | {'_href': _server_href(server)}
 
@@ -110,7 +114,11 @@ def server_update(keycloak: KeycloakClient, vault: Vault, server_id, body, user)
     server.update_from_dict(body)
 
     db.session.commit()
-    logger.info(f'Server {server.name} (id {server.id}) updated by user {user}')
+
+    logger.info(
+        f'Server {server.name} (id {server.id}) updated by user {user}',
+        extra={'user_id': user, 'server_id': server.id},
+    )
 
     return server.to_dict() | {'_href': _server_href(server)}
 
@@ -126,4 +134,8 @@ def server_delete(keycloak: KeycloakClient, server_id, user):
 
     db.session.delete(server)
     db.session.commit()
-    logger.info(f'Server {server.name} (id {server.id}) deleted by user {user}')
+
+    logger.info(
+        f'Server {server.name} (id {server.id}) deleted by user {user}',
+        extra={'user_id': user, 'server_id': server.id},
+    )
