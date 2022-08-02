@@ -1,6 +1,7 @@
 import logging
 import logging.config
 import os
+import urllib.parse
 
 import click
 import connexion
@@ -46,6 +47,46 @@ def init_command():
     init_app()
 
 
+def log_request():
+    try:
+        request_method = flask.request.method
+        request_path = flask.request.path
+        request_query = urllib.parse.unquote(flask.request.query_string.decode())
+        if flask.request.content_type == 'application/json':
+            request_data = flask.request.json
+        else:
+            request_data = flask.request.data
+
+        logger.debug(
+            f'{request_method=} {request_path=} {request_query=} {request_data=}',
+        )
+
+    except Exception:
+        logger.exception('Failed to log request (DEBUG logging)')
+
+
+def log_response(response):
+    try:
+        response_status = response.status
+        if response.content_type in {'application/json', 'application/problem+json'}:
+            response_data = response.json
+            # Don't display secrets in logs.
+            for k in response_data:
+                if k in {'access_token', 'refresh_token'}:
+                    response_data[k] = '***'
+        else:
+            response_data = response.data
+
+        logger.debug(
+            f'{response_status=} {response_data=}',
+        )
+
+    except Exception:
+        logger.exception('Failed to log response (DEBUG logging)')
+
+    return response
+
+
 def create_app():
     """Create Connexion/Flask application."""
     log_config = os.getenv('LOG_CONFIG')
@@ -84,6 +125,10 @@ def create_app():
     CORS(flask_app)
 
     flask_app.cli.add_command(init_command)
+
+    if logger.isEnabledFor(logging.DEBUG):
+        flask_app.before_request(log_request)
+        flask_app.after_request(log_response)
 
     db.init_app(flask_app)
     migrate.init_app(flask_app, db)
