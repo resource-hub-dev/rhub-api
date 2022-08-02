@@ -1,17 +1,17 @@
-import logging
 import json
+import logging
 import time
 
-from flask import Response, request, current_app, url_for
 from connexion import problem
+from flask import Response, current_app, request, url_for
 from werkzeug.exceptions import Unauthorized
 
-from rhub.tower import model
-from rhub.tower.client import TowerError
-from rhub.api import db, DEFAULT_PAGE_LIMIT
+from rhub.api import DEFAULT_PAGE_LIMIT, db
 from rhub.api.utils import date_now, db_sort
 from rhub.auth.utils import route_require_admin, user_is_admin
 from rhub.lab import model as lab_model
+from rhub.tower import model
+from rhub.tower.client import TowerError
 
 
 logger = logging.getLogger(__name__)
@@ -100,6 +100,11 @@ def create_server(body, user):
     db.session.add(server)
     db.session.commit()
 
+    logger.info(
+        f'Server {server.name} (id {server.id}) created by user {user}',
+        extra={'user_id': user, 'server_id': server.id},
+    )
+
     return server.to_dict() | {'_href': _server_href(server)}
 
 
@@ -119,6 +124,11 @@ def update_server(server_id, body, user):
     server.update_from_dict(body)
     db.session.commit()
 
+    logger.info(
+        f'Server {server.name} (id {server.id}) updated by user {user}',
+        extra={'user_id': user, 'server_id': server.id},
+    )
+
     return server.to_dict() | {'_href': _server_href(server)}
 
 
@@ -130,6 +140,11 @@ def delete_server(server_id, user):
 
     db.session.delete(server)
     db.session.commit()
+
+    logger.info(
+        f'Server {server.name} (id {server.id}) deleted by user {user}',
+        extra={'user_id': user, 'server_id': server.id},
+    )
 
 
 def list_templates(filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
@@ -168,6 +183,11 @@ def create_template(body, user):
 
     db.session.add(template)
     db.session.commit()
+
+    logger.info(
+        f'Template {template.name} (id {template.id}) created by user {user}',
+        extra={'user_id': user, 'template_id': template.id},
+    )
 
     return template.to_dict() | {'_href': _template_href(template)}
 
@@ -211,6 +231,11 @@ def update_template(template_id, body, user):
     template.update_from_dict(body)
     db.session.commit()
 
+    logger.info(
+        f'Template {template.name} (id {template.id}) updated by user {user}',
+        extra={'user_id': user, 'template_id': template.id},
+    )
+
     return template.to_dict() | {'_href': _template_href(template)}
 
 
@@ -223,6 +248,11 @@ def delete_template(template_id, user):
     db.session.delete(template)
     db.session.commit()
 
+    logger.info(
+        f'Template {template.name} (id {template.id}) deleted by user {user}',
+        extra={'user_id': user, 'template_id': template.id},
+    )
+
 
 def launch_template(template_id, body, user):
     template = model.Template.query.get(template_id)
@@ -234,8 +264,9 @@ def launch_template(template_id, body, user):
         template_launch_params = body
 
         logger.info(
-            f'''Launching tower template {template.id},
-                template_launch_params={template_launch_params!r}'''
+            f'Launching tower template {template.id}'
+            f'template_launch_params={template_launch_params!r}',
+            extra={'user_id': user},
         )
         if template.tower_template_is_workflow:
             tower_job_data = tower_client.workflow_launch(
@@ -363,6 +394,11 @@ def relaunch_job(job_id, user):
         )
         db.session.add(relaunched_job)
         db.session.commit()
+
+        logger.info(
+            f'Re-launching tower job {tower_job_data["id"]}',
+            extra={'user_id': user},
+        )
 
         return _tower_job(relaunched_job, tower_job_data) | {'_href': _job_href(job)}
 

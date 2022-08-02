@@ -104,7 +104,11 @@ def cloud_create(keycloak: KeycloakClient, vault: Vault, body, user):
 
     db.session.add(cloud)
     db.session.commit()
-    logger.info(f'Cloud {cloud.name} (id {cloud.id}) created by user {user}')
+
+    logger.info(
+        f'Cloud {cloud.name} (id {cloud.id}) created by user {user}',
+        extra={'user_id': user, 'cloud_id': cloud.id},
+    )
 
     return cloud.to_dict() | {'_href': _cloud_href(cloud)}
 
@@ -133,7 +137,11 @@ def cloud_update(keycloak: KeycloakClient, vault: Vault, cloud_id, body, user):
     cloud.update_from_dict(body)
 
     db.session.commit()
-    logger.info(f'Cloud {cloud.name} (id {cloud.id}) updated by user {user}')
+
+    logger.info(
+        f'Cloud {cloud.name} (id {cloud.id}) updated by user {user}',
+        extra={'user_id': user, 'cloud_id': cloud.id},
+    )
 
     return cloud.to_dict() | {'_href': _cloud_href(cloud)}
 
@@ -149,7 +157,11 @@ def cloud_delete(keycloak: KeycloakClient, cloud_id, user):
 
     db.session.delete(cloud)
     db.session.commit()
-    logger.info(f'Cloud {cloud.name} (id {cloud.id}) deleted by user {user}')
+
+    logger.info(
+        f'Cloud {cloud.name} (id {cloud.id}) deleted by user {user}',
+        extra={'user_id': user, 'cloud_id': cloud.id},
+    )
 
 
 def project_list(keycloak: KeycloakClient,
@@ -209,7 +221,11 @@ def project_create(body, user):
 
     db.session.add(project)
     db.session.commit()
-    logger.info(f'Project {project.name} (id {project.id}) created by user {user}')
+
+    logger.info(
+        f'Project {project.name} (id {project.id}) created by user {user}',
+        extra={'user_id': user, 'project_id': project.id},
+    )
 
     return project.to_dict() | {'_href': _project_href(project)}
 
@@ -236,7 +252,11 @@ def project_update(project_id, body, user):
     project.update_from_dict(body)
 
     db.session.commit()
-    logger.info(f'Project {project.name} (id {project.id}) updated by user {user}')
+
+    logger.info(
+        f'Project {project.name} (id {project.id}) updated by user {user}',
+        extra={'user_id': user, 'project_id': project.id},
+    )
 
     return project.to_dict() | {'_href': _project_href(project)}
 
@@ -251,7 +271,11 @@ def project_delete(project_id, user):
 
     db.session.delete(project)
     db.session.commit()
-    logger.info(f'Project {project.name} (id {project.id}) deleted by user {user}')
+
+    logger.info(
+        f'Project {project.name} (id {project.id}) deleted by user {user}',
+        extra={'user_id': user, 'project_id': project.id},
+    )
 
 
 def project_limits_get(project_id, user):

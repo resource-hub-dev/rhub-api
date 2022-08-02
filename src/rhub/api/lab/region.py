@@ -128,7 +128,11 @@ def create_region(keycloak: KeycloakClient, vault: Vault, body, user):
 
     db.session.add(region)
     db.session.commit()
-    logger.info(f'Region {region.name} (id {region.id}) created by user {user}')
+
+    logger.info(
+        f'Region {region.name} (id {region.id}) created by user {user}',
+        extra={'user_id': user, 'region': region.id},
+    )
 
     return region.to_dict() | {'_href': _region_href(region)}
 
@@ -169,7 +173,11 @@ def update_region(keycloak: KeycloakClient, vault: Vault, region_id, body, user)
     region.update_from_dict(body)
 
     db.session.commit()
-    logger.info(f'Region {region.name} (id {region.id}) updated by user {user}')
+
+    logger.info(
+        f'Region {region.name} (id {region.id}) updated by user {user}',
+        extra={'user_id': user, 'region': region.id},
+    )
 
     return region.to_dict() | {'_href': _region_href(region)}
 
@@ -192,9 +200,12 @@ def delete_region(keycloak: KeycloakClient, region_id, user):
         db.session.flush()
 
     db.session.delete(region)
-
     db.session.commit()
-    logger.info(f'Region {region.name} (id {region.id}) deleted by user {user}')
+
+    logger.info(
+        f'Region {region.name} (id {region.id}) deleted by user {user}',
+        extra={'user_id': user, 'region': region.id},
+    )
 
 
 def list_region_products(keycloak: KeycloakClient, region_id, user, filter_):
@@ -259,14 +270,16 @@ def add_region_product(keycloak: KeycloakClient, region_id, body, user):
         )
         db.session.add(relation)
         db.session.commit()
-        logger.info(
-            f'Added Product {product.name} (id {product.id}) to Region {region.name} '
-            f'(id {region.id}) by user {user}'
-        )
     elif 'enabled' in body:
         for relation in q.all():
             relation.enabled = body['enabled']
         db.session.commit()
+
+    logger.info(
+        f'Added Product {product.name} (id {product.id}) to Region {region.name} '
+        f'(id {region.id}) by user {user}',
+        extra={'user_id': user, 'region_id': region.id, 'product_id': product.id},
+    )
 
 
 def delete_region_product(keycloak: KeycloakClient, region_id, user):
@@ -290,6 +303,12 @@ def delete_region_product(keycloak: KeycloakClient, region_id, user):
         for relation in q.all():
             db.session.delete(relation)
         db.session.commit()
+
+    logger.info(
+        f'Deleted Product {product.name} (id {product.id}) from Region {region.name} '
+        f'(id {region.id}) by user {user}',
+        extra={'user_id': user, 'region_id': region.id, 'product_id': product.id},
+    )
 
 
 def region_to_usage(region, user):
