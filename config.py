@@ -1,9 +1,24 @@
 #!/usr/bin/env python3
 
+import logging
 import os
 import pathlib
 
+from gunicorn import glogging
 from ruamel import yaml
+
+
+class HealthCheckFilter(logging.Filter):
+    def filter(self, record):
+        # Filter out healthcheck requests.
+        url = record.args['U']
+        return not url.endswith('/ping') and not url.endswith('/cowsay')
+
+
+class CustomGunicornLogger(glogging.Logger):
+    def setup(self, cfg):
+        super().setup(cfg)
+        self.access_log.addFilter(HealthCheckFilter())
 
 
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'warning')
@@ -23,10 +38,12 @@ if LOG_CONFIG and os.path.exists(LOG_CONFIG):
 else:
     loglevel = LOG_LEVEL
 
+logger_class = CustomGunicornLogger
+
 # preload_app = True
 
 from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
 
+
 def child_exit(server, worker):
     GunicornInternalPrometheusMetrics.mark_process_dead_on_child_exit(worker.pid)
-
