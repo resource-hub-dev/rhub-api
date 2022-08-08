@@ -101,15 +101,18 @@ def delete_expired_clusters(params):
     )
 
     expired_clusters = lab_model.Cluster.query.filter(
-        db.or_(
-            db.and_(
-                ~lab_model.Cluster.reservation_expiration.is_(None),
-                lab_model.Cluster.reservation_expiration <= (
-                    now - reservation_grace_period),
-            ),
-            db.and_(
-                ~lab_model.Cluster.lifespan_expiration.is_(None),
-                lab_model.Cluster.lifespan_expiration <= now,
+        db.and_(
+            lab_model.Cluster.status == lab_model.ClusterStatus.ACTIVE,
+            db.or_(
+                db.and_(
+                    ~lab_model.Cluster.reservation_expiration.is_(None),
+                    lab_model.Cluster.reservation_expiration <= (
+                        now - reservation_grace_period),
+                ),
+                db.and_(
+                    ~lab_model.Cluster.lifespan_expiration.is_(None),
+                    lab_model.Cluster.lifespan_expiration <= now,
+                ),
             ),
         )
     )
