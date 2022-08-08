@@ -100,7 +100,7 @@ def provision_logs_upload(provision_id):
 
     provision.logs_path = str(final_file_name)
     db.session.commit()
-    return provision
+    return provision.to_dict()
 
 
 def provision_get_kickstart(provision_id):
