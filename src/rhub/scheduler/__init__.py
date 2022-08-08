@@ -28,7 +28,7 @@ class SchedulerModule(injector.Module):
         else:
             sched.start()
 
-        @sched.task('interval', id='rhub_scheduler', seconds=1, max_instances=1)
+        @sched.task('interval', id='rhub_scheduler', minutes=1, max_instances=1)
         def rhub_scheduler():
             from rhub.scheduler import worker
             with self.app.app_context():
