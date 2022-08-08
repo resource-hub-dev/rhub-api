@@ -133,7 +133,7 @@ class BareMetalIronicHandler(BareMetalHandler):
         client.__class__ = IronicClient
         return client
 
-    def to_dict_with_super(self) -> dict[str, str]:
-        data = super().to_dict_with_super()
+    def to_dict(self) -> dict[str, str]:
+        data = super().to_dict()
         del data['password']
         return data

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 def host_list():
     hosts = db.session.query(bare_metal_host_full)
     return {
-        "data": [i.to_dict_with_super() for i in hosts.all()],
+        "data": [i.to_dict() for i in hosts.all()],
         "total": hosts.count(),
     }
 
@@ -25,7 +25,7 @@ def _host_create(host_model_cls, body):
     ret = ironic_enroll_host_task.delay(host.id)
     logger.debug(f"Queued background task {ret}")
 
-    return host.to_dict_with_super()
+    return host.to_dict()
 
 
 def host_create_ipmi(body):
@@ -44,7 +44,7 @@ def host_get(host_id):
     host = BareMetalHost.query.get(host_id)
     if not host:
         return problem(404, "Not Found", f"Host {host_id} does not exist")
-    return host.to_dict_with_super()
+    return host.to_dict()
 
 
 def host_get_power_state(host_id):
