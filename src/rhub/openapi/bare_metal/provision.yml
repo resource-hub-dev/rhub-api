@@ -155,7 +155,11 @@ endpoints:
                 format: binary
     responses:
       '200':
-        description: Success
+        description: Provision object
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/BareMetalProvisionISO'
       default:
         $ref: '../common.yml#/responses/problem'
 
@@ -168,7 +172,7 @@ endpoints:
       - $ref: '#/parameters/provision_id'
     responses:
       '200':
-        description: provision
+        description: Provision object
         content:
           application/json:
             schema:
@@ -187,7 +191,7 @@ endpoints:
       - $ref: '#/parameters/provision_id'
     responses:
       '200':
-        description: provision
+        description: Provision object
         content:
           application/json:
             schema:
