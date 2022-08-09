@@ -1,12 +1,13 @@
-import logging
 import contextlib
 import datetime
+import logging
 
 import rhub.tower.model
-from rhub.api import db
+from rhub.api import db, di
 from rhub.api.utils import date_now
 from rhub.lab import model as lab_model
 from rhub.lab import utils as lab_utils
+from rhub.messaging import Messaging
 
 
 logger = logging.getLogger(__name__)
@@ -95,6 +96,8 @@ def delete_expired_clusters(params):
             days. This only applies to reservation (soft limit), if lifespan
             (hard limit) expires cluster is deleted immediately.
     """
+    messaging = di.get(Messaging)
+
     now = date_now()
     reservation_grace_period = datetime.timedelta(
         days=params.get('reservation_grace_period', 0),
@@ -106,8 +109,7 @@ def delete_expired_clusters(params):
             db.or_(
                 db.and_(
                     ~lab_model.Cluster.reservation_expiration.is_(None),
-                    lab_model.Cluster.reservation_expiration <= (
-                        now - reservation_grace_period),
+                    lab_model.Cluster.reservation_expiration <= now,
                 ),
                 db.and_(
                     ~lab_model.Cluster.lifespan_expiration.is_(None),
@@ -118,14 +120,59 @@ def delete_expired_clusters(params):
     )
 
     for cluster in expired_clusters.all():
-        logger.info(
-            f'Deleting expired cluster "{cluster.name}" ({cluster.id=}, '
-            f'{cluster.reservation_expiration=}, {cluster.lifespan_expiration=})',
-            extra={'cluster': cluster.to_dict(), 'region': cluster.region.to_dict()},
+        lifespan_expired = (
+            cluster.lifespan_expiration
+            and cluster.lifespan_expiration <= now
+        )
+        reservation_expired = (
+            cluster.reservation_expiration
+            and cluster.reservation_expiration <= now - reservation_grace_period
         )
 
-        with contextlib.suppress(Exception):
-            lab_utils.delete_cluster(cluster)
+        delete = lifespan_expired or reservation_expired
+        delete_date = cluster.reservation_expiration + reservation_grace_period
+
+        msg_extra = {
+            'owner_id': cluster.owner_id,
+            'owner_name': cluster.owner_name,
+            'cluster_id': cluster.id,
+            'cluster_name': cluster.name,
+            'cluster_reservation_expiration': (
+                cluster.reservation_expiration.isoformat()
+                if cluster.reservation_expiration
+                else None
+            ),
+            'cluster_lifespan_expiration': (
+                cluster.lifespan_expiration.isoformat()
+                if cluster.lifespan_expiration
+                else None
+            ),
+            'cluster_delete': delete,
+            'cluster_delete_date': delete_date.isoformat(),
+        }
+
+        if delete:
+            logger.info(
+                f'Deleting expired cluster "{cluster.name}" ({cluster.id=}, '
+                f'{cluster.reservation_expiration=}, {cluster.lifespan_expiration=})',
+                extra={'cluster': cluster.to_dict(), 'region': cluster.region.to_dict()},
+            )
+            messaging.send(
+                'lab.cluster.delete',
+                f'Deleting expired cluser "{cluster.name}" (ID={cluster.id})',
+                extra=msg_extra,
+            )
+
+            with contextlib.suppress(Exception):
+                lab_utils.delete_cluster(cluster)
+
+        else:
+            messaging.send(
+                'lab.cluster.delete',
+                f'Cluster "{cluster.name}" (ID={cluster.id}) has expired and '
+                f'will be deleted at {delete_date:%Y-%m-%d %H:%M %Z}.',
+                extra=msg_extra,
+            )
 
 
 @CronJob
