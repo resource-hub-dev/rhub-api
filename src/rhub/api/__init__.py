@@ -21,6 +21,7 @@ from rhub import ROOT_PKG_PATH
 from rhub.api.extensions import celery
 from rhub.api.vault import Vault, VaultModule
 from rhub.auth.keycloak import KeycloakModule
+from rhub.messaging import MessagingModule
 from rhub.scheduler import SchedulerModule
 
 
@@ -145,6 +146,7 @@ def create_app():
             KeycloakModule(flask_app),
             VaultModule(flask_app),
             SchedulerModule(flask_app),
+            MessagingModule(flask_app),
         ],
     )
 

@@ -5,6 +5,7 @@ import pytest
 
 from rhub.tower import model
 from rhub.tower.client import TowerError
+from rhub.lab import model as lab_model
 
 
 API_BASE = '/v0'

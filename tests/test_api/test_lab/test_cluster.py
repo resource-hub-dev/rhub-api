@@ -1,4 +1,5 @@
 import datetime
+import base64
 from unittest.mock import ANY
 
 import pytest
@@ -1163,3 +1164,96 @@ def test_delete_cluster_hosts(client, db_session_mock, project):
     for host in hosts:
         db_session_mock.delete.assert_any_call(host)
     db_session_mock.commit.assert_called()
+
+
+def test_tower_webhook_cluster(client, mocker, messaging_mock, region, project, product, tower_client):
+    cluster = model.Cluster(
+        id=1,
+        name='testcluster',
+        description='test cluster',
+        created=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
+        region_id=region.id,
+        region=region,
+        project_id=project.id,
+        project=project,
+        reservation_expiration=None,
+        lifespan_expiration=None,
+        status=model.ClusterStatus.ACTIVE,
+        product_id=product.id,
+        product_params={},
+        product=product,
+    )
+    model.Cluster.query.get.return_value = cluster
+
+    tower_job_id = 53341
+    payload = {
+        'id': tower_job_id,
+        'name': product.tower_template_name_delete,
+        'url': 'https://tower.example.com/#/jobs/playbook/53341',
+        'created_by': 'rhub-tower',
+        'started': '2022-08-08T14:00:09.850133+00:00',
+        'finished': '2022-08-08T14:02:44.576137+00:00',
+        'status': 'successful',
+        'traceback': '',
+        'inventory': 'localhost',
+        'project': 'example',
+        'playbook': 'products/rhub-example-delete.yml',
+        'credential': 'example',
+        'limit': '',
+        'extra_vars': f"""
+            {{
+              "rhub_cluster_id": {cluster.id},
+              "rhub_cluster_name": "{cluster.name}",
+              "rhub_product_id": {product.id},
+              "rhub_product_name": "{product.name}",
+              "rhub_region_id": {region.id},
+              "rhub_region_name": "{region.name}",
+              "rhub_project_id": {project.id},
+              "rhub_project_name": "{project.name}",
+              "rhub_user_id": "00000000-0000-0000-0000-000000000000",
+              "rhub_user_name": "exampleuser"
+            }}
+        """,
+        'hosts': {
+            'localhost': {
+                'failed': False,
+                'changed': 3,
+                'dark': 0,
+                'failures': 0,
+                'ok': 11,
+                'processed': 1,
+                'skipped': 0,
+                'rescued': 0,
+                'ignored': 0,
+            },
+        },
+    }
+
+    mocker.patch.dict(client.application.config, {
+        'WEBHOOK_USER': 'user',
+        'WEBHOOK_PASS': 'pass',
+    })
+
+    tower_client.template_get.return_value = {'id': 123, 'name': 'rhub-example-delete'}
+    tower_client.template_launch.return_value = {'id': 321}
+
+    rv = client.post(
+        f'{API_BASE}/tower/webhook_notification',
+        headers={
+            'Authorization': 'Basic ' + base64.b64encode(b'user:pass').decode(),
+            'Content-Type': 'application/json',
+        },
+        json=payload,
+    )
+
+    assert rv.status_code == 204, rv.data
+
+    messaging_mock.send.assert_called()
+
+    m_topic, m_msg = messaging_mock.send.call_args.args
+    m_extra = messaging_mock.send.call_args.kwargs['extra']
+
+    assert m_topic == 'lab.cluster.delete'
+    assert m_extra['cluster_id'] == cluster.id
+    assert m_extra['job_id'] == tower_job_id
+    assert m_extra['job_status'] == 'successful'

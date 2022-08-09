@@ -4,6 +4,7 @@ import pathlib
 
 from setuptools import find_packages, setup
 
+
 here = pathlib.Path(__file__).parent.resolve()
 
 # Get the long description from the README file
@@ -34,18 +35,19 @@ setup(
         "connexion[swagger-ui]",
         "cron-validator >= 1.0.5",
         "dpath",
-        "flask_injector",
+        "flask",
         "flask-apscheduler",
         "flask-cors",
         "flask-dotenv",
+        "flask_injector",
         "flask-migrate",
         "flask-sqlalchemy",
-        "flask",
         "gunicorn",
         "hvac",
         "injector",
         "inotify",
         "jinja2",
+        "kombu",
         "openapi-spec-validator",
         "openstacksdk",
         "prance",

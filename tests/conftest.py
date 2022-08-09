@@ -7,6 +7,7 @@ import pytest
 from rhub.api import create_app
 from rhub.api.vault import Vault
 from rhub.auth.keycloak import KeycloakClient
+from rhub.messaging import Messaging
 
 
 @pytest.fixture
@@ -34,6 +35,16 @@ def vault_mock(session_mocker):
     m.return_value = vault_mock
 
     yield vault_mock
+
+
+@pytest.fixture(autouse=True, scope='session')
+def messaging_mock(session_mocker):
+    messaging_mock = session_mocker.Mock(spec=Messaging)
+
+    m = session_mocker.patch('rhub.messaging.MessagingModule._create')
+    m.return_value = messaging_mock
+
+    yield messaging_mock
 
 
 @pytest.fixture(autouse=True)

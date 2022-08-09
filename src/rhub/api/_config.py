@@ -3,6 +3,7 @@ import urllib.parse
 from datetime import timedelta
 from pathlib import Path
 
+
 KEYCLOAK_SERVER = os.getenv('KEYCLOAK_SERVER')
 KEYCLOAK_RESOURCE = os.getenv('KEYCLOAK_RESOURCE')
 KEYCLOAK_REALM = os.getenv('KEYCLOAK_REALM')
@@ -42,14 +43,16 @@ VAULT_PATH = os.getenv('VAULT_PATH')
 
 SCHEDULER_API_ENABLED = False
 
-CELERY_BROKER_URL = '{type}://{username}:{password}@{host}:{port}'.format(
+RHUB_BROKER_URL = '{type}://{username}:{password}@{host}:{port}'.format(
     type=os.getenv('RHUB_BROKER_TYPE', ''),
     host=os.getenv('RHUB_BROKER_HOST', ''),
     port=os.getenv('RHUB_BROKER_PORT', ''),
     username=os.getenv('RHUB_BROKER_USERNAME', ''),
     password=urllib.parse.quote_plus(os.getenv('RHUB_BROKER_PASSWORD', '')),
 )
+RHUB_BROKER_MESSAGING_EXCHANGE = os.getenv('RHUB_BROKER_MESSAGING_EXCHANGE', '')
 
+CELERY_BROKER_URL = RHUB_BROKER_URL
 CELERY_RESULT_BACKEND = 'db+postgresql:' + SQLALCHEMY_DATABASE_URI.split(':', 1)[1]
 CELERY_RESULT_EXPIRES = timedelta(days=7)
 CELERYBEAT_SCHEDULE = {
