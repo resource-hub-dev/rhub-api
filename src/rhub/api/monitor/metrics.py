@@ -7,6 +7,8 @@ from rhub.api.bare_metal.host import host_list
 from rhub.bare_metal.model import (
     BareMetalHostDrac,
     BareMetalHostRedfish,
+    get_bm_metrics,
+    BareMetalHostStatus
 )
 
 
@@ -117,7 +119,61 @@ def lab_metrics():
 
 
 def bm_metrics():
-    return mock_availability("platforms")
+    # we're going to use mock platform counts for cpu and memory
+    # counts for now since they're not in the BareMetalHost model yet.
+    configs = get_monitoring_configs()
+    available_platforms = configs["mock_platforms"]
+
+
+    bm_raw_metrics = get_bm_metrics()
+
+    r = []
+
+    for raw_metric in bm_raw_metrics:
+        cpus_used = 0
+        ram_used = 0
+        cpus_available = 0
+        ram_available = 0
+
+        arch = raw_metric["arch"]
+        mock_platform = available_platforms[arch]
+        cpus_per_system = mock_platform["cpus_per_system"]
+        ram_per_system = mock_platform["ram_per_system"]
+
+        r_platform = {}
+        r_platform["platform"] = arch
+
+        status_used = [
+            BareMetalHostStatus.ENROLLING,
+            BareMetalHostStatus.FAILED_ENROLLING,
+            BareMetalHostStatus.RESERVED
+        ]
+
+        status_available = [
+            BareMetalHostStatus.AVAILABLE
+        ]
+
+        for metric, value in raw_metric.items():
+
+            if metric in status_used:
+                cpus_used += (value * cpus_per_system)
+                ram_used += (value * ram_per_system)
+            elif metric in status_available:
+                cpus_available += (value * cpus_per_system)
+                ram_available += (value * ram_per_system)
+
+            if metric != "arch":
+                r_platform[metric] = value
+
+        r_platform["cpus_available"] = cpus_available
+        r_platform["cpus_used"] = cpus_used
+        r_platform["memory_available"] = ram_available
+        r_platform["memory_used"] = ram_used
+
+        r.append(r_platform)
+
+    wrapper = {"data": r}
+    return wrapper
 
 
 def bm_power_states_metrics():
