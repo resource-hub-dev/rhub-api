@@ -1,5 +1,4 @@
-# based on https://stackoverflow.com/questions/12044776
-#   /how-to-use-flask-sqlalchemy-in-a-celery-task/14146403#14146403
+# based on https://stackoverflow.com/a/14146403
 
 import flask
 from celery import Celery
@@ -35,6 +34,3 @@ class FlaskCelery(Celery):
         self.config_from_object(app.config)
         self.conf.broker_url = app.config['CELERY_BROKER_URL']
         self.conf.result_backend = app.config['CELERY_RESULT_BACKEND']
-
-
-celery = FlaskCelery()

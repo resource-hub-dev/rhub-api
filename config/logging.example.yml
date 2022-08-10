@@ -28,5 +28,7 @@ loggers:
     level: INFO
   flask_migrate:
     level: INFO
+  celery:
+    level: INFO
   rhub:
     level: DEBUG

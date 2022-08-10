@@ -30,12 +30,12 @@ elif [[ "$application" == 'rhub-worker' ]]; then
   temp=(${RHUB_API_URL//\// })
   export FLASK_SERVER_NAME=${temp[1]}
 
-  command=(celery -A rhub.api.celery_worker:celery worker --loglevel "${LOG_LEVEL:-INFO}")
+  command=(celery -A rhub.worker:celery worker --loglevel "${LOG_LEVEL:-INFO}")
 
 elif [[ "$application" == 'rhub-cron' ]]; then
   mkdir -p ~/celery/
 
-  command=(celery -A rhub.api.celery_worker:celery beat --schedule ~/celery/celerybeat-schedule --loglevel "${LOG_LEVEL:-INFO}")
+  command=(celery -A rhub.worker:celery beat --schedule ~/celery/celerybeat-schedule --loglevel "${LOG_LEVEL:-INFO}")
 fi
 
 exec "${command[@]}"
