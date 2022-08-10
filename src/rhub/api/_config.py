@@ -1,7 +1,10 @@
 import os
 import urllib.parse
+import logging
 from datetime import timedelta
 from pathlib import Path
+
+import yaml
 
 
 KEYCLOAK_SERVER = os.getenv('KEYCLOAK_SERVER')
@@ -71,3 +74,19 @@ CELERYBEAT_SCHEDULE = {
 SERVER_NAME = os.getenv('FLASK_SERVER_NAME')
 
 BARE_METAL_LOGS_PATH = Path(os.getenv('RHUB_BARE_METAL_LOGS_DIR', ''))
+
+
+_log_config_path = os.getenv('LOG_CONFIG')
+if _log_config_path and os.path.exists(_log_config_path):
+    try:
+        with open(_log_config_path, 'r') as f:
+            LOGGING_CONFIG = yaml.safe_load(f)
+    except Exception:
+        logging.exception(
+            f'Failed to load logging configuration from {_log_config_path!r}!'
+        )
+        LOGGING_CONFIG = None
+else:
+    LOGGING_CONFIG = None
+
+LOGGING_LEVEL = os.getenv('LOG_LEVEL', 'info')

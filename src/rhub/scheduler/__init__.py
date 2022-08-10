@@ -25,6 +25,8 @@ class SchedulerModule(injector.Module):
 
         if flask.helpers.get_debug_flag():
             logger.warning('Not starting scheduler, Flask debug is enabled.')
+        if self.app.config.get('SCHEDULER_DISABLE'):
+            logger.info('Scheduler is disabled (SCHEDULER_DISABLE config).')
         else:
             sched.start()
 
