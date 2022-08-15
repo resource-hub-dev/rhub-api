@@ -2,6 +2,7 @@
 
 import flask
 from celery import Celery
+from kombu import Queue
 
 
 class FlaskCelery(Celery):
@@ -31,6 +32,19 @@ class FlaskCelery(Celery):
 
     def init_app(self, app):
         self.app = app
+
         self.config_from_object(app.config)
+
         self.conf.broker_url = app.config['CELERY_BROKER_URL']
         self.conf.result_backend = app.config['CELERY_RESULT_BACKEND']
+
+        self.conf.task_default_queue = 'celery.default'
+        self.conf.task_queues = (
+            Queue('celery.default', queue_arguments={'x-max-priority': 10}),
+        )
+        self.conf.task_queue_max_priority = 10
+        self.conf.task_default_priority = 5
+
+        # Default is 4, but then queue can't prioritize messages (tasks),
+        # because they get downloaded to workers before sorting happens.
+        self.conf.worker_prefetch_multiplier = 1
