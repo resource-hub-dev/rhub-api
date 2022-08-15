@@ -242,7 +242,17 @@ def test_list_projects(client, keycloak_mock):
     }
 
 
-def test_get_cloud(client, keycloak_mock):
+def test_list_project_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/openstack/project',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
+def test_get_project(client, keycloak_mock):
     cloud = model.Cloud(
         id=1,
         name='test_cloud',
