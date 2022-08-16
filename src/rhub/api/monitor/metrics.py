@@ -124,7 +124,6 @@ def bm_metrics():
     configs = get_monitoring_configs()
     available_platforms = configs["mock_platforms"]
 
-
     bm_raw_metrics = get_bm_metrics()
 
     r = []

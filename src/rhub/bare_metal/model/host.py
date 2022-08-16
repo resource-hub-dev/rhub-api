@@ -204,11 +204,12 @@ class BareMetalHostDrac(BareMetalHost):
         "polymorphic_identity": BareMetalHardwareType.DRAC,
     }
 
+
 def get_bm_metrics():
     rows = []
 
     for model in [
-        BareMetalHostRedFish(),
+        BareMetalHostRedfish(),
         BareMetalHostDrac()
     ]:
         sub_metrics = db.query(func.count(model.id)).group_by(
