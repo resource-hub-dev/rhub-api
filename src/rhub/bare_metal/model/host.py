@@ -212,7 +212,7 @@ def get_bm_metrics():
         BareMetalHostRedfish(),
         BareMetalHostDrac()
     ]:
-        sub_metrics = db.query(func.count(model.id)).group_by(
+        sub_metrics = model.query(func.count(model.id)).group_by(
             model.arch,
             model.status,
         ).all()
