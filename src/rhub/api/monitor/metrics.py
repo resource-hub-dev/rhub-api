@@ -7,9 +7,9 @@ from rhub.api.bare_metal.host import host_list
 from rhub.bare_metal.model import (
     BareMetalHostDrac,
     BareMetalHostRedfish,
-    get_bm_metrics,
     BareMetalHostStatus
 )
+from rhub.bare_metal.model.host import get_bm_metrics
 
 
 def read_local_yaml(filename):
