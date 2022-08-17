@@ -17,3 +17,4 @@ recursive-include config otel*yaml
 recursive-include migrations *.py
 recursive-include src/rhub/api/monitor *.yml
 recursive-include src/rhub/openapi *.yml
+recursive-include src *.j2

@@ -17,11 +17,11 @@ from jinja2 import BaseLoader, Environment
 from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
 
 from rhub import ROOT_PKG_PATH
-from rhub.worker import celery
 from rhub.api.vault import Vault, VaultModule
 from rhub.auth.keycloak import KeycloakModule
 from rhub.messaging import MessagingModule
 from rhub.scheduler import SchedulerModule
+from rhub.worker import celery
 
 
 logger = logging.getLogger(__name__)

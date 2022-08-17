@@ -7,6 +7,12 @@ from pathlib import Path
 import yaml
 
 
+RHUB_LINKS = {
+    k.removeprefix('RHUB_LINK_').replace('_', ' '): os.environ[k]
+    for k in os.environ if k.startswith('RHUB_LINK_')
+}
+
+
 KEYCLOAK_SERVER = os.getenv('KEYCLOAK_SERVER')
 KEYCLOAK_RESOURCE = os.getenv('KEYCLOAK_RESOURCE')
 KEYCLOAK_REALM = os.getenv('KEYCLOAK_REALM')
@@ -90,3 +96,8 @@ else:
     LOGGING_CONFIG = None
 
 LOGGING_LEVEL = os.getenv('LOG_LEVEL', 'info')
+
+SMTP_SERVER = os.getenv('SMTP_SERVER')
+SMTP_PORT = int(os.environ['SMTP_PORT']) if os.getenv('SMTP_PORT') else 25
+EMAIL_FROM = os.getenv('EMAIL_FROM')
+EMAIL_REPLY_TO = os.getenv('EMAIL_REPLY_TO')
