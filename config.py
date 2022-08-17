@@ -40,7 +40,10 @@ else:
 
 logger_class = CustomGunicornLogger
 
-# preload_app = True
+# Must be set to True, otherwise scheduler and messaging thread are started
+# multiple times in each of gunicorn worker.
+preload_app = True
+
 
 from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
 

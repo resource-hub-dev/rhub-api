@@ -1,0 +1,14 @@
+From: {{ EMAIL_FROM }}
+{% if EMAIL_REPLY_TO -%}
+Reply-To: {{ EMAIL_REPLY_TO }}
+{% endif -%}
+Subject: [RHub] {% filter trim %}{% block subject %}{% endblock %}{% endfilter %}
+
+{% filter trim %}{% block body %}{% endblock %}{% endfilter %}
+
+{% if RHUB_LINKS -%}
+--
+{% for k, v in RHUB_LINKS.items() | sort -%}
+{{ k }}: {{ v }}
+{% endfor -%}
+{% endif -%}

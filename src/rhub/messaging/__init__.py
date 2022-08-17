@@ -1,9 +1,11 @@
 import json
 import logging
 
+import attr
 import injector
 import kombu
-import attr
+
+from .notifications import Notifications
 
 
 logger = logging.getLogger(__name__)
@@ -47,7 +49,12 @@ class MessagingModule(injector.Module):
         try:
             binder.bind(
                 Messaging,
-                to=self._create(),
+                to=self._create_messaging(),
+                scope=injector.singleton,
+            )
+            binder.bind(
+                Notifications,
+                to=self._create_notifications(),
                 scope=injector.singleton,
             )
         except Exception:
@@ -55,8 +62,26 @@ class MessagingModule(injector.Module):
                 'Failed to create Messaging service.'
             )
 
-    def _create(self):
+    def _create_messaging(self):
         return Messaging(
             broker_url=self.app.config['RHUB_BROKER_URL'],
             exchange_name=self.app.config['RHUB_BROKER_MESSAGING_EXCHANGE'],
         )
+
+    def _create_notifications(self):
+        if self.app.config['SMTP_SERVER']:
+            notifications = Notifications(
+                broker_url=self.app.config['RHUB_BROKER_URL'],
+                exchange_name=self.app.config['RHUB_BROKER_MESSAGING_EXCHANGE'],
+                smtp_server=self.app.config['SMTP_SERVER'],
+                smtp_port=self.app.config['SMTP_PORT'],
+                email_from=self.app.config['EMAIL_FROM'],
+                email_reply_to=self.app.config['EMAIL_REPLY_TO'],
+                rhub_links=self.app.config['RHUB_LINKS'],
+            )
+            notifications.start_thread()
+            return notifications
+        else:
+            logger.info(
+                'SMTP_SERVER is not configured, email notifications will be disabled'
+            )

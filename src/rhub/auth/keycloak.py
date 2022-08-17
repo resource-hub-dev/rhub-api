@@ -75,6 +75,16 @@ class KeycloakClient:
             )
         return None
 
+    def user_get_email(self, user_id):
+        """Get user's email, returns string or `None` if failed."""
+        try:
+            return self.user_get(user_id)['email']
+        except KeycloakGetError:
+            logger.exception(
+                f'Failed to get user email from Keycloak, user_id={user_id}'
+            )
+        return None
+
     def user_create(self, data):
         data = data.copy()
         data.setdefault('enabled', True)

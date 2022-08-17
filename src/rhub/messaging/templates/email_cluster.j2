@@ -1,0 +1,15 @@
+{% extends "_email.j2" %}
+
+{% block subject %}
+Notification for cluster "{{ cluster_name }}"
+{% endblock %}
+
+{% block body %}
+Hi,
+
+{{ msg }}
+
+{% if cluster_delete_date is defined -%}
+Cluster will be deleted at {{ cluster_delete_date }}.
+{% endif -%}
+{% endblock %}

@@ -41,7 +41,7 @@ def vault_mock(session_mocker):
 def messaging_mock(session_mocker):
     messaging_mock = session_mocker.Mock(spec=Messaging)
 
-    m = session_mocker.patch('rhub.messaging.MessagingModule._create')
+    m = session_mocker.patch('rhub.messaging.MessagingModule._create_messaging')
     m.return_value = messaging_mock
 
     yield messaging_mock
