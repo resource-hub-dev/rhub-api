@@ -2,14 +2,16 @@ import os
 import random
 
 import yaml
+from sqlalchemy import case
 
+from rhub.api import db
+from rhub.bare_metal.model import bare_metal_host_full
 from rhub.api.bare_metal.host import host_list
 from rhub.bare_metal.model import (
     BareMetalHostDrac,
     BareMetalHostRedfish,
     BareMetalHostStatus
 )
-from rhub.bare_metal.model.host import get_bm_metrics
 
 
 def read_local_yaml(filename):
@@ -124,55 +126,33 @@ def bm_metrics():
     configs = get_monitoring_configs()
     available_platforms = configs["mock_platforms"]
 
-    bm_raw_metrics = get_bm_metrics()
-
-    r = []
-
-    for raw_metric in bm_raw_metrics:
-        cpus_used = 0
-        ram_used = 0
-        cpus_available = 0
-        ram_available = 0
-
-        arch = raw_metric["arch"]
+    raw_data = db.session.query(
+        bare_metal_host_full.arch,
+        db.func.sum(case(
+            (bare_metal_host_full.status.in_(BareMetalHostStatus.host_available_states()), 1),
+            else_=0
+        )).label('available'),
+        db.func.sum(case(
+            (bare_metal_host_full.status.in_(BareMetalHostStatus.host_in_use_states()), 1),
+            else_=0
+        )).label('used'),
+    ).group_by(
+        bare_metal_host_full.arch,
+    ).all()
+    data = []
+    for arch, available, used in raw_data:
         mock_platform = available_platforms[arch]
         cpus_per_system = mock_platform["cpus_per_system"]
         ram_per_system = mock_platform["ram_per_system"]
 
-        r_platform = {}
-        r_platform["platform"] = arch
-
-        status_used = [
-            BareMetalHostStatus.ENROLLING,
-            BareMetalHostStatus.FAILED_ENROLLING,
-            BareMetalHostStatus.RESERVED
-        ]
-
-        status_available = [
-            BareMetalHostStatus.AVAILABLE
-        ]
-
-        for metric, value in raw_metric.items():
-
-            if metric in status_used:
-                cpus_used += (value * cpus_per_system)
-                ram_used += (value * ram_per_system)
-            elif metric in status_available:
-                cpus_available += (value * cpus_per_system)
-                ram_available += (value * ram_per_system)
-
-            if metric != "arch":
-                r_platform[metric] = value
-
-        r_platform["cpus_available"] = cpus_available
-        r_platform["cpus_used"] = cpus_used
-        r_platform["memory_available"] = ram_available
-        r_platform["memory_used"] = ram_used
-
-        r.append(r_platform)
-
-    wrapper = {"data": r}
-    return wrapper
+        data.append(dict(
+            platform=arch,
+            cpus_available=available * cpus_per_system,
+            cpus_used=used * cpus_per_system,
+            memory_available=available * ram_per_system,
+            memory_used=used * ram_per_system,
+        ))
+    return {"data": data}
 
 
 def bm_power_states_metrics():

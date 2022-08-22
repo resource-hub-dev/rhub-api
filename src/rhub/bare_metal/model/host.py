@@ -4,7 +4,6 @@ from typing import Optional
 
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.sql import expression
-from sqlalchemy import func
 
 from rhub.api import db
 from rhub.api.utils import ModelMixin, TimestampMixin
@@ -28,6 +27,20 @@ class BareMetalHostStatus(str, enum.Enum):
     MAINTENANCE = "maintenance"
     NON_ENROLLED = "non_enrolled"
     RESERVED = "reserved"
+
+    @classmethod
+    def host_in_use_states(cls) -> set["BareMetalHostStatus"]:
+        return {
+            cls.ENROLLING,
+            cls.FAILED_ENROLLING,
+            cls.RESERVED,
+        }
+
+    @classmethod
+    def host_available_states(cls) -> set["BareMetalHostStatus"]:
+        return {
+            cls.AVAILABLE,
+        }
 
 
 class BareMetalHardwareType(str, enum.Enum):
@@ -203,48 +216,3 @@ class BareMetalHostDrac(BareMetalHost):
     __mapper_args__ = {
         "polymorphic_identity": BareMetalHardwareType.DRAC,
     }
-
-
-def get_bm_metrics():
-    rows = []
-
-    for model in [
-        BareMetalHostRedfish(),
-        BareMetalHostDrac()
-    ]:
-        sub_metrics = db.session.query(func.count(model.id)).group_by(
-            model.arch,
-            model.status,
-        ).all()
-
-        for row in sub_metrics:
-            rows.append(row)
-
-    by_arch = {}
-    for row in rows:
-        sub_status = {}
-        if row.arch in by_arch:
-            sub_status = by_arch[row.arch]
-
-        sub_count = 0
-        if row.status in sub_status:
-            sub_count = sub_status[row.status]
-
-        sub_count += row.count
-
-        sub_status[row.status] = sub_count
-        by_arch[row.arch] = sub_status
-
-    # items will be returned in this dict pattern:
-    # {arch="x86", provisioned=10, pending=5 ...}
-    r = []
-    for arch, arch_item in by_arch.items():
-        rdict = {}
-        rdict["arch"] = arch
-
-        for status, the_count in arch_item.items():
-            rdict[status] = the_count
-
-        r.append(rdict)
-
-    return r
