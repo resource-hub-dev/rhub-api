@@ -15,13 +15,13 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from jinja2 import BaseLoader, Environment
 from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
-from ruamel import yaml
 
 from rhub import ROOT_PKG_PATH
-from rhub.api.extensions import celery
 from rhub.api.vault import Vault, VaultModule
 from rhub.auth.keycloak import KeycloakModule
+from rhub.messaging import MessagingModule
 from rhub.scheduler import SchedulerModule
+from rhub.worker import celery
 
 
 logger = logging.getLogger(__name__)
@@ -87,20 +87,19 @@ def log_response(response):
     return response
 
 
-def create_app():
+def create_app(extra_config=None):
     """Create Connexion/Flask application."""
-    log_config = os.getenv('LOG_CONFIG')
-    if log_config and os.path.exists(log_config):
-        with open(log_config, 'r') as f:
-            logging.config.dictConfig(yaml.safe_load(f))
+    from . import _config
+
+    if _config.LOGGING_CONFIG:
+        logging.config.dictConfig(_config.LOGGING_CONFIG)
     else:
-        log_level = os.getenv('LOG_LEVEL', 'info').upper()
         try:
             import coloredlogs
-            coloredlogs.install(level=log_level)
+            coloredlogs.install(level=_config.LOGGING_LEVEL)
         except ImportError:
             logger.addHandler(flask.logging.default_handler)
-            logger.setLevel(log_level)
+            logger.setLevel(_config.LOGGING_LEVEL)
 
     connexion_app = connexion.App(__name__)
 
@@ -109,8 +108,9 @@ def create_app():
     if os.getenv('PROMETHEUS_MULTIPROC_DIR'):
         GunicornInternalPrometheusMetrics(flask_app)
 
-    from . import _config
     flask_app.config.from_object(_config)
+    if extra_config:
+        flask_app.config.from_mapping(extra_config)
 
     parser = prance.ResolvingParser(str(ROOT_PKG_PATH / 'openapi' / 'openapi.yml'))
     connexion_app.add_api(
@@ -145,6 +145,7 @@ def create_app():
             KeycloakModule(flask_app),
             VaultModule(flask_app),
             SchedulerModule(flask_app),
+            MessagingModule(flask_app),
         ],
     )
 

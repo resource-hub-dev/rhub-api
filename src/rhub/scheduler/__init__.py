@@ -25,10 +25,12 @@ class SchedulerModule(injector.Module):
 
         if flask.helpers.get_debug_flag():
             logger.warning('Not starting scheduler, Flask debug is enabled.')
+        if self.app.config.get('SCHEDULER_DISABLE'):
+            logger.info('Scheduler is disabled (SCHEDULER_DISABLE config).')
         else:
             sched.start()
 
-        @sched.task('interval', id='rhub_scheduler', seconds=1, max_instances=1)
+        @sched.task('interval', id='rhub_scheduler', minutes=1, max_instances=1)
         def rhub_scheduler():
             from rhub.scheduler import worker
             with self.app.app_context():

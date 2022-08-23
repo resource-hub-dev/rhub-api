@@ -6,10 +6,11 @@ from connexion import problem
 from flask import Response, current_app, request, url_for
 from werkzeug.exceptions import Unauthorized
 
-from rhub.api import DEFAULT_PAGE_LIMIT, db
+from rhub.api import DEFAULT_PAGE_LIMIT, db, di
 from rhub.api.utils import date_now, db_sort
 from rhub.auth.utils import route_require_admin, user_is_admin
 from rhub.lab import model as lab_model
+from rhub.messaging import Messaging
 from rhub.tower import model
 from rhub.tower.client import TowerError
 
@@ -493,11 +494,17 @@ def webhook_notification():
 
     job_id = payload.get('id')
     job_status = payload.get('status')
+    job_url = payload.get('url')
     if not job_id or not job_status:
         logger.error('Unexpected tower webhook notification data')
         return Response(status=400)
 
-    logger.info(f'Received a notification from tower {job_id=} {job_status=}')
+    logger.info(
+        f'Received a notification from tower {job_id=} {job_status=} {job_url=}'
+    )
+
+    if job_url and '/jobs/project/' in job_url:
+        return Response(status=204)
 
     try:
         extra_vars = json.loads(payload['extra_vars'])
@@ -516,6 +523,8 @@ def webhook_notification():
 
 
 def cluster_notification_handler(payload, cluster_id):
+    messaging = di.get(Messaging)
+
     cluster = lab_model.Cluster.query.get(cluster_id)
     tower_client = cluster.region.tower.create_tower_client()
 
@@ -552,13 +561,35 @@ def cluster_notification_handler(payload, cluster_id):
             cluster.status = new_status
             db.session.commit()
 
+    msg_extra = {
+        'owner_id': cluster.owner_id,
+        'owner_name': cluster.owner_name,
+        'cluster_id': cluster.id,
+        'cluster_name': cluster.name,
+        'tower_id': cluster.region.tower_id,
+        'job_id': job_id,
+        'job_status': job_status,
+    }
+
     if job_status == 'successful':
+        messaging.send(
+            f'lab.cluster.{cluster_operation}',
+            f'Cluster "{cluster.name}" (ID={cluster.id}) has been successfully '
+            f'{cluster_operation}d.',
+            extra=msg_extra,
+        )
         if cluster_operation == 'create':
             update_cluster_status(lab_model.ClusterStatus.ACTIVE)
         else:
             update_cluster_status(lab_model.ClusterStatus.DELETED)
 
     elif job_status == 'failed':
+        messaging.send(
+            f'lab.cluster.{cluster_operation}',
+            f'Failed to {cluster_operation} cluster "{cluster.name}" '
+            f'(ID={cluster.id}).',
+            extra=msg_extra,
+        )
         if not cluster.status.is_failed:
             if cluster_operation == 'create':
                 update_cluster_status(lab_model.ClusterStatus.CREATE_FAILED)

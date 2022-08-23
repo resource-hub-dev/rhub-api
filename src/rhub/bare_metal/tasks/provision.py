@@ -3,7 +3,7 @@ import subprocess
 from datetime import timedelta
 
 from rhub.api import db
-from rhub.api.extensions import celery
+from rhub.worker import celery
 from rhub.api.utils import date_now
 from rhub.bare_metal.model import (
     BareMetalBootType,

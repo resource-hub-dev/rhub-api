@@ -1,7 +1,7 @@
 import logging
 
 from rhub.api import db
-from rhub.api.extensions import celery
+from rhub.worker import celery
 from rhub.bare_metal.model import (
     BareMetalException,
     BareMetalHost,
