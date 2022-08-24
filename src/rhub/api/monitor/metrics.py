@@ -2,11 +2,15 @@ import os
 import random
 
 import yaml
+from sqlalchemy import case
 
+from rhub.api import db
+from rhub.bare_metal.model import bare_metal_host_full
 from rhub.api.bare_metal.host import host_list
 from rhub.bare_metal.model import (
     BareMetalHostDrac,
     BareMetalHostRedfish,
+    BareMetalHostStatus
 )
 
 
@@ -117,7 +121,38 @@ def lab_metrics():
 
 
 def bm_metrics():
-    return mock_availability("platforms")
+    # we're going to use mock platform counts for cpu and memory
+    # counts for now since they're not in the BareMetalHost model yet.
+    configs = get_monitoring_configs()
+    available_platforms = configs["mock_platforms"]
+
+    raw_data = db.session.query(
+        bare_metal_host_full.arch,
+        db.func.sum(case(
+            (bare_metal_host_full.status.in_(BareMetalHostStatus.host_available_states()), 1),
+            else_=0
+        )).label('available'),
+        db.func.sum(case(
+            (bare_metal_host_full.status.in_(BareMetalHostStatus.host_in_use_states()), 1),
+            else_=0
+        )).label('used'),
+    ).group_by(
+        bare_metal_host_full.arch,
+    ).all()
+    data = []
+    for arch, available, used in raw_data:
+        mock_platform = available_platforms[arch]
+        cpus_per_system = mock_platform["cpus_per_system"]
+        ram_per_system = mock_platform["ram_per_system"]
+
+        data.append(dict(
+            platform=arch,
+            cpus_available=available * cpus_per_system,
+            cpus_used=used * cpus_per_system,
+            memory_available=available * ram_per_system,
+            memory_used=used * ram_per_system,
+        ))
+    return {"data": data}
 
 
 def bm_power_states_metrics():

@@ -28,6 +28,20 @@ class BareMetalHostStatus(str, enum.Enum):
     NON_ENROLLED = "non_enrolled"
     RESERVED = "reserved"
 
+    @classmethod
+    def host_in_use_states(cls) -> set["BareMetalHostStatus"]:
+        return {
+            cls.ENROLLING,
+            cls.FAILED_ENROLLING,
+            cls.RESERVED,
+        }
+
+    @classmethod
+    def host_available_states(cls) -> set["BareMetalHostStatus"]:
+        return {
+            cls.AVAILABLE,
+        }
+
 
 class BareMetalHardwareType(str, enum.Enum):
     GENERIC = "generic"
