@@ -47,6 +47,16 @@ def test_list_policy(client, mocker):
     }
 
 
+def test_list_policy_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/policies',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_get_policy(client):
     model.Policy.query.get.return_value = model.Policy(
         id=1,
@@ -94,6 +104,33 @@ def test_get_policy(client):
     }
 
 
+def test_get_policy_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/policies/1',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
+def test_get_policy_non_existent(client):
+    policy_id = 1
+
+    model.Policy.query.get.return_value = None
+
+    rv = client.get(
+        f'{API_BASE}/policies/{policy_id}',
+        headers={'Authorization': 'Bearer foobar'},
+    )
+
+    model.Policy.query.get.assert_called_with(policy_id)
+
+    assert rv.status_code == 404
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Policy {policy_id} does not exist'
+
+
 def test_create_policy(client, keycloak_mock, db_session_mock):
     user_data = {'id': 'uuid', 'name': 'user'}
     policy_data = {
@@ -121,6 +158,76 @@ def test_create_policy(client, keycloak_mock, db_session_mock):
         assert getattr(server, k) == v
 
     assert rv.status_code == 200
+
+
+def test_create_policy_unauthorized(
+    client, 
+    keycloak_mock, 
+    db_session_mock
+):
+    policy_data = {
+        'name': 'test',
+        'department': 'test server',
+    }
+
+    rv = client.post(
+        f'{API_BASE}/policies',
+        json=policy_data,
+    )
+
+    db_session_mock.add.assert_not_called()
+
+    keycloak_mock.reset_mock() # keycloak_mock has a 'session' scope
+    keycloak_mock.group_create.assert_not_called()
+    keycloak_mock.group_user_add.assert_not_called()
+    keycloak_mock.group_role_add.assert_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
+@pytest.mark.parametrize(
+    'policy_data, missing_property',
+    [
+        pytest.param( 
+            {
+                'name': 'test server'
+            },
+            'department',
+            id='missing_department'
+        ),
+        pytest.param(
+            {
+                'department': 'test'
+            },
+            'name',
+            id='missing_name'
+        )
+    ]
+)
+def test_create_policy_missing_properties(
+    client, 
+    keycloak_mock, 
+    db_session_mock, 
+    policy_data,
+    missing_property
+):
+    rv = client.post(
+        f'{API_BASE}/policies',
+        headers={'Authorization': 'Bearer foobar'},
+        json=policy_data,
+    )
+
+    db_session_mock.add.assert_not_called()
+
+    keycloak_mock.group_create.assert_not_called()
+    keycloak_mock.group_user_add.assert_not_called()
+    keycloak_mock.group_role_add.assert_not_called()
+
+    assert rv.status_code == 400, rv.data
+    assert rv.json['title'] == 'Bad Request'
+    assert rv.json['detail'] == f'\'{missing_property}\' is a required property'
 
 
 def test_delete_policy(client, keycloak_mock, db_session_mock):
@@ -157,6 +264,36 @@ def test_delete_policy(client, keycloak_mock, db_session_mock):
     db_session_mock.delete.assert_called_with(policy)
 
     assert rv.status_code == 204
+
+
+def test_delete_policy_unauthorized(client, db_session_mock):
+    rv = client.delete(
+        f'{API_BASE}/policies/1',
+    )
+
+    db_session_mock.delete.assert_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
+def test_delete_policy_non_existent(client, db_session_mock, keycloak_mock):
+    policy_id = 1
+
+    model.Policy.query.get.return_value = None
+
+    rv = client.delete(
+        f'{API_BASE}/policies/{policy_id}',
+        headers={'Authorization': 'Bearer foobar'},
+    )
+
+    model.Policy.query.get.assert_called_with(policy_id)
+    db_session_mock.delete.assert_not_called()
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == 'Record Does Not Exist'
 
 
 def test_update_policy(client, keycloak_mock, db_session_mock):
@@ -211,3 +348,38 @@ def test_update_policy(client, keycloak_mock, db_session_mock):
             },
         }
     }
+
+
+def test_update_policy_unauthorized(client):
+    rv = client.patch(
+        f'{API_BASE}/policies/1',
+        json={
+            'name': 'new',
+            'department': 'new desc',
+        },
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
+def test_update_policy_non_existent(client, keycloak_mock):
+    policy_id = 1
+
+    model.Policy.query.get.return_value = None
+
+    rv = client.patch(
+        f'{API_BASE}/policies/{policy_id}',
+        headers={'Authorization': 'Bearer foobar'},
+        json={
+            'name': 'new',
+            'department': 'new desc',
+        },
+    )
+
+    model.Policy.query.get.assert_called_with(policy_id)
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == 'Record Does Not Exist'
