@@ -73,4 +73,5 @@ keycloak-config.json
 .scannerwork/
 bandit_report.json
 flake8_report.txt
+odc-reports/
 pytest_report.xml
