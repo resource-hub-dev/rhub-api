@@ -1,3 +1,5 @@
+GIT_ROOT := $(shell git rev-parse --show-toplevel)
+
 default:
 
 init:
@@ -36,13 +38,14 @@ clean:
 requirements.txt: setup.py
 	pip-compile setup.py
 
-.PHONY: scan
-scan:
+.PHONY: scan clean_scan
+scan: clean_scan
+ifneq ($(GIT_ROOT), $(CURDIR))
+    $(error Run make from git root -- $(GIT_ROOT))
+endif
 ifndef SONAR_TOKEN
 	$(error SONAR_TOKEN needs to be defined to run the SonarScanner)
 endif
-	$(eval GIT_ROOT := $(shell git rev-parse --show-toplevel))
-	rm -f "$(GIT_ROOT)/coverage.xml" "$(GIT_ROOT)/flake8_report.txt" "$(GIT_ROOT)/bandit_report.json"
 	tox -e py3 -- --cov=src --cov-report=xml --cov-config=tox.ini --cov-branch tests
 	sed -i 's#$(GIT_ROOT)#/usr/src#g' coverage.xml
 	tox -e flake8 -- --color never --exit-zero --output-file=flake8_report.txt src
@@ -56,3 +59,7 @@ endif
 	images.paas.redhat.com/alm/sonar-scanner:latest \
 	sonar-scanner \
 	-Dproject.settings=sonar-project.properties
+
+clean_scan:
+	rm -f "$(GIT_ROOT)/coverage.xml" "$(GIT_ROOT)/flake8_report.txt" "$(GIT_ROOT)/bandit_report.json"
+	coverage erase
