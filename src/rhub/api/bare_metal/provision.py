@@ -118,7 +118,7 @@ def provision_get_kickstart(provision_id):
     return send_file(
         BytesIO(bytes(provision.kickstart_rendered, "utf-8")),
         as_attachment=True,
-        attachment_filename="kickstart.cfg",
+        download_name="kickstart.cfg",
         mimetype="text/plain",
     )
 
@@ -134,6 +134,6 @@ def provision_kickstart_debug_script_get(provision_id):
     return send_file(
         BytesIO(bytes(provision.debug_script, "utf-8")),
         as_attachment=True,
-        attachment_filename="kickstart_debug_script.sh",
+        download_name="kickstart_debug_script.sh",
         mimetype="text/plain",
     )

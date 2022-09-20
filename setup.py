@@ -4,7 +4,6 @@ import pathlib
 
 from setuptools import find_packages, setup
 
-
 here = pathlib.Path(__file__).parent.resolve()
 
 # Get the long description from the README file
@@ -48,10 +47,10 @@ setup(
         "inotify",
         "jinja2",
         "kombu",
-        "openapi-spec-validator",
+        "openapi_spec_validator < 0.5",  # https://github.com/RonnyPfannschmidt/prance/issues/131
         "openstacksdk",
-        "prance",
-        "prometheus_flask_exporter == 0.18.7",
+        "prance[osv]",
+        "prometheus_flask_exporter",
         "psycopg2-binary",
         "python-dateutil",
         "python-ironicclient",
