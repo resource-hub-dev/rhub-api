@@ -35,3 +35,18 @@ clean:
 
 requirements.txt: setup.py
 	pip-compile setup.py
+
+.PHONY: scan
+scan:
+ifndef SONAR_TOKEN
+	$(error SONAR_TOKEN needs to be defined to run the SonarScanner)
+endif
+	docker run \
+	--rm \
+	--pull always \
+	-e SONAR_TOKEN \
+	-v "$(shell git rev-parse --show-toplevel):/usr/src:delegated,z" \
+	-w /usr/src \
+	images.paas.redhat.com/alm/sonar-scanner:latest \
+	sonar-scanner \
+	-Dproject.settings=sonar-project.properties

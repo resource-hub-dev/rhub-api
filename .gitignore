@@ -69,3 +69,5 @@ otel-internal-rhub-exporter.json
 config/logging.yml
 keycloak-config.json
 
+# SonarScanner
+.scannerwork/
