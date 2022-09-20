@@ -66,6 +66,7 @@ setup(
         "dev": [
             "build",
             "check-manifest>=0.42",
+            "coverage",
             "pip-tools",
             "tox",
         ],
@@ -73,7 +74,4 @@ setup(
     classifiers=[
         'License :: OSI Approved :: MIT License',
     ],
-    # package_data={  # Optional
-    #     "sample": ["package_data.dat"],
-    # },
 )

@@ -101,6 +101,28 @@ vault, see example in `data/vault.yml`
 
 * `WEBHOOK_VAULT_PATH`
 
+## Running quality checks
+
+1. Install development dependencies (create a clean virtual env first, if you don't have one).
+```bash
+$ pip install -U -e .[dev] -r requirements.txt
+```
+
+2. SonarQube report. A link for the report will be printed on screen.
+```bash
+$ make scan
+```
+
+3. pip-audit report. Errors will be printed on screen.
+```bash
+$ tox -e pip_audit
+```
+
+4. OWASP Dependency-Check report. Report will be at `odc-reports/dependency-check-report.html`.
+```bash
+$ bash bin/dependency_check.sh
+```
+
 ## Contributing
 
 If you want to contribute to our project, you are more then welcome - just check our [contributing guide](.github/CONTRIBUTING.md).
