@@ -41,11 +41,15 @@ scan:
 ifndef SONAR_TOKEN
 	$(error SONAR_TOKEN needs to be defined to run the SonarScanner)
 endif
+	$(eval GIT_ROOT := $(shell git rev-parse --show-toplevel))
+	rm -f "$(GIT_ROOT)/coverage.xml"
+	tox -e py3 -- --cov=src --cov-report=xml --cov-config=tox.ini --cov-branch tests
+	sed -i 's#$(GIT_ROOT)#/usr/src#g' coverage.xml
 	docker run \
 	--rm \
 	--pull always \
 	-e SONAR_TOKEN \
-	-v "$(shell git rev-parse --show-toplevel):/usr/src:delegated,z" \
+	-v "$(GIT_ROOT):/usr/src:delegated,z" \
 	-w /usr/src \
 	images.paas.redhat.com/alm/sonar-scanner:latest \
 	sonar-scanner \
