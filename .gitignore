@@ -71,3 +71,4 @@ keycloak-config.json
 
 # SonarScanner
 .scannerwork/
+flake8_report.txt

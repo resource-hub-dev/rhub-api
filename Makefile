@@ -42,9 +42,10 @@ ifndef SONAR_TOKEN
 	$(error SONAR_TOKEN needs to be defined to run the SonarScanner)
 endif
 	$(eval GIT_ROOT := $(shell git rev-parse --show-toplevel))
-	rm -f "$(GIT_ROOT)/coverage.xml"
+	rm -f "$(GIT_ROOT)/coverage.xml" "$(GIT_ROOT)/flake8_report.txt"
 	tox -e py3 -- --cov=src --cov-report=xml --cov-config=tox.ini --cov-branch tests
 	sed -i 's#$(GIT_ROOT)#/usr/src#g' coverage.xml
+	tox -e flake8 -- --color never --exit-zero --output-file=flake8_report.txt src
 	docker run \
 	--rm \
 	--pull always \
