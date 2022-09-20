@@ -71,4 +71,5 @@ keycloak-config.json
 
 # SonarScanner
 .scannerwork/
+bandit_report.json
 flake8_report.txt
