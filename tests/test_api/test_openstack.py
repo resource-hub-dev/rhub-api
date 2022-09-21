@@ -2,6 +2,7 @@ import base64
 from unittest.mock import ANY
 
 import pytest
+import sqlalchemy.exc
 
 from rhub.openstack import model
 
@@ -241,7 +242,7 @@ def test_create_cloud_unauthorized(client, db_session_mock):
 
     assert rv.status_code == 401, rv.data
     assert rv.json['title'] == 'Unauthorized'
-    assert rv.json['detail'] == 'No authorization token provided'    
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 def test_update_cloud(client, keycloak_mock):
@@ -257,6 +258,7 @@ def test_update_cloud(client, keycloak_mock):
         networks=['test_net'],
     )
     model.Cloud.query.get.return_value = cloud
+    model.Cloud.query.filter.return_value.count.return_value = 0
 
     keycloak_mock.group_get_name.return_value = 'test-group'
 
@@ -277,9 +279,38 @@ def test_update_cloud(client, keycloak_mock):
     assert cloud.description == 'new desc'
 
 
-@pytest.mark.skip('TODO')
-def test_update_cloud_existing_name(client):
-    pass
+def test_update_cloud_existing_name(client, db_session_mock, vault_mock):
+    cloud = model.Cloud(
+        id=1,
+        name='test',
+        description='',
+        owner_group_id='00000000-0000-0000-0000-000000000000',
+        url='https://openstack.example.com:13000',
+        credentials='kv/test',
+        domain_name='Default',
+        domain_id='default',
+        networks=['test_net'],
+    )
+    model.Cloud.query.get.return_value = cloud
+    model.Cloud.query.filter.return_value.count.return_value = 1
+
+    rv = client.patch(
+        f'{API_BASE}/openstack/cloud/1',
+        headers={'Authorization': 'Bearer foobar'},
+        json={
+            'name': 'new',
+            'credentials': {'username': 'foo', 'password': 'bar'},
+        },
+    )
+
+    assert rv.status_code == 400, rv.data
+    assert rv.json['title'] == 'Bad Request'
+    assert rv.json['detail'] == "Cloud with name 'new' already exists"
+
+    model.Cloud.query.get.assert_called_with(1)
+
+    db_session_mock.commit.assert_not_called()
+    vault_mock.write.assert_not_called()
 
 
 def test_update_cloud_non_existent(client):
@@ -667,7 +698,6 @@ def test_update_project(client, keycloak_mock):
         f'{API_BASE}/openstack/project/1',
         headers={'Authorization': 'Bearer foobar'},
         json={
-            'name': 'new_name',
             'description': 'new desc',
         },
     )
@@ -676,9 +706,8 @@ def test_update_project(client, keycloak_mock):
 
     model.Project.query.get.assert_called_with(1)
 
-    assert project.name == 'new_name'
     assert project.description == 'new desc'
-    
+
 
 def test_update_project_non_existent(client):
     project_id = 1
@@ -689,7 +718,6 @@ def test_update_project_non_existent(client):
         f'{API_BASE}/openstack/project/{project_id}',
         headers={'Authorization': 'Bearer foobar'},
         json={
-            'name': 'new_name',
             'description': 'new desc',
         },
     )
@@ -729,7 +757,6 @@ def test_update_project_unauthorized(client, keycloak_mock):
     rv = client.patch(
         f'{API_BASE}/openstack/project/{project.id}',
         json={
-            'name': 'new_name',
             'description': 'new desc',
         },
     )
@@ -738,8 +765,50 @@ def test_update_project_unauthorized(client, keycloak_mock):
     assert rv.json['title'] == 'Unauthorized'
     assert rv.json['detail'] == 'No authorization token provided'
 
-    assert project.name == 'test_project'
     assert project.description == ''
+
+
+@pytest.mark.parametrize(
+    'field, value',
+    [
+        pytest.param('name', 'newname', id='name'),
+        pytest.param('cloud_id', 100, id='cluster_id'),
+    ]
+)
+def test_update_project_ro_field(client, db_session_mock, field, value):
+    cloud = model.Cloud(
+        id=1,
+        name='test_cloud',
+        description='',
+        owner_group_id='00000000-0000-0000-0000-000000000000',
+        url='https://openstack.example.com:13000',
+        credentials='kv/test',
+        domain_name='Default',
+        domain_id='default',
+        networks=['test_net'],
+    )
+
+    project = model.Project(
+        id=1,
+        cloud_id=1,
+        cloud=cloud,
+        name='test_project',
+        description='',
+        owner_id='00000000-0000-0000-0000-000000000000',
+    )
+    model.Project.query.get.return_value = project
+
+    rv = client.patch(
+        f'{API_BASE}/openstack/project/1',
+        headers={'Authorization': 'Bearer foobar'},
+        json={field: value},
+    )
+
+    assert rv.status_code == 400, rv.data
+    assert rv.json['title'] == 'Bad Request'
+    assert rv.json['detail'] == f'Project {field} field cannot be changed.'
+
+    db_session_mock.commit.assert_not_called()
 
 
 def test_delete_project(client, db_session_mock, keycloak_mock):
