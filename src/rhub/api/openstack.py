@@ -129,6 +129,14 @@ def cloud_update(keycloak: KeycloakClient, vault: Vault, cloud_id, body, user):
         if not keycloak.user_check_group(user, cloud.owner_group_id):
             raise Forbidden('You are not owner of this cloud.')
 
+    if 'name' in body:
+        query = model.Cloud.query.filter(model.Cloud.name == body['name'])
+        if query.count() > 0:
+            return problem(
+                400, 'Bad Request',
+                f'Cloud with name {body["name"]!r} already exists',
+            )
+
     credentials = body.get('credentials', cloud.credentials)
     if not isinstance(credentials, str):
         vault.write(cloud.credentials, credentials)
@@ -248,6 +256,11 @@ def project_update(project_id, body, user):
 
     if not _user_can_access_project(project, user):
         return problem(403, 'Forbidden', "You don't have access to this project.")
+
+    for key in ['name', 'cloud_id']:
+        if key in body:
+            return problem(400, 'Bad Request',
+                           f'Project {key} field cannot be changed.')
 
     project.update_from_dict(body)
 
