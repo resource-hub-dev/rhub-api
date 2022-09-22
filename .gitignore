@@ -69,3 +69,9 @@ otel-internal-rhub-exporter.json
 config/logging.yml
 keycloak-config.json
 
+# SonarScanner
+.scannerwork/
+bandit_report.json
+flake8_report.txt
+odc-reports/
+pytest_report.xml
