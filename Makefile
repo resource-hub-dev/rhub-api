@@ -36,12 +36,21 @@ clean:
 	$(MAKE) -C docs clean
 
 requirements.txt: setup.py
-	pip-compile setup.py
+	rm -f requirements.txt
+	docker run \
+	--rm \
+	--pull always \
+	-e USER \
+	-u "$(id -u):$(id -g)" \
+	-v "$(GIT_ROOT):/tmp/app" \
+	-w /tmp/app \
+	registry.access.redhat.com/ubi8/python-39 \
+	/bin/bash -c 'pip install pip-tools && pip-compile'
 
 .PHONY: scan clean_scan
 scan: clean_scan
 ifneq ($(GIT_ROOT), $(CURDIR))
-    $(error Run make from git root -- $(GIT_ROOT))
+	$(error Run make from git root -- $(GIT_ROOT))
 endif
 ifndef SONAR_TOKEN
 	$(error SONAR_TOKEN needs to be defined to run the SonarScanner)
