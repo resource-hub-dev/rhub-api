@@ -1,3 +1,5 @@
+GIT_ROOT := $(shell git rev-parse --show-toplevel)
+
 default:
 
 init:
@@ -34,4 +36,13 @@ clean:
 	$(MAKE) -C docs clean
 
 requirements.txt: setup.py
-	pip-compile setup.py
+	rm -f requirements.txt
+	docker run \
+	--rm \
+	--pull always \
+	-e USER \
+	-u "$(id -u):$(id -g)" \
+	-v "$(GIT_ROOT):/tmp/app" \
+	-w /tmp/app \
+	registry.access.redhat.com/ubi8/python-39 \
+	/bin/bash -c 'pip install pip-tools && pip-compile'
