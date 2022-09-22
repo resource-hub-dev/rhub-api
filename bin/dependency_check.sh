@@ -11,13 +11,12 @@ DATA_DIRECTORY="$DC_DIRECTORY/data"
 GIT_ROOT=$(git rev-parse --show-toplevel)
 REPORT_DIRECTORY="$GIT_ROOT/odc-reports"
 VENV_DIRECTORY=$(mktemp -d)
+trap 'rm -rf "$VENV_DIRECTORY"' EXIT
 
-for directory in "$DATA_DIRECTORY" "$CACHE_DIRECTORY" "$REPORT_DIRECTORY"; do
-  mkdir -p "$directory"
-done
+mkdir -p "$DATA_DIRECTORY" "$CACHE_DIRECTORY" "$REPORT_DIRECTORY"
 
 # Create a virtual env in a temp dir to have only the dependencies installed, to do a proper scanning.
-python -m venv "$VENV_DIRECTORY"
+python3 -m venv "$VENV_DIRECTORY"
 . "$VENV_DIRECTORY/bin/activate"
 pip install -U pip setuptools wheel
 pip install -r "$GIT_ROOT/requirements.txt"
@@ -38,4 +37,3 @@ docker run \
   --out /report
 
 deactivate
-rm -rf "$VENV_DIRECTORY"
