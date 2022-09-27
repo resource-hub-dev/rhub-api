@@ -31,7 +31,7 @@ setup(
         "celery",
         "click",
         "coloredlogs",
-        "connexion[swagger-ui]",
+        "connexion[swagger-ui]==2.14.0",  # FIXME https://github.com/spec-first/connexion/commit/cdc8af157dd55cd40b9d60643416ba168ca12b86
         "cron-validator >= 1.0.5",
         "dpath",
         "flask",
