@@ -64,7 +64,7 @@ cmd2==2.4.2
     # via cliff
 coloredlogs==15.0.1
     # via rhub (setup.py)
-connexion[swagger-ui]==2.14.1
+connexion[swagger-ui]==2.14.0
     # via rhub (setup.py)
 cron-validator==1.0.6
     # via rhub (setup.py)
