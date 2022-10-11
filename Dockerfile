@@ -3,19 +3,20 @@ FROM registry.access.redhat.com/ubi8/python-39
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+USER 0
+
 RUN dnf install openssh-clients; \
     dnf clean all
 
-RUN mkdir -p ~/.ssh \
-    && chmod 755 ~/.ssh
+COPY . rhub_api
+# https://docs.openshift.com/container-platform/4.11/openshift_images/create-images.html#images-create-guide-openshift_create-images
+RUN ln -rsf rhub_api/bin bin && \
+    chown -R 1001:0 . && chmod -R g=u,o-wX .
 
-WORKDIR /opt/app-root/src/rhub_api/
-
-USER 0
-COPY . .
-RUN /usr/bin/fix-permissions ./
 # "default" user in the ubi container
 USER 1001
+
+WORKDIR /opt/app-root/src/rhub_api/
 
 # TODO: improve performance
 RUN pip install -r requirements.txt -e .
