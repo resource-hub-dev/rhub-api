@@ -7,6 +7,10 @@ from pathlib import Path
 import yaml
 
 
+RHUB_CONFIG_DIR = Path(os.getenv('RHUB_DATA_DIR', '/tmp/config'))
+RHUB_DATA_DIR = Path(os.getenv('RHUB_DATA_DIR', '/tmp/data'))
+
+
 RHUB_LINKS = {
     k.removeprefix('RHUB_LINK_').replace('_', ' '): os.environ[k]
     for k in os.environ if k.startswith('RHUB_LINK_')
