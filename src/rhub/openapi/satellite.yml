@@ -63,7 +63,7 @@ endpoints:
       - name: filter
         in: query
         description: Filter servers by attributes.
-        explode: false
+        style: deepObject
         schema:
           type: object
           properties:

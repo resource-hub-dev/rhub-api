@@ -678,7 +678,7 @@ endpoints:
       - name: filter
         in: query
         description: Filter regions by attributes.
-        explode: false
+        style: deepObject
         schema:
           type: object
           properties:
@@ -736,7 +736,7 @@ endpoints:
       - name: filter
         in: query
         description: Filter regions by attributes.
-        explode: false
+        style: deepObject
         schema:
           type: object
           properties:
@@ -902,7 +902,7 @@ endpoints:
       - name: filter
         in: query
         description: Filter products by attributes.
-        explode: false
+        style: deepObject
         schema:
           type: object
           properties:
@@ -1073,7 +1073,7 @@ endpoints:
       - name: filter
         in: query
         description: Filter products by attributes.
-        explode: false
+        style: deepObject
         schema:
           type: object
           properties:
@@ -1215,7 +1215,7 @@ endpoints:
       - name: filter
         in: query
         description: Filter regions by attributes.
-        explode: false
+        style: deepObject
         schema:
           type: object
           properties:
@@ -1275,7 +1275,7 @@ endpoints:
       - name: filter
         in: query
         description: Filter clusters by attributes.
-        explode: false
+        style: deepObject
         schema:
           type: object
           properties:

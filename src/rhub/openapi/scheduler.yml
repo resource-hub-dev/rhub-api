@@ -53,7 +53,7 @@ endpoints:
       - name: filter
         in: query
         description: Filter cron jobs by attributes.
-        explode: false
+        style: deepObject
         schema:
           type: object
           properties:

@@ -124,7 +124,7 @@ endpoints:
       - name: filter
         in: query
         description: Filter clouds by attributes.
-        explode: false
+        style: deepObject
         schema:
           type: object
           properties:
@@ -271,7 +271,7 @@ endpoints:
       - name: filter
         in: query
         description: Filter project by attributes.
-        explode: false
+        style: deepObject
         schema:
           type: object
           properties:

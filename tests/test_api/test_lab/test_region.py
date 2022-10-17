@@ -216,6 +216,23 @@ def test_list_regions(client, keycloak_mock):
     }
 
 
+def test_query_regions(client):
+    # Simple test to detect issues with deepObject query parameters,
+    # https://github.com/resource-hub-dev/rhub-api/pull/150
+    q = model.Region.query.outerjoin.return_value.filter.return_value
+    q.limit.return_value.offset.return_value = []
+    q.count.return_value = 0
+
+    rv = client.get(
+        f'{API_BASE}/lab/region',
+        query_string={'filter[name]': 'test'},
+        headers={'Authorization': 'Bearer foobar'},
+    )
+
+    assert rv.status_code == 200, rv.data
+    assert rv.json == {'data': [], 'total': 0}
+
+
 def test_get_region(client, keycloak_mock):
     model.Region.query.get.return_value = model.Region(
         id=1,
