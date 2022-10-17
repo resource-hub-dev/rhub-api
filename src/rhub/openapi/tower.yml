@@ -205,7 +205,7 @@ endpoints:
       - name: filter
         in: query
         description: Filter servers by attributes.
-        explode: false
+        style: deepObject
         schema:
           type: object
           properties:
@@ -356,7 +356,7 @@ endpoints:
       - name: filter
         in: query
         description: Filter templates by attributes.
-        explode: false
+        style: deepObject
         schema:
           type: object
           properties:
@@ -553,7 +553,7 @@ endpoints:
       - name: filter
         in: query
         description: Filter jobs by attributes.
-        explode: false
+        style: deepObject
         schema:
           type: object
           properties:
@@ -601,7 +601,7 @@ endpoints:
       - name: filter
         in: query
         description: Filter jobs by attributes.
-        explode: false
+        style: deepObject
         schema:
           type: object
           properties:

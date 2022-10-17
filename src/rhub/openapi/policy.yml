@@ -87,7 +87,7 @@ endpoints:
       - name: filter
         in: query
         description: Filter policies by attributes.
-        explode: false
+        style: deepObject
         schema:
           type: object
           properties:
