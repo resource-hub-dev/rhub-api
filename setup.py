@@ -40,7 +40,7 @@ setup(
         "flask-dotenv",
         "flask_injector",
         "flask-migrate",
-        "flask-sqlalchemy",
+        "flask-sqlalchemy ~= 2.5",
         "gunicorn",
         "hvac",
         "injector",
