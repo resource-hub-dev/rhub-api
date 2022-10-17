@@ -10,9 +10,9 @@ alembic==1.8.1
     #   rhub (setup.py)
 amqp==5.1.1
     # via kombu
-ansible==6.4.0
+ansible==6.5.0
     # via rhub (setup.py)
-ansible-core==2.13.4
+ansible-core==2.13.5
     # via ansible
 appdirs==1.4.4
     # via
@@ -31,7 +31,7 @@ billiard==3.6.4.0
     # via celery
 celery==5.2.7
     # via rhub (setup.py)
-certifi==2022.9.14
+certifi==2022.9.24
     # via requests
 cffi==1.15.1
     # via cryptography
@@ -111,7 +111,7 @@ flask-sqlalchemy==2.5.1
     # via
     #   flask-migrate
     #   rhub (setup.py)
-greenlet==1.1.3
+greenlet==1.1.3.post0
     # via sqlalchemy
 gunicorn==20.1.0
     # via rhub (setup.py)
@@ -121,7 +121,7 @@ hvac==1.0.2
     # via rhub (setup.py)
 idna==3.4
     # via requests
-importlib-metadata==4.12.0
+importlib-metadata==5.0.0
     # via
     #   cliff
     #   flask
@@ -133,7 +133,7 @@ injector==0.20.1
     #   rhub (setup.py)
 inotify==0.2.10
     # via rhub (setup.py)
-iso8601==1.0.2
+iso8601==1.1.0
     # via
     #   keystoneauth1
     #   openstacksdk
@@ -169,7 +169,7 @@ kombu==5.2.4
     # via
     #   celery
     #   rhub (setup.py)
-mako==1.2.2
+mako==1.2.3
     # via alembic
 markupsafe==2.1.1
     # via
@@ -192,7 +192,7 @@ openapi-spec-validator==0.4.0
     # via
     #   prance
     #   rhub (setup.py)
-openstacksdk==0.101.0
+openstacksdk==0.102.0
     # via
     #   osc-lib
     #   python-ironicclient
@@ -229,13 +229,13 @@ prance[osv]==0.21.8.0
     # via rhub (setup.py)
 prettytable==3.4.1
     # via cliff
-prometheus-client==0.14.1
+prometheus-client==0.15.0
     # via prometheus-flask-exporter
 prometheus-flask-exporter==0.20.3
     # via rhub (setup.py)
 prompt-toolkit==3.0.31
     # via click-repl
-psycopg2-binary==2.9.3
+psycopg2-binary==2.9.4
     # via rhub (setup.py)
 pyasn1==0.4.8
     # via
@@ -262,9 +262,9 @@ python-ironicclient==5.0.1
     # via rhub (setup.py)
 python-jose==3.3.0
     # via python-keycloak
-python-keycloak==2.5.0
+python-keycloak==2.6.0
     # via rhub (setup.py)
-pytz==2022.2.1
+pytz==2022.4
     # via
     #   apscheduler
     #   celery
@@ -318,12 +318,12 @@ six==1.16.0
     #   munch
     #   prance
     #   python-dateutil
-sqlalchemy==1.4.41
+sqlalchemy==1.4.42
     # via
     #   alembic
     #   flask-sqlalchemy
     #   rhub (setup.py)
-stevedore==4.0.0
+stevedore==4.0.1
     # via
     #   cliff
     #   dogpile-cache
@@ -332,9 +332,9 @@ stevedore==4.0.0
     #   python-ironicclient
 swagger-ui-bundle==0.0.9
     # via connexion
-tenacity==8.0.1
+tenacity==8.1.0
     # via rhub (setup.py)
-tzdata==2022.2
+tzdata==2022.5
     # via pytz-deprecation-shim
 tzlocal==4.2
     # via apscheduler
@@ -359,7 +359,7 @@ werkzeug==2.2.2
     #   rhub (setup.py)
 wrapt==1.14.1
     # via debtcollector
-zipp==3.8.1
+zipp==3.9.0
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
