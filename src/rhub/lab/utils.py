@@ -49,3 +49,50 @@ def delete_cluster(cluster, user=None):
             f'Failed to trigger cluster ID={cluster.id} deletion in Tower, {e!s}'
         )
         raise
+
+
+def calculate_cluster_usage(cluster):
+    """
+    Calculate cluster usage from cluster parameters and product flavors. Should
+    only be used before creating a new cluster to check if the region quota will
+    be exceeded.
+    """
+    product = cluster.product
+    params = cluster.product_params
+
+    node_consumption = dict.fromkeys(model.Quota.FIELDS, 0)
+
+    for param_name in params:
+        # Filter out parameters not containing node number.
+        if not (param_name.startswith('num_') and param_name.endswith('_nodes')):
+            continue
+
+        num_nodes = int(params[param_name])
+        node_flavor_name = param_name.removeprefix('num_')
+
+        # Generic product has only one node type and the flavor is specified in
+        # parameters.
+        if node_flavor_name == 'nodes':
+            node_flavor_name = params['node_flavor']
+
+        # Some product use differend flavors depending on how many nodes
+        # user wants to provision. In that case, flavor X does not exist, and
+        # flavors single_X and multi_X are defined instead.
+        elif node_flavor_name not in product.flavors:
+            if num_nodes == 1:
+                node_flavor_name = f'single_{node_flavor_name}'
+            else:
+                node_flavor_name = f'multi_{node_flavor_name}'
+
+        if node_flavor_name not in product.flavors:
+            raise ValueError(
+                f'Undefined flavor {node_flavor_name!r} in the product '
+                f'ID={product.id}. Flavor name was extracted from cluster '
+                f'parameter {param_name!r}.'
+            )
+
+        node_flavor = product.flavors[node_flavor_name]
+        for k in node_flavor:
+            node_consumption[k] += num_nodes * node_flavor[k]
+
+    return node_consumption

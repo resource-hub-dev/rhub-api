@@ -141,7 +141,7 @@ class Region(db.Model, ModelMixin):
         )
         result = query.first()
 
-        return dict(zip(['num_vcpus', 'ram_mb', 'num_volumes', 'volumes_gb'], result))
+        return dict(zip(Quota.FIELDS, result))
 
     def get_total_quota_usage(self):
         query = (
@@ -161,7 +161,7 @@ class Region(db.Model, ModelMixin):
         )
         result = query.first()
 
-        return dict(zip(['num_vcpus', 'ram_mb', 'num_volumes', 'volumes_gb'], result))
+        return dict(zip(Quota.FIELDS, result))
 
     def is_product_enabled(self, product_id):
         """Check if the product is configured and enabled in the region."""
@@ -182,6 +182,8 @@ class Quota(db.Model, ModelMixin):
     ram_mb = db.Column(db.Integer, nullable=True)
     num_volumes = db.Column(db.Integer, nullable=True)
     volumes_gb = db.Column(db.Integer, nullable=True)
+
+    FIELDS = ['num_vcpus', 'ram_mb', 'num_volumes', 'volumes_gb']
 
     def to_dict(self):
         data = super().to_dict()
@@ -346,7 +348,7 @@ class Cluster(db.Model, ModelMixin):
 
         :type: dict or `None`
         """
-        usage = dict.fromkeys(['num_vcpus', 'ram_mb', 'num_volumes', 'volumes_gb'], 0)
+        usage = dict.fromkeys(Quota.FIELDS, 0)
         for host in self.hosts:
             for k in usage:
                 usage[k] += getattr(host, k)
