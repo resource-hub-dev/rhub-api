@@ -2,12 +2,11 @@ import datetime
 
 import pytest
 
-from rhub.policies import model
-from rhub.lab import model as lab_model
 from rhub.api import db
-from test_tower import _db_add_row_side_effect
 from rhub.auth.keycloak import KeycloakClient
-
+from rhub.lab import model as lab_model
+from rhub.policies import model
+from tests.test_api.test_tower import _db_add_row_side_effect
 
 API_BASE = '/v0'
 
