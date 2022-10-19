@@ -1,5 +1,5 @@
-import datetime
 import base64
+import datetime
 from unittest.mock import ANY
 
 import pytest
@@ -65,6 +65,12 @@ def region(mocker):
 
     mocker.patch.object(model.Region, 'products_relation')
     mocker.patch.object(model.Region, 'is_product_enabled').return_value = True
+    mocker.patch.object(model.Region, 'get_user_quota_usage').return_value = {
+        'num_vcpus': 0,
+        'ram_mb': 0,
+        'num_volumes': 0,
+        'volumes_gb': 0,
+    }
 
     model.Region.query.get.return_value = region
 
@@ -164,7 +170,20 @@ def product():
         enabled=True,
         tower_template_name_create='dummy-create',
         tower_template_name_delete='dummy-delete',
-        parameters={},
+        parameters=[
+            {
+                'name': 'Node count',
+                'variable': 'num_nodes',
+                'required': False,
+                'type': 'integer',
+            },
+            {
+                'name': 'Node flavor',
+                'variable': 'node_flavor',
+                'required': False,
+                'type': 'string',
+            },
+        ]
     )
 
     model.Product.query.get.return_value = product
@@ -671,6 +690,79 @@ def test_create_cluster_with_disabled_product_in_region(
     assert rv.status_code == 400, rv.data
 
     db_session_mock.commit.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    'num_nodes, exceeded',
+    [
+        (1, False),
+        (2, True),
+    ]
+)
+def test_create_cluster_quota(
+        client, db_session_mock, mocker, region, project, product, tower_client, keycloak_mock,
+        num_nodes, exceeded):
+    cluster_data = {
+        'name': 'testcluster',
+        'description': 'test cluster',
+        'region_id': 1,
+        'reservation_expiration': datetime.datetime(2100, 1, 1, 0, 0, tzinfo=tzutc()),
+        'lifespan_expiration': None,
+        'product_id': 1,
+        'product_params': {
+            'num_nodes': num_nodes,
+            'node_flavor': 'default',
+        },
+    }
+
+    model.Cluster.query.filter.return_value.count.return_value = 0
+
+    region_user_quota_id = 1
+    region.user_quota = model.Quota(
+        id=1,
+        num_vcpus=1,
+        ram_mb=1024,
+        num_volumes=1,
+        volumes_gb=10,
+    )
+
+    product.flavors = {
+        'default': {
+            'num_vcpus': 1,
+            'ram_mb': 1024,
+            'num_volumes': 1,
+            'volumes_gb': 10,
+        },
+    }
+
+    def db_add(row):
+        row.id = 1
+        if isinstance(row, model.Cluster):
+            mocker.patch.object(model.Cluster, 'region', region)
+            mocker.patch.object(model.Cluster, 'product', product)
+            mocker.patch.object(model.Cluster, 'project', project)
+
+    db_session_mock.add.side_effect = db_add
+
+    tower_client.template_get.return_value = {'id': 123, 'name': 'dummy-create'}
+    tower_client.template_launch.return_value = {'id': 321}
+
+    keycloak_mock.user_get_name.return_value = project.owner_name
+
+    rv = client.post(
+        f'{API_BASE}/lab/cluster',
+        headers={'Authorization': 'Bearer foobar'},
+        json=cluster_data,
+    )
+
+    if exceeded:
+        assert rv.status_code == 400, rv.data
+        assert 'Quota Exceeded.' in rv.json['detail']
+        assert set(rv.json['exceeded_resources']) == {
+            'num_vcpus', 'ram_mb', 'volumes_gb', 'num_volumes'}
+
+    else:
+        assert rv.status_code == 200, rv.data
 
 
 def test_update_cluster(client, db_session_mock, mocker,

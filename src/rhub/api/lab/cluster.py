@@ -389,47 +389,34 @@ def create_cluster(keycloak: KeycloakClient, body, user):
                        ext={'invalid_product_params': e.args[0]})
 
     if region.user_quota is not None and product.flavors is not None:
-        current_user_quota_usage = region.get_user_quota_usage(user)
-        user_quota = region.user_quota.to_dict()
-        params = cluster.product_params
-        node_params_keys = list(
-            filter(lambda param: param.find('node') != -1, params.keys()))
-        node_consumption = {}
-        if ('num_nodes' in node_params_keys):  # Generic
-            num_nodes = int(params['num_nodes'])
-            for rsc in product.flavors[params['node_flavor']].keys():
-                node_consumption[rsc] = num_nodes * \
-                    product.flavors[params['node_flavor']][rsc]
-        else:
-            num_node_param_keys = list(
-                filter(lambda param: param.find('num') != -1, node_params_keys))
-            for key in num_node_param_keys:
-                count = int(params[key])
-                flavor_name = key[key.find('num_') + 4:]
-                if key.find('master') != -1:
-                    if count == 1:
-                        flavor_name = [name for name in product.flavors
-                                       if 'single' in name][0]
-                    else:
-                        flavor_name = [name for name in product.flavors
-                                       if 'multi' in name][0]
-                flavor = product.flavors[flavor_name]
-                for rsc in flavor.keys():
-                    if rsc not in node_consumption:
-                        node_consumption[rsc] = 0
-                    node_consumption[rsc] += count * int(flavor[rsc])
-        for rsc in user_quota.keys():
-            rsc_consumption = node_consumption[rsc] + \
-                current_user_quota_usage[rsc]
-            if (rsc_consumption / user_quota[rsc] >= 1):
-                db.session.rollback()
+        try:
+            cluster_usage = lab_utils.calculate_cluster_usage(cluster)
+
+            user_quota = region.user_quota.to_dict()
+            user_quota_usage = region.get_user_quota_usage(user)
+
+            exceeded_resources = []
+            for k in user_quota:
+                if (user_quota[k] is not None  # Quota fields are nullable
+                        and (user_quota_usage[k] + cluster_usage[k]) > user_quota[k]):
+                    exceeded_resources.append(k)
+
+            if exceeded_resources:
                 logger.error(
-                    f'Failed to create {product.name} cluster for user ID={user}. '
-                    'Quota Exceeded',
+                    f'Refused to create {product.name} cluster for user ID={user}. '
+                    f'Quota exceeded: {exceeded_resources!r}.',
                     extra={'user_id': user, 'project_id': project.id},
                 )
-                return problem(500, 'Internal Server Error',
-                                    'Quota Exceeded. Please resize cluster')
+                return problem(
+                    400, 'Bad Request', 'Quota Exceeded. Please resize cluster',
+                    ext={'exceeded_resources': exceeded_resources}
+                )
+
+        except Exception:
+            db.session.rollback()
+            logger.exception('Failed to calculate usage of cluster')
+            return problem(500, 'Internal Server Error',
+                           'Failed to calculate cluster usage.')
 
     try:
         tower_client = region.tower.create_tower_client()
