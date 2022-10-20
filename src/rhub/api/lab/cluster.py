@@ -339,9 +339,16 @@ def create_cluster(keycloak: KeycloakClient, body, user):
         if not project:
             return problem(404, 'Not Found', f'Project {project_id} does not exist')
         if project.cloud_id != region.openstack.id:
-            return problem(400, 'Bad Request', 'TODO')
+            return problem(
+                400, 'Bad Request',
+                f'Project {project_id} does not belong to the selected '
+                f'OpenStack cloud {region.openstack.id}',
+            )
         if project.owner_id != user and not _user_is_cluster_admin(user):
-            return problem(403, 'Forbidden', 'TODO')
+            return problem(
+                403, 'Forbidden',
+                "You don't have permission to create clusters in the selected project.",
+            )
 
     else:
         user_name = keycloak.user_get_name(user)
