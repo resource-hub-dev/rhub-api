@@ -11,8 +11,9 @@ from ruamel import yaml
 class HealthCheckFilter(logging.Filter):
     def filter(self, record):
         # Filter out healthcheck requests.
-        url = record.args['U']
-        return not url.endswith('/ping') and not url.endswith('/cowsay')
+        if url := record.args['U']:
+            return not url.endswith('/ping') and not url.endswith('/cowsay')
+        return True
 
 
 class CustomGunicornLogger(glogging.Logger):
