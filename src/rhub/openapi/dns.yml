@@ -127,8 +127,11 @@ endpoints:
             allOf:
               - $ref: '#/model/Server'
               - required:
-                  - hostname
                   - credentials
+                  - hostname
+                  - name
+                  - owner_group_id
+                  - zone
     responses:
       '200':
         description: Success

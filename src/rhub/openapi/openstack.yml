@@ -343,6 +343,7 @@ endpoints:
               - required:
                   - cloud_id
                   - name
+                  - owner_id
     responses:
       '200':
         description: Success
