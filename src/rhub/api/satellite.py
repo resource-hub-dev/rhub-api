@@ -62,14 +62,16 @@ def server_create(keycloak: KeycloakClient, vault: Vault, body, user):
             'you have to create group first or use existing group.'
         )
 
-    query = model.SatelliteServer.query.filter(
-        model.SatelliteServer.name == body['name']
-    )
-    if query.count() > 0:
-        return problem(
-            400, 'Bad Request',
-            f'Server with name {body["name"]!r} already exists',
+    for field_name in ['name', 'hostname']:
+        field_value = body[field_name]
+        query = model.SatelliteServer.query.filter(
+            getattr(model.SatelliteServer, field_name) == field_value
         )
+        if query.count() > 0:
+            return problem(
+                400, 'Bad Request',
+                f'Server with {field_name}={field_value!r} already exists',
+            )
 
     credentials = body['credentials']
     if not isinstance(credentials, str):
@@ -105,6 +107,18 @@ def server_update(keycloak: KeycloakClient, vault: Vault, server_id, body, user)
     if not keycloak.user_check_role(user, ADMIN_ROLE):
         if not keycloak.user_check_group(user, server.owner_group_id):
             raise Forbidden('You are not owner of this server.')
+
+    for field_name in ['name', 'hostname']:
+        if field_name in body:
+            field_value = body[field_name]
+            query = model.SatelliteServer.query.filter(
+                getattr(model.SatelliteServer, field_name) == field_value
+            )
+            if query.count() > 0:
+                return problem(
+                    400, 'Bad Request',
+                    f'Server with {field_name}={field_value!r} already exists',
+                )
 
     credentials = body.get('credentials', server.credentials)
     if not isinstance(credentials, str):
