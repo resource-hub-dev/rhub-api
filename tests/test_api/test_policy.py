@@ -6,9 +6,22 @@ from rhub.api import db
 from rhub.auth.keycloak import KeycloakClient
 from rhub.lab import model as lab_model
 from rhub.policies import model
-from tests.test_api.test_tower import _db_add_row_side_effect
 
 API_BASE = '/v0'
+
+
+def _db_add_row_side_effect(data_added):
+    def side_effect(row):
+        for k, v in data_added.items():
+            setattr(row, k, v)
+    return side_effect
+
+
+@pytest.fixture(autouse=True)
+def user_can_modify_policy_mock(mocker):
+    m = mocker.patch('rhub.api.policies._user_can_modify_policy')
+    m.return_value = True
+    yield m
 
 
 def test_list_policy(client, mocker):
@@ -160,8 +173,8 @@ def test_create_policy(client, keycloak_mock, db_session_mock):
 
 
 def test_create_policy_unauthorized(
-    client, 
-    keycloak_mock, 
+    client,
+    keycloak_mock,
     db_session_mock
 ):
     policy_data = {
@@ -189,7 +202,7 @@ def test_create_policy_unauthorized(
 @pytest.mark.parametrize(
     'policy_data, missing_property',
     [
-        pytest.param( 
+        pytest.param(
             {
                 'name': 'test server'
             },
@@ -206,9 +219,9 @@ def test_create_policy_unauthorized(
     ]
 )
 def test_create_policy_missing_properties(
-    client, 
-    keycloak_mock, 
-    db_session_mock, 
+    client,
+    keycloak_mock,
+    db_session_mock,
     policy_data,
     missing_property
 ):
@@ -250,19 +263,18 @@ def test_delete_policy(client, keycloak_mock, db_session_mock):
     )
     model.Policy.query.get.return_value = policy
     model.Policy.query.delete.return_value = policy
-    keycloak_mock.user_group_list.return_value = [{'id': 'uuid', 'name': 'policy-1-owners'}]
+
     keycloak_mock.group_list.return_value = [{'id': 'uuid', 'name': 'policy-1-owners'}]
 
     rv = client.delete(
         f'{API_BASE}/policies/1',
         headers={'Authorization': 'Bearer foobar'},
     )
-    model.Policy.query.get.assert_called_with(1)
-    keycloak_mock.user_group_list.assert_called_with(user_id)
-
-    db_session_mock.delete.assert_called_with(policy)
 
     assert rv.status_code == 204
+
+    model.Policy.query.get.assert_called_with(1)
+    db_session_mock.delete.assert_called_with(policy)
 
 
 def test_delete_policy_unauthorized(client, db_session_mock):
@@ -277,7 +289,7 @@ def test_delete_policy_unauthorized(client, db_session_mock):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_delete_policy_non_existent(client, db_session_mock, keycloak_mock):
+def test_delete_policy_non_existent(client, db_session_mock):
     policy_id = 1
 
     model.Policy.query.get.return_value = None
@@ -295,7 +307,7 @@ def test_delete_policy_non_existent(client, db_session_mock, keycloak_mock):
     assert rv.json['detail'] == 'Record Does Not Exist'
 
 
-def test_update_policy(client, keycloak_mock, db_session_mock):
+def test_update_policy(client, db_session_mock):
     user_id = '00000000-0000-0000-0000-000000000000'
     policy = model.Policy(
         id=1,
@@ -314,7 +326,6 @@ def test_update_policy(client, keycloak_mock, db_session_mock):
         constraint_location=lab_model.Location(id=1, name='RDU', description=''),
     )
     model.Policy.query.get.return_value = policy
-    keycloak_mock.user_group_list.return_value = [{'name': 'policy-1-owners'}]
 
     rv = client.patch(
         f'{API_BASE}/policies/1',
@@ -326,7 +337,7 @@ def test_update_policy(client, keycloak_mock, db_session_mock):
     )
 
     model.Policy.query.get.assert_called_with(1)
-    keycloak_mock.user_group_list.assert_called_with(user_id)
+
     assert rv.status_code == 200
     assert rv.json == {
         'id': 1,
@@ -363,7 +374,7 @@ def test_update_policy_unauthorized(client):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_update_policy_non_existent(client, keycloak_mock):
+def test_update_policy_non_existent(client):
     policy_id = 1
 
     model.Policy.query.get.return_value = None
