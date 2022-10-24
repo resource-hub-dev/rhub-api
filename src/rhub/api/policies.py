@@ -1,14 +1,13 @@
 import logging
-import functools
 
 from connexion import problem
 
-from rhub.policies import model
-from rhub.api import db, di, DEFAULT_PAGE_LIMIT
+from rhub.api import DEFAULT_PAGE_LIMIT, db, di
 from rhub.api.utils import db_sort
-from rhub.auth.keycloak import (
-    KeycloakClient, KeycloakGetError, problem_from_keycloak_error,
-)
+from rhub.auth import ADMIN_ROLE
+from rhub.auth.keycloak import (KeycloakClient, KeycloakGetError,
+                                problem_from_keycloak_error)
+from rhub.policies import model
 
 
 """
@@ -36,27 +35,18 @@ constraint_serv_avail', 'constraint_limit', 'constraint_density',
 logger = logging.getLogger(__name__)
 
 
-def check_access(func):
-    """
-    Check whether user is in policy owners group
-    """
-    @functools.wraps(func)
-    def inner(*args, **kwargs):
-        keycloak = di.get(KeycloakClient)
-        if 'policy_id' in kwargs:
-            current_user = kwargs['user']
-            group_name = f'policy-{kwargs["policy_id"]}-owners'
-            group_list = keycloak.user_group_list(current_user)
-            groups = {group['name']: group for group in group_list}
-            if group_name in groups.keys():
-                # User has access to delete/edit policy
-                return func(*args, **kwargs)
-            else:
-                # User does not have access to delete/edit policy
-                return problem(403, 'Forbidden', 'You do not own this policy')
-        else:
-            return func(*args, **kwargs)
-    return inner
+def _user_can_modify_policy(policy, user_id):
+    keycloak = di.get(KeycloakClient)
+
+    if keycloak.user_check_role(user_id, ADMIN_ROLE):
+        return True
+
+    group_name = f'policy-{policy.id}-owners'
+    for group in keycloak.user_group_list(user_id):
+        if group_name == group['name']:
+            return True
+
+    return False
 
 
 def list_policies(user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
@@ -120,7 +110,6 @@ def get_policy(user, policy_id):
     return policy.to_dict()
 
 
-@check_access
 def update_policy(user, policy_id, body):
     """
     API endpoint to update policy attributes
@@ -129,13 +118,16 @@ def update_policy(user, policy_id, body):
     if not policy:
         return problem(404, 'Not Found', 'Record Does Not Exist')
 
+    if not _user_can_modify_policy(policy, user):
+        return problem(403, 'Forbidden',
+                       "You don't have permissions to update this policy.")
+
     policy.update_from_dict(body)
     db.session.commit()
 
     return policy.to_dict()
 
 
-@check_access
 def delete_policy(keycloak: KeycloakClient, user, policy_id):
     """
     API endpoint to delete policy given policy id
@@ -143,6 +135,10 @@ def delete_policy(keycloak: KeycloakClient, user, policy_id):
     policy = model.Policy.query.get(policy_id)
     if not policy:
         return problem(404, 'Not Found', 'Record Does Not Exist')
+
+    if not _user_can_modify_policy(policy, user):
+        return problem(403, 'Forbidden',
+                       "You don't have permissions to delete this policy.")
 
     try:
         groups = {group['name']: group for group in keycloak.group_list()}
