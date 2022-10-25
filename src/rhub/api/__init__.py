@@ -49,10 +49,14 @@ def init_command():
 
 def log_request():
     try:
+        path = flask.request.path.rstrip('/')
+        if path == '/v0/openapi.json' or path.startswith('/v0/ui'):
+            return
+
         request_method = flask.request.method
         request_path = flask.request.path
         request_query = urllib.parse.unquote(flask.request.query_string.decode())
-        if flask.request.content_type == 'application/json':
+        if flask.request.content_type == 'application/json' and flask.request.data:
             request_data = flask.request.json
         else:
             request_data = flask.request.data
@@ -67,6 +71,10 @@ def log_request():
 
 def log_response(response):
     try:
+        path = flask.request.path.rstrip('/')
+        if path == '/v0/openapi.json' or path.startswith('/v0/ui'):
+            return response
+
         response_status = response.status
         if response.content_type in {'application/json', 'application/problem+json'}:
             response_data = response.json

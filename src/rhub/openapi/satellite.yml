@@ -129,9 +129,10 @@ endpoints:
             allOf:
               - $ref: '#/model/Server'
               - required:
-                  - name
-                  - hostname
                   - credentials
+                  - hostname
+                  - name
+                  - owner_group_id
     responses:
       '200':
         description: Success

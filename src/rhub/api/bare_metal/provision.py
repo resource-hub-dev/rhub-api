@@ -94,6 +94,7 @@ def provision_logs_upload(provision_id):
     if not file.filename.lower().endswith(".tbz"):
         return problem(415, "Unsupported Media Type", "Provision debug logs needs to be *.tbz")
 
+    BARE_METAL_LOGS_PATH.mkdir(parents=True, exist_ok=True)
     final_file_name = BARE_METAL_LOGS_PATH / f"provision_{provision.id:08}_log.tbz"
     logger.info(f"Saving logs for provision ({provision}): {file.filename} -> {final_file_name}")
     file.save(final_file_name)

@@ -83,7 +83,7 @@ CELERYBEAT_SCHEDULE = {
 # https://flask.palletsprojects.com/en/2.1.x/config/#SERVER_NAME
 SERVER_NAME = os.getenv('FLASK_SERVER_NAME')
 
-BARE_METAL_LOGS_PATH = Path(os.getenv('RHUB_BARE_METAL_LOGS_DIR', ''))
+BARE_METAL_LOGS_PATH = Path(os.getenv('RHUB_BARE_METAL_LOGS_DIR', RHUB_DATA_DIR / 'bm-logs'))
 
 
 _log_config_path = os.getenv('LOG_CONFIG')
