@@ -87,22 +87,20 @@ def cloud_create(keycloak: KeycloakClient, vault: Vault, body, user):
             'you have to create group first or use existing group.'
         )
 
-    query = model.Cloud.query.filter(model.Cloud.name == body['name'])
-    if query.count() > 0:
-        return problem(
-            400, 'Bad Request',
-            f'Cloud with name {body["name"]!r} already exists',
-        )
-
-    credentials = body['credentials']
-    if not isinstance(credentials, str):
-        credentials_path = f'{VAULT_PATH_PREFIX}/{body["name"]}'
-        vault.write(credentials_path, credentials)
-        body['credentials'] = credentials_path
+    credentials = body.pop('credentials')
+    if isinstance(credentials, str):
+        body['credentials'] = credentials
+    else:
+        body['credentials'] = f'{VAULT_PATH_PREFIX}/{body["name"]}'
 
     cloud = model.Cloud.from_dict(body)
 
     db.session.add(cloud)
+    db.session.flush()
+
+    if isinstance(credentials, dict):
+        vault.write(cloud.credentials, credentials)
+
     db.session.commit()
 
     logger.info(
@@ -129,20 +127,15 @@ def cloud_update(keycloak: KeycloakClient, vault: Vault, cloud_id, body, user):
         if not keycloak.user_check_group(user, cloud.owner_group_id):
             raise Forbidden('You are not owner of this cloud.')
 
-    if 'name' in body:
-        query = model.Cloud.query.filter(model.Cloud.name == body['name'])
-        if query.count() > 0:
-            return problem(
-                400, 'Bad Request',
-                f'Cloud with name {body["name"]!r} already exists',
-            )
-
-    credentials = body.get('credentials', cloud.credentials)
-    if not isinstance(credentials, str):
-        vault.write(cloud.credentials, credentials)
-        del body['credentials']
+    credentials = body.pop('credentials', None)
+    if isinstance(credentials, str):
+        cloud.credentials = credentials
 
     cloud.update_from_dict(body)
+    db.session.flush()
+
+    if isinstance(credentials, dict):
+        vault.write(cloud.credentials, credentials)
 
     db.session.commit()
 
@@ -209,22 +202,6 @@ def project_list(keycloak: KeycloakClient,
 
 
 def project_create(body, user):
-    query = model.Project.query.filter(
-        db.and_(
-            model.Project.name == body['name'],
-            model.Project.cloud_id == body['cloud_id'],
-        )
-    )
-    if query.count() > 0:
-        return problem(
-            400, 'Bad Request',
-            f'Project with the same name {body["name"]!r} in the cloud '
-            f'{body["cloud_id"]!r} already exists'
-        )
-
-    if 'owner_id' not in body:
-        body['owner_id'] = user
-
     project = model.Project.from_dict(body)
 
     db.session.add(project)

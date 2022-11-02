@@ -112,7 +112,7 @@ def test_get_server_unauthorized(client):
 
 def test_get_server_non_existent(client):
     server_id = 1
-    
+
     model.SatelliteServer.query.get.return_value = None
 
     rv = client.get(
@@ -167,7 +167,7 @@ def test_create_server(client, db_session_mock, keycloak_mock, mocker):
                 'credentials': 'kv/test',
             },
             'name',
-            id='missing_name'
+            id='name'
         ),
         pytest.param(
             {
@@ -177,7 +177,7 @@ def test_create_server(client, db_session_mock, keycloak_mock, mocker):
                 'credentials': 'kv/test',
             },
             'owner_group_id',
-            id='missing_owner_group_id'
+            id='owner_group_id'
         ),
         pytest.param(
             {
@@ -187,7 +187,7 @@ def test_create_server(client, db_session_mock, keycloak_mock, mocker):
                 'credentials': 'kv/test',
             },
             'hostname',
-            id='missing_hostname'
+            id='hostname'
         ),
         pytest.param(
             {
@@ -197,15 +197,15 @@ def test_create_server(client, db_session_mock, keycloak_mock, mocker):
                 'insecure': True,
             },
             'credentials',
-            id='missing_credentials'
+            id='credentials'
         ),
     ]
 )
 def test_create_server_missing_properties(
-    client, 
+    client,
     vault_mock,
-    db_session_mock, 
-    server_data, 
+    db_session_mock,
+    server_data,
     missing_property
 ):
     rv = client.post(
@@ -226,26 +226,11 @@ def test_create_server_missing_properties(
     assert rv.json['detail'] == f'\'{missing_property}\' is a required property'
 
 
-@pytest.mark.parametrize(
-    'counts, duplicate_property',
-    [
-        pytest.param(
-            [1], 
-            'name', 
-            id='duplicate_name'
-        ),
-        pytest.param(
-            [0, 1],
-            'hostname',
-            id='duplicate_hostname'
-        ),
-    ]
-)
+@pytest.mark.parametrize('duplicate_property', ['name', 'hostname'])
 def test_create_server_duplicate_properties(
-    client, 
-    vault_mock, 
-    db_session_mock, 
-    counts, 
+    client,
+    db_unique_violation,
+    vault_mock,
     duplicate_property
 ):
     server_data = {
@@ -255,25 +240,23 @@ def test_create_server_duplicate_properties(
         'insecure': True,
         'credentials': 'kv/test',
     }
+    duplicate_value = server_data[duplicate_property]
 
-    model.SatelliteServer.query.filter.return_value.count.side_effect = counts
+    db_unique_violation(duplicate_property, duplicate_value)
 
     rv = client.post(
         f'{API_BASE}/satellite/server',
         headers={'Authorization': 'Bearer foobar'},
         json=server_data,
     )
-    
-    vault_mock.write.assert_not_called()
-
-    db_session_mock.add.assert_not_called()
 
     assert rv.status_code == 400, rv.data
     assert rv.json['title'] == 'Bad Request'
     assert rv.json['detail'] == (
-        f'Server with {duplicate_property}={server_data[duplicate_property]!r} '
-        f'already exists'
+        f'Key ({duplicate_property})=({duplicate_value}) already exists.'
     )
+
+    vault_mock.write.assert_not_called()
 
 
 def test_create_server_unauthorized(client, db_session_mock):
@@ -284,7 +267,7 @@ def test_create_server_unauthorized(client, db_session_mock):
         'insecure': True,
         'credentials': 'kv/test',
     }
-    
+
     rv = client.post(
         f'{API_BASE}/satellite/server',
         json=server_data,
@@ -330,25 +313,11 @@ def test_update_server(client, keycloak_mock):
     assert server.description == 'new desc'
 
 
-@pytest.mark.parametrize(
-    'server_data, duplicate_property',
-    [
-        pytest.param(
-            { 'name': 'new_name' },
-            'name', 
-            id='duplicate_name'
-        ),
-        pytest.param(
-            { 'hostname': 'new.example.com' },
-            'hostname',
-            id='duplicate_hostname'
-        ),
-    ]
-)
+@pytest.mark.parametrize('duplicate_property', ['name', 'hostname'])
 def test_update_server_duplicate_properties(
-    client, 
-    keycloak_mock,
-    server_data,
+    client,
+    db_unique_violation,
+    vault_mock,
     duplicate_property
 ):
     server = model.SatelliteServer(
@@ -360,11 +329,14 @@ def test_update_server_duplicate_properties(
         insecure=False,
         credentials='kv/test',
     )
-    model.SatelliteServer.query.get.return_value = server
 
-    keycloak_mock.group_get_name.return_value = 'test-group'
-    
-    model.SatelliteServer.query.filter.return_value.count.side_effect = [1]
+    server_data = {
+        'name': 'new-name',
+        'hostname': 'new.example.com',
+    }
+    duplicate_value = server_data[duplicate_property]
+
+    db_unique_violation(duplicate_property, duplicate_value)
 
     rv = client.patch(
         f'{API_BASE}/satellite/server/1',
@@ -372,15 +344,13 @@ def test_update_server_duplicate_properties(
         json=server_data,
     )
 
-    model.SatelliteServer.query.get.assert_called_with(server.id)
-
     assert rv.status_code == 400, rv.data
     assert rv.json['title'] == 'Bad Request'
     assert rv.json['detail'] == (
-        f'Server with {duplicate_property}={server_data[duplicate_property]!r} '
-        f'already exists'
+        f'Key ({duplicate_property})=({duplicate_value}) already exists.'
     )
 
+    vault_mock.write.assert_not_called()
 
 
 def test_update_server_unauthorized(client):
@@ -397,9 +367,9 @@ def test_update_server_unauthorized(client):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_update_server_non_existent(client):
+def test_update_server_non_existent(client, vault_mock):
     server_id = 1
-    
+
     model.SatelliteServer.query.get.return_value = None
 
     rv = client.patch(
@@ -416,6 +386,8 @@ def test_update_server_non_existent(client):
     assert rv.status_code == 404, rv.data
     assert rv.json['title'] == 'Not Found'
     assert rv.json['detail'] == f'Server {server_id} does not exist'
+
+    vault_mock.write.assert_not_called()
 
 
 def test_delete_server(client, db_session_mock, keycloak_mock):
