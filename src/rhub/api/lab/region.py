@@ -19,10 +19,6 @@ from rhub.tower import model as tower_model
 logger = logging.getLogger(__name__)
 
 
-VAULT_PATH_PREFIX = 'kv/lab/region'
-"""Vault path prefix to create new credentials in Vault."""
-
-
 def _region_href(region):
     href = {
         'region': url_for('.rhub_api_lab_region_get_region',

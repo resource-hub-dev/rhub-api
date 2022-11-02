@@ -1,3 +1,4 @@
+import json
 import logging
 import logging.config
 import os
@@ -8,6 +9,9 @@ import connexion
 import flask
 import injector
 import prance
+import psycopg2.errors
+import sqlalchemy.exc
+from connexion import problem
 from flask.cli import with_appcontext
 from flask_cors import CORS
 from flask_injector import FlaskInjector
@@ -15,6 +19,7 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from jinja2 import BaseLoader, Environment
 from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
+from werkzeug import Response
 
 from rhub import ROOT_PKG_PATH
 from rhub.api.vault import Vault, VaultModule
@@ -95,6 +100,30 @@ def log_response(response):
     return response
 
 
+def db_integrity_error_handler(ex: sqlalchemy.exc.IntegrityError):
+    connexion_response = None
+
+    try:
+        if isinstance(ex.orig, (psycopg2.errors.UniqueViolation,
+                                psycopg2.errors.ForeignKeyViolation)):
+            msg = ex.orig.diag.message_detail
+            connexion_response = problem(400, 'Bad Request', msg)
+    except Exception:
+        pass
+
+    if connexion_response is None:
+        logger.exception(ex)
+        connexion_response = problem(500, 'Internal Server Error',
+                                     'Unknown database integrity error.')
+
+    return Response(
+        response=json.dumps(connexion_response.body, indent=2),
+        status=connexion_response.status_code,
+        content_type=connexion_response.mimetype,
+        headers=connexion_response.headers,
+    )
+
+
 def create_app(extra_config=None):
     """Create Connexion/Flask application."""
     from . import _config
@@ -127,6 +156,9 @@ def create_app(extra_config=None):
         strict_validation=True,
         pythonic_params=True,
     )
+
+    connexion_app.add_error_handler(sqlalchemy.exc.IntegrityError,
+                                    db_integrity_error_handler)
 
     # Enable CORS (Cross-Origin Resource Sharing)
     # https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS

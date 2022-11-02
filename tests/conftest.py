@@ -1,8 +1,10 @@
-import tempfile
-import pathlib
 import functools
+import pathlib
+import tempfile
 
+import psycopg2.errors
 import pytest
+import sqlalchemy.exc
 
 from rhub.api import create_app
 from rhub.api.vault import Vault
@@ -74,6 +76,23 @@ def db_query_mock(mocker):
 @pytest.fixture(autouse=True)
 def db_session_mock(mocker):
     yield mocker.patch('rhub.api.db.session')
+
+
+@pytest.fixture
+def db_unique_violation(mocker, db_session_mock):
+    class UniqueViolationMock(mocker.Mock, sqlalchemy.exc.IntegrityError):
+        def __init__(self, name, value):
+            super().__init__()
+            self.orig = mocker.Mock(spec=psycopg2.errors.UniqueViolation)
+            self.orig.diag = mocker.Mock(spec=psycopg2.extensions.Diagnostics)
+            self.orig.diag.message_detail = f'Key ({name})=({value}) already exists.'
+
+    def factory(name, value):
+        side_effect = UniqueViolationMock(name, value)
+        db_session_mock.flush.side_effect = side_effect
+        db_session_mock.commit.side_effect = side_effect
+
+    yield factory
 
 
 @pytest.fixture

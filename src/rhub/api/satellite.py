@@ -62,26 +62,20 @@ def server_create(keycloak: KeycloakClient, vault: Vault, body, user):
             'you have to create group first or use existing group.'
         )
 
-    for field_name in ['name', 'hostname']:
-        field_value = body[field_name]
-        query = model.SatelliteServer.query.filter(
-            getattr(model.SatelliteServer, field_name) == field_value
-        )
-        if query.count() > 0:
-            return problem(
-                400, 'Bad Request',
-                f'Server with {field_name}={field_value!r} already exists',
-            )
-
-    credentials = body['credentials']
-    if not isinstance(credentials, str):
-        credentials_path = f'{VAULT_PATH_PREFIX}/{body["name"]}'
-        vault.write(credentials_path, credentials)
-        body['credentials'] = credentials_path
+    credentials = body.pop('credentials')
+    if isinstance(credentials, str):
+        body['credentials'] = credentials
+    else:
+        body['credentials'] = f'{VAULT_PATH_PREFIX}/{body["name"]}'
 
     server = model.SatelliteServer.from_dict(body)
 
     db.session.add(server)
+    db.session.flush()
+
+    if isinstance(credentials, dict):
+        vault.write(server.credentials, credentials)
+
     db.session.commit()
 
     logger.info(
@@ -108,24 +102,15 @@ def server_update(keycloak: KeycloakClient, vault: Vault, server_id, body, user)
         if not keycloak.user_check_group(user, server.owner_group_id):
             raise Forbidden('You are not owner of this server.')
 
-    for field_name in ['name', 'hostname']:
-        if field_name in body:
-            field_value = body[field_name]
-            query = model.SatelliteServer.query.filter(
-                getattr(model.SatelliteServer, field_name) == field_value
-            )
-            if query.count() > 0:
-                return problem(
-                    400, 'Bad Request',
-                    f'Server with {field_name}={field_value!r} already exists',
-                )
-
-    credentials = body.get('credentials', server.credentials)
-    if not isinstance(credentials, str):
-        vault.write(server.credentials, credentials)
-        del body['credentials']
+    credentials = body.pop('credentials', None)
+    if isinstance(credentials, str):
+        server.credentials = credentials
 
     server.update_from_dict(body)
+    db.session.flush()
+
+    if isinstance(credentials, dict):
+        vault.write(server.credentials, credentials)
 
     db.session.commit()
 
