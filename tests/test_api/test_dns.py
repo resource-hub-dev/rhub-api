@@ -1,4 +1,3 @@
-import base64
 from unittest.mock import ANY
 
 import pytest
@@ -99,7 +98,6 @@ def test_create_server(client, db_session_mock, keycloak_mock, mocker):
         'credentials': 'kv/test',
     }
 
-    model.DnsServer.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
     keycloak_mock.group_get_name.return_value = 'test-group'
