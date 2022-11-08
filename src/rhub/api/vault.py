@@ -18,6 +18,9 @@ class Vault(abc.ABC):
     def write(self, path, data):
         raise NotImplementedError
 
+    def exists(self, path):
+        return self.read(path) is not None
+
 
 class HashicorpVault(Vault):
     """Hashicorp Vault client."""

@@ -1,8 +1,8 @@
-from sqlalchemy.orm import validates
 from cron_validator import CronValidator
+from sqlalchemy.orm import validates
 
 from rhub.api import db
-from rhub.api.utils import ModelMixin
+from rhub.api.utils import ModelMixin, ModelValueError
 from rhub.scheduler import jobs
 
 
@@ -20,15 +20,16 @@ class SchedulerCronJob(db.Model, ModelMixin):
     last_run = db.Column(db.DateTime(timezone=True), nullable=True)
 
     @validates('time_expr')
-    def validate_time_expr(self, key, value):
+    def _validate_time_expr(self, key, value):
         if not CronValidator.parse(value):
-            raise ValueError(f'Cron time expression {value!r} is not valid')
+            raise ModelValueError(f'Cron time expression {value!r} is not valid',
+                                  self, key, value)
         return value
 
     @validates('job_name')
-    def validate_job_name(self, key, value):
+    def _validate_job_name(self, key, value):
         if value not in jobs.CronJob.get_jobs():
-            raise ValueError('CronJob is not defined')
+            raise ModelValueError('CronJob is not defined', self, key, value)
         return value
 
     @property

@@ -1,9 +1,10 @@
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.orm import validates
 
-from rhub.api import db, di
+from rhub.api import db, di, utils
+from rhub.api.utils import ModelMixin, ModelValueError
 from rhub.api.vault import Vault
 from rhub.tower.client import Tower
-from rhub.api.utils import ModelMixin
 
 
 class Server(db.Model, ModelMixin):
@@ -39,6 +40,21 @@ class Server(db.Model, ModelMixin):
             password=credentials['password'],
             verify_ssl=self.verify_ssl,
         )
+
+    @validates('url')
+    def _validate_url(self, key, value):
+        if not utils.validate_url(value):
+            raise ModelValueError(f'URL {value!r} is not valid.',
+                                  self, key, value)
+        return value
+
+    @validates('credentials')
+    def _validate_credentials(self, key, value):
+        vault = di.get(Vault)
+        if not vault.exists(value):
+            raise ModelValueError(f'{value!r} does not exist in Vault',
+                                  self, key, value)
+        return value
 
 
 class Template(db.Model, ModelMixin):
