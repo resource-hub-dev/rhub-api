@@ -1,10 +1,16 @@
+import logging
+
 import openstack
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.orm import validates
 
-from rhub.api import db, di
-from rhub.api.utils import ModelMixin
+from rhub.api import db, di, utils
+from rhub.api.utils import ModelMixin, ModelValueError
 from rhub.api.vault import Vault
 from rhub.auth.keycloak import KeycloakClient
+
+
+logger = logging.getLogger(__name__)
 
 
 class Cloud(db.Model, ModelMixin):
@@ -33,6 +39,21 @@ class Cloud(db.Model, ModelMixin):
         data = super().to_dict()
         data['owner_group_name'] = self.owner_group_name
         return data
+
+    @validates('credentials')
+    def _validate_credentials(self, key, value):
+        vault = di.get(Vault)
+        if not vault.exists(value):
+            raise ModelValueError(f'{value!r} does not exist in Vault',
+                                  self, key, value)
+        return value
+
+    @validates('url')
+    def _validate_url(self, key, value):
+        if not utils.validate_url(value):
+            raise ModelValueError(f'URL {value!r} is not valid.',
+                                  self, key, value)
+        return value
 
 
 class Project(db.Model, ModelMixin):

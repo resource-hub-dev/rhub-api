@@ -7,7 +7,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import validates
 
 from rhub.api import db, di
-from rhub.api.utils import ModelMixin, condition_eval
+from rhub.api.utils import ModelMixin, ModelValueError, condition_eval
 from rhub.auth.keycloak import KeycloakClient
 from rhub.dns import model as dns_model
 from rhub.lab import SHAREDCLUSTER_GROUP
@@ -318,15 +318,16 @@ class Cluster(db.Model, ModelMixin):
     @validates('name')
     def validate_name(self, key, value):
         if value.lower() in self.RESERVED_NAMES:
-            raise ValueError(f'{value!r} is reserved name')
+            raise ModelValueError(f'{value!r} is reserved name', self, key, value)
         if len(value) < 6:
-            raise ValueError('Cluster name is too short')
+            raise ModelValueError('Cluster name is too short', self, key, value)
         if len(value) > 20:
-            raise ValueError('Cluster name is too long')
+            raise ModelValueError('Cluster name is too long', self, key, value)
         if not re.match(r'^[0-9a-z]+$', value):
-            raise ValueError(
+            raise ModelValueError(
                 'Cluster name contains invalid characters, '
-                'allowed are only 0-9 and a-z (uppercase characters are not allowed).'
+                'allowed are only 0-9 and a-z (uppercase characters are not allowed).',
+                self, key, value,
             )
         return value
 

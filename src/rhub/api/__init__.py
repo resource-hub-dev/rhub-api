@@ -100,21 +100,8 @@ def log_response(response):
     return response
 
 
-def db_integrity_error_handler(ex: sqlalchemy.exc.IntegrityError):
-    connexion_response = None
-
-    try:
-        if isinstance(ex.orig, (psycopg2.errors.UniqueViolation,
-                                psycopg2.errors.ForeignKeyViolation)):
-            msg = ex.orig.diag.message_detail
-            connexion_response = problem(400, 'Bad Request', msg)
-    except Exception:
-        pass
-
-    if connexion_response is None:
-        logger.exception(ex)
-        connexion_response = problem(500, 'Internal Server Error',
-                                     'Unknown database integrity error.')
+def problem_response(*args, **kwargs):
+    connexion_response = problem(*args, **kwargs)
 
     return Response(
         response=json.dumps(connexion_response.body, indent=2),
@@ -122,6 +109,30 @@ def db_integrity_error_handler(ex: sqlalchemy.exc.IntegrityError):
         content_type=connexion_response.mimetype,
         headers=connexion_response.headers,
     )
+
+
+def db_integrity_error_handler(ex: sqlalchemy.exc.IntegrityError):
+    try:
+        if isinstance(ex.orig, (psycopg2.errors.UniqueViolation,
+                                psycopg2.errors.ForeignKeyViolation)):
+            msg = ex.orig.diag.message_detail
+            return problem_response(400, 'Bad Request', msg)
+    except Exception:
+        pass
+
+    logger.exception(ex)
+    return problem_response(500, 'Internal Server Error',
+                            'Unknown database integrity error.')
+
+
+def value_error_handler(ex: ValueError):
+    from rhub.api.utils import ModelValueError
+
+    ext = {}
+    if isinstance(ex, ModelValueError) and ex.attr_name:
+        ext['invalid_field'] = ex.attr_name
+
+    return problem_response(400, 'Bad Request', str(ex), ext=ext)
 
 
 def create_app(extra_config=None):
@@ -157,6 +168,7 @@ def create_app(extra_config=None):
         pythonic_params=True,
     )
 
+    connexion_app.add_error_handler(ValueError, value_error_handler)
     connexion_app.add_error_handler(sqlalchemy.exc.IntegrityError,
                                     db_integrity_error_handler)
 

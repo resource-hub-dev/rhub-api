@@ -1,5 +1,7 @@
 import copy
 import datetime
+import socket
+import urllib.parse
 
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import declarative_mixin, declared_attr
@@ -67,6 +69,31 @@ class ModelMixin:
 
         for k, v in data.items():
             setattr(self, k, v)
+
+
+class ModelValueError(ValueError):
+    def __init__(self, msg, row=None, attr_name=None, attr_value=None):
+        super().__init__(msg)
+        self.row = row
+        self.attr_name = attr_name
+        self.attr_value = attr_value
+
+
+def validate_hostname(hostname):
+    """Check if hostname is valid."""
+    try:
+        socket.getaddrinfo(hostname, None)
+        return True
+    except Exception:
+        return False
+
+
+def validate_url(url):
+    try:
+        parsed_url = urllib.parse.urlparse(url)
+        return validate_hostname(parsed_url.hostname)
+    except Exception:
+        return False
 
 
 def date_now():

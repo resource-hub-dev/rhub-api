@@ -119,3 +119,10 @@ def scheduler_mock(session_mocker):
     m.return_value = scheduler_mock
 
     yield scheduler_mock
+
+
+@pytest.fixture(autouse=True)
+def validate_hostname_mock(mocker):
+    m = mocker.patch('rhub.api.utils.validate_hostname')
+    m.return_value = True
+    yield m
