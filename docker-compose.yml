@@ -106,11 +106,16 @@ services:
       - .env
     ports:
       - '5672:5672'
+      - '15674:15674' #webstomp
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 30s
       retries: 5
       timeout: 30s
+    volumes:
+      - ./config/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./config/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+
 
   otel:
     image: otel/opentelemetry-collector-contrib-dev:latest
