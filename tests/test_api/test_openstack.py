@@ -148,7 +148,6 @@ def test_create_cloud(client, db_session_mock, keycloak_mock, mocker):
         'networks': ['test_net'],
     }
 
-    model.Cloud.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
 
     keycloak_mock.group_get_name.return_value = 'test-group'
@@ -168,19 +167,24 @@ def test_create_cloud(client, db_session_mock, keycloak_mock, mocker):
         assert getattr(cloud, k) == v
 
 
-def test_create_cloud_existing_name(client, db_session_mock):
+def test_create_cloud_existing_name(
+        client,
+        db_session_mock,
+        db_unique_violation,
+        vault_mock,
+    ):
     cloud_data = {
         'name': 'test-name',
         'description': '',
         'owner_group_id': '00000000-0000-0000-0000-000000000000',
         'url': 'https://openstack.example.com:13000',
-        'credentials': 'kv/test',
+        'credentials': {'username': 'foo', 'password': 'bar'},
         'domain_name': 'Default',
         'domain_id': 'default',
         'networks': ['test_net'],
     }
 
-    model.Cloud.query.filter.return_value.count.return_value = 1
+    db_unique_violation('name', 'test-name')
 
     rv = client.post(
         f'{API_BASE}/openstack/cloud',
@@ -188,21 +192,19 @@ def test_create_cloud_existing_name(client, db_session_mock):
         json=cloud_data,
     )
 
-    db_session_mock.add.assert_not_called()
-
     assert rv.status_code == 400, rv.data
     assert rv.json['title'] == 'Bad Request'
-    assert rv.json['detail'] == (
-        f'Cloud with name {cloud_data["name"]!r} already exists'
-    )
+    assert rv.json['detail'] == f'Key (name)=(test-name) already exists.'
+
+    vault_mock.write.assert_not_called()
 
 
-def test_create_cloud_missing_name(client, db_session_mock):
+def test_create_cloud_missing_name(client, db_session_mock, vault_mock):
     cloud_data = {
         'description': '',
         'owner_group_id': '00000000-0000-0000-0000-000000000000',
         'url': 'https://openstack.example.com:13000',
-        'credentials': 'kv/test',
+        'credentials': {'username': 'foo', 'password': 'bar'},
         'domain_name': 'Default',
         'domain_id': 'default',
         'networks': ['test_net'],
@@ -220,14 +222,16 @@ def test_create_cloud_missing_name(client, db_session_mock):
     assert rv.json['title'] == 'Bad Request'
     assert rv.json['detail'] == '\'name\' is a required property'
 
+    vault_mock.write.assert_not_called()
 
-def test_create_cloud_unauthorized(client, db_session_mock):
+
+def test_create_cloud_unauthorized(client, db_session_mock, vault_mock):
     cloud_data = {
         'name': 'test',
         'description': '',
         'owner_group_id': '00000000-0000-0000-0000-000000000000',
         'url': 'https://openstack.example.com:13000',
-        'credentials': 'kv/test',
+        'credentials': {'username': 'foo', 'password': 'bar'},
         'domain_name': 'Default',
         'domain_id': 'default',
         'networks': ['test_net'],
@@ -244,6 +248,8 @@ def test_create_cloud_unauthorized(client, db_session_mock):
     assert rv.json['title'] == 'Unauthorized'
     assert rv.json['detail'] == 'No authorization token provided'
 
+    vault_mock.write.assert_not_called()
+
 
 def test_update_cloud(client, keycloak_mock):
     cloud = model.Cloud(
@@ -258,7 +264,6 @@ def test_update_cloud(client, keycloak_mock):
         networks=['test_net'],
     )
     model.Cloud.query.get.return_value = cloud
-    model.Cloud.query.filter.return_value.count.return_value = 0
 
     keycloak_mock.group_get_name.return_value = 'test-group'
 
@@ -279,7 +284,12 @@ def test_update_cloud(client, keycloak_mock):
     assert cloud.description == 'new desc'
 
 
-def test_update_cloud_existing_name(client, db_session_mock, vault_mock):
+def test_update_cloud_existing_name(
+        client,
+        db_session_mock,
+        vault_mock,
+        db_unique_violation,
+    ):
     cloud = model.Cloud(
         id=1,
         name='test',
@@ -292,7 +302,8 @@ def test_update_cloud_existing_name(client, db_session_mock, vault_mock):
         networks=['test_net'],
     )
     model.Cloud.query.get.return_value = cloud
-    model.Cloud.query.filter.return_value.count.return_value = 1
+
+    db_unique_violation('name', 'new')
 
     rv = client.patch(
         f'{API_BASE}/openstack/cloud/1',
@@ -305,15 +316,14 @@ def test_update_cloud_existing_name(client, db_session_mock, vault_mock):
 
     assert rv.status_code == 400, rv.data
     assert rv.json['title'] == 'Bad Request'
-    assert rv.json['detail'] == "Cloud with name 'new' already exists"
+    assert rv.json['detail'] == f'Key (name)=(new) already exists.'
 
     model.Cloud.query.get.assert_called_with(1)
 
-    db_session_mock.commit.assert_not_called()
     vault_mock.write.assert_not_called()
 
 
-def test_update_cloud_non_existent(client):
+def test_update_cloud_non_existent(client, vault_mock):
     cloud_id = 1
 
     model.Cloud.query.get.return_value = None
@@ -324,6 +334,7 @@ def test_update_cloud_non_existent(client):
         json={
             'name': 'new',
             'description': 'new desc',
+            'credentials': {'username': 'foo', 'password': 'bar'},
         },
     )
 
@@ -333,8 +344,10 @@ def test_update_cloud_non_existent(client):
     assert rv.json['title'] == 'Not Found'
     assert rv.json['detail'] == f'Cloud {cloud_id} does not exist'
 
+    vault_mock.write.assert_not_called()
 
-def test_update_cloud_unauthorized(client, keycloak_mock):
+
+def test_update_cloud_unauthorized(client, keycloak_mock, vault_mock):
     cloud = model.Cloud(
         id=1,
         name='test',
@@ -355,6 +368,7 @@ def test_update_cloud_unauthorized(client, keycloak_mock):
         json={
             'name': 'new',
             'description': 'new desc',
+            'credentials': {'username': 'foo', 'password': 'bar'},
         },
     )
 
@@ -364,6 +378,8 @@ def test_update_cloud_unauthorized(client, keycloak_mock):
 
     assert cloud.name == 'test'
     assert cloud.description == ''
+
+    vault_mock.write.assert_not_called()
 
 
 def test_delete_cloud(client, db_session_mock, keycloak_mock):
@@ -601,7 +617,7 @@ def test_create_project(client, db_session_mock, keycloak_mock, mocker):
         assert getattr(project, k) == v
 
 
-def test_create_project_existing_name(client, db_session_mock):
+def test_create_project_existing_name(client, db_session_mock, db_unique_violation):
     project_data = {
         'cloud_id': 1,
         'name': 'test_project',
@@ -609,7 +625,7 @@ def test_create_project_existing_name(client, db_session_mock):
         'owner_id': '00000000-0000-0000-0000-000000000000',
     }
 
-    model.Project.query.filter.return_value.count.return_value = 1
+    db_unique_violation('cloud_id, name', '1, test_project')
 
     rv = client.post(
         f'{API_BASE}/openstack/project',
@@ -617,24 +633,19 @@ def test_create_project_existing_name(client, db_session_mock):
         json=project_data,
     )
 
-    db_session_mock.add.assert_not_called()
-
     assert rv.status_code == 400, rv.data
     assert rv.json['title'] == 'Bad Request'
     assert rv.json['detail'] == (
-        f'Project with the same name {project_data["name"]!r} in the cloud '
-        f'{project_data["cloud_id"]!r} already exists'
+        f'Key (cloud_id, name)=(1, test_project) already exists.'
     )
 
 
-def test_create_project_existing_name(client, db_session_mock):
+def test_create_project_missing_name(client, db_session_mock):
     project_data = {
         'cloud_id': 1,
         'description': '',
         'owner_id': '00000000-0000-0000-0000-000000000000',
     }
-
-    model.Project.query.filter.return_value.count.return_value = 0
 
     rv = client.post(
         f'{API_BASE}/openstack/project',

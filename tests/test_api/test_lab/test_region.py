@@ -4,7 +4,6 @@ from unittest.mock import ANY
 import pytest
 import sqlalchemy.exc
 
-from rhub.api.lab.region import VAULT_PATH_PREFIX
 from rhub.api.vault import Vault
 from rhub.auth.keycloak import KeycloakClient
 from rhub.lab import model
