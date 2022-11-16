@@ -7,7 +7,9 @@ from rhub.auth.keycloak import KeycloakClient
 from rhub.lab import model as lab_model
 from rhub.policies import model
 
+
 API_BASE = '/v0'
+AUTH_HEADER = {'Authorization': 'Basic X190b2tlbl9fOmR1bW15Cg=='}
 
 
 def _db_add_row_side_effect(data_added):
@@ -38,7 +40,7 @@ def test_list_policy(client, mocker):
 
     rv = client.get(
         f'{API_BASE}/policies',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200
@@ -89,7 +91,7 @@ def test_get_policy(client):
 
     rv = client.get(
         f'{API_BASE}/policies/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Policy.query.get.assert_called_with(1)
@@ -133,7 +135,7 @@ def test_get_policy_non_existent(client):
 
     rv = client.get(
         f'{API_BASE}/policies/{policy_id}',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Policy.query.get.assert_called_with(policy_id)
@@ -144,6 +146,7 @@ def test_get_policy_non_existent(client):
 
 
 def test_create_policy(client, keycloak_mock, db_session_mock):
+    user_id = 1
     user_data = {'id': 'uuid', 'name': 'user'}
     policy_data = {
         'name': 'test',
@@ -157,13 +160,12 @@ def test_create_policy(client, keycloak_mock, db_session_mock):
 
     rv = client.post(
         f'{API_BASE}/policies',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=policy_data,
     )
 
     keycloak_mock.group_role_add.assert_called_with('policy-owner', group_id)
-    keycloak_mock.group_user_add.assert_called_with(
-        '00000000-0000-0000-0000-000000000000', group_id)
+    keycloak_mock.group_user_add.assert_called_with(user_id, group_id)
 
     server = db_session_mock.add.call_args.args[0]
     for k, v in policy_data.items():
@@ -227,7 +229,7 @@ def test_create_policy_missing_properties(
 ):
     rv = client.post(
         f'{API_BASE}/policies',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=policy_data,
     )
 
@@ -268,7 +270,7 @@ def test_delete_policy(client, keycloak_mock, db_session_mock):
 
     rv = client.delete(
         f'{API_BASE}/policies/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 204
@@ -296,7 +298,7 @@ def test_delete_policy_non_existent(client, db_session_mock):
 
     rv = client.delete(
         f'{API_BASE}/policies/{policy_id}',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Policy.query.get.assert_called_with(policy_id)
@@ -329,7 +331,7 @@ def test_update_policy(client, db_session_mock):
 
     rv = client.patch(
         f'{API_BASE}/policies/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'name': 'new',
             'department': 'new desc',
@@ -381,7 +383,7 @@ def test_update_policy_non_existent(client):
 
     rv = client.patch(
         f'{API_BASE}/policies/{policy_id}',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'name': 'new',
             'department': 'new desc',

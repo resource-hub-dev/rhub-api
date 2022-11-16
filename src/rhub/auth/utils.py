@@ -2,28 +2,35 @@ import functools
 
 from werkzeug.exceptions import Forbidden
 
-from rhub.api import di
-from rhub.auth import ADMIN_ROLE
-from rhub.auth.keycloak import KeycloakClient
+from rhub.auth import ADMIN_GROUP, model
+
+
+def is_user_in_group(user_id, *group_name):
+    q = (
+        model.User.query
+        .filter(model.User.id == user_id)
+        .join(model.Group, model.User.groups)
+        .filter(model.Group.name.in_(group_name))
+    )
+    return q.count()
 
 
 def user_is_admin(user_id):
-    """Check if user is admin, has :const:`rhub.auth.ADMIN_ROLE` role."""
-    keycloak = di.get(KeycloakClient)
-    return keycloak.user_check_role(user_id, ADMIN_ROLE)
+    """Check if user is admin, belongs to :const:`rhub.auth.ADMIN_GROUP` group."""
+    return is_user_in_group(user_id, ADMIN_GROUP)
 
 
-def route_require_role(*roles,
-                       forbidden_message="You don't have permissions for this."):
+def route_require_group(*group_name,
+                        forbidden_message="You don't have permissions for this."):
     """
-    Decorator to require user role to use API endpoint route. If user doesn't
-    have any of the specified role Forbidden exception will be raised to prevent
-    user from using the endpoint.
+    Decorator to require user group to use API endpoint route. If user doesn't
+    beloing to any of the specified groups, Forbidden exception will be raised
+    to prevent user from using the endpoint.
 
     Decorated handler must have `user` in its parameters!
     """
-    if not roles:
-        raise ValueError('At least one role is required')
+    if not group_name:
+        raise ValueError('At least one group name is required')
 
     def decorator(fn):
         if 'user' not in fn.__code__.co_varnames:
@@ -34,10 +41,8 @@ def route_require_role(*roles,
 
         @functools.wraps(fn)
         def inner(*args, **kwargs):
-            user = kwargs['user']
-            keycloak = di.get(KeycloakClient)
-            if not user or not any(keycloak.user_check_role(user, role)
-                                   for role in roles):
+            user_id = kwargs['user']
+            if not is_user_in_group(user_id, *group_name):
                 raise Forbidden(forbidden_message)
             return fn(*args, **kwargs)
         return inner
@@ -47,7 +52,7 @@ def route_require_role(*roles,
 
 def route_require_admin(fn):
     """
-    Shortcut to require admin role (:const:`rhub.auth.ADMIN_ROLE`) to use API
+    Shortcut to require admin group (:const:`rhub.auth.ADMIN_GROUP`) to use API
     endpoint.
     """
-    return route_require_role(ADMIN_ROLE)(fn)
+    return route_require_group(ADMIN_GROUP)(fn)

@@ -8,6 +8,7 @@ from rhub.scheduler import model
 
 
 API_BASE = '/v0'
+AUTH_HEADER = {'Authorization': 'Basic X190b2tlbl9fOmR1bW15Cg=='}
 
 
 def _db_add_row_side_effect(data_added):
@@ -34,7 +35,7 @@ def test_list(client):
 
     rv = client.get(
         f'{API_BASE}/scheduler/cron',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200
@@ -70,7 +71,7 @@ def test_create(client, db_session_mock):
 
     rv = client.post(
         f'{API_BASE}/scheduler/cron',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=cron_job_data,
     )
 
@@ -98,7 +99,7 @@ def test_create_duplicate_name(client, db_session_mock):
 
     rv = client.post(
         f'{API_BASE}/scheduler/cron',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=cron_job_data,
     )
 
@@ -120,7 +121,7 @@ def test_get(client):
 
     rv = client.get(
         f'{API_BASE}/scheduler/cron/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200
@@ -151,7 +152,7 @@ def test_update(client, db_session_mock):
 
     rv = client.patch(
         f'{API_BASE}/scheduler/cron/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'time_expr': '0 */5 * * *',
             'job_params': {'bar': 'foo'},
@@ -183,7 +184,7 @@ def test_update_duplicate_name(client, db_session_mock):
 
     rv = client.patch(
         f'{API_BASE}/scheduler/cron/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'name': 'example-duplicate'
         },
@@ -208,7 +209,7 @@ def test_delete(client, db_session_mock):
 
     rv = client.delete(
         f'{API_BASE}/scheduler/cron/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 204

@@ -11,6 +11,7 @@ from rhub.openstack import model as openstack_model
 
 
 API_BASE = '/v0'
+AUTH_HEADER = {'Authorization': 'Basic X190b2tlbl9fOmR1bW15Cg=='}
 
 
 def _db_add_row_side_effect(data_added):
@@ -163,7 +164,7 @@ def test_list_regions(client, keycloak_mock):
 
     rv = client.get(
         f'{API_BASE}/lab/region',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200, rv.data
@@ -225,7 +226,7 @@ def test_query_regions(client):
     rv = client.get(
         f'{API_BASE}/lab/region',
         query_string={'filter[name]': 'test'},
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200, rv.data
@@ -275,7 +276,7 @@ def test_get_region(client, keycloak_mock):
 
     rv = client.get(
         f'{API_BASE}/lab/region/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200, rv.data
@@ -342,7 +343,7 @@ def test_create_region(client, db_session_mock, keycloak_mock, mocker):
 
     rv = client.post(
         f'{API_BASE}/lab/region',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=region_data,
     )
 
@@ -388,7 +389,7 @@ def test_create_region_with_quota(client, db_session_mock, keycloak_mock, mocker
 
     rv = client.post(
         f'{API_BASE}/lab/region',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=region_data,
     )
 
@@ -457,7 +458,7 @@ def test_update_region(client):
 
     rv = client.patch(
         f'{API_BASE}/lab/region/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'name': 'new',
             'description': 'new desc',
@@ -539,7 +540,7 @@ def test_update_region_quota(client, keycloak_mock, db_session_mock, quota_data)
 
     rv = client.patch(
         f'{API_BASE}/lab/region/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={'user_quota': quota_data},
     )
 
@@ -598,7 +599,7 @@ def test_delete_region(client, db_session_mock):
 
     rv = client.delete(
         f'{API_BASE}/lab/region/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 204, rv.data
@@ -667,7 +668,7 @@ def test_region_list_products(client):
 
     rv = client.get(
         f'{API_BASE}/lab/region/1/products',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200, rv.data
@@ -744,7 +745,7 @@ def test_region_add_product(client, db_session_mock):
 
     rv = client.post(
         f'{API_BASE}/lab/region/1/products',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={'id': 10},
     )
 
@@ -815,7 +816,7 @@ def test_region_disable_product(client, db_session_mock):
 
     rv = client.post(
         f'{API_BASE}/lab/region/1/products',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={'id': 10, 'enabled': False},
     )
 
@@ -882,7 +883,7 @@ def test_region_delete_product(client, db_session_mock):
 
     rv = client.delete(
         f'{API_BASE}/lab/region/1/products',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={'id': 10},
     )
 

@@ -11,6 +11,7 @@ from rhub.auth.keycloak import KeycloakClient
 
 
 API_BASE = '/v0'
+AUTH_HEADER = {'Authorization': 'Basic X190b2tlbl9fOmR1bW15Cg=='}
 
 
 def _db_add_row_side_effect(data_added):
@@ -32,7 +33,7 @@ def test_location_list(client):
 
     rv = client.get(
         f'{API_BASE}/lab/location',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200
@@ -58,7 +59,7 @@ def test_location_get(client):
 
     rv = client.get(
         f'{API_BASE}/lab/location/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Location.query.get.assert_called_with(1)
@@ -83,7 +84,7 @@ def test_location_create(client, db_session_mock, mocker):
 
     rv = client.post(
         f'{API_BASE}/lab/location',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=location_data,
     )
 
@@ -112,7 +113,7 @@ def test_location_update(client):
 
     rv = client.patch(
         f'{API_BASE}/lab/location/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'description': 'Raleigh',
         },
@@ -141,7 +142,7 @@ def test_location_delete(client, db_session_mock):
 
     rv = client.delete(
         f'{API_BASE}/lab/location/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Location.query.get.assert_called_with(1)

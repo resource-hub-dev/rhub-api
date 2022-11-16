@@ -50,13 +50,10 @@ def messaging_mock(session_mocker):
 
 
 @pytest.fixture(autouse=True)
-def token_mock(mocker):
-    decode_token_mock = mocker.patch(f'rhub.api.auth.token.decode_token')
-    decode_token_mock.return_value = {
-        'sub': '00000000-0000-0000-0000-000000000000',
-        'scope': 'tests',
-    }
-    yield decode_token_mock
+def auth_mock(mocker):
+    m = mocker.patch(f'rhub.api.auth.security.basic_auth')
+    m.return_value = {'uid': 1}
+    yield m
 
 
 @pytest.fixture(autouse=True, scope='function')

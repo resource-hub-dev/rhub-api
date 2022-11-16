@@ -47,6 +47,7 @@ setup(
         "inotify",
         "jinja2",
         "kombu",
+        "oic",
         "openapi_spec_validator < 0.5",  # https://github.com/RonnyPfannschmidt/prance/issues/131
         "openstacksdk",
         "prance[osv]",

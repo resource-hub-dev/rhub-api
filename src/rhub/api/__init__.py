@@ -22,7 +22,7 @@ from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMet
 from werkzeug import Response
 
 from rhub import ROOT_PKG_PATH
-from rhub.api.vault import Vault, VaultModule
+from rhub.api.vault import VaultModule
 from rhub.auth.keycloak import KeycloakModule
 from rhub.messaging import MessagingModule
 from rhub.scheduler import SchedulerModule
@@ -50,6 +50,37 @@ def init_app():
 @with_appcontext
 def init_command():
     init_app()
+
+
+@click.command('create-user')
+@click.argument('user_name')
+@click.option('-g', 'group_name')
+@with_appcontext
+def create_user_command(user_name, group_name):
+    from rhub.auth import model as auth_model
+
+    user = auth_model.User(name=user_name)
+    db.session.add(user)
+    db.session.flush()
+
+    if group_name:
+        group = auth_model.Group.query.filter(
+            auth_model.Group.name == group_name
+        ).first()
+        user_group = auth_model.UserGroup(user_id=user.id, group_id=group.id)
+        db.session.add(user_group)
+
+    token_plain, token = auth_model.Token.generate(user_id=user.id)
+    db.session.add(token)
+
+    db.session.commit()
+    click.secho(
+        '\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'
+        f'  User ID:    {user.id}\n'
+        f'  API Token:  {token_plain}\n'
+        '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n',
+        bold=True,
+    )
 
 
 def log_request():
@@ -177,6 +208,7 @@ def create_app(extra_config=None):
     CORS(flask_app)
 
     flask_app.cli.add_command(init_command)
+    flask_app.cli.add_command(create_user_command)
 
     if logger.isEnabledFor(logging.DEBUG):
         flask_app.before_request(log_request)
@@ -200,25 +232,5 @@ def create_app(extra_config=None):
             MessagingModule(flask_app),
         ],
     )
-
-    # Try to retrieve Tower notification webhook creds from vault
-    try:
-        with flask_app.app_context():
-            vault = di.get(Vault)
-            webhookCreds = vault.read(flask_app.config['WEBHOOK_VAULT_PATH'])
-            if webhookCreds:
-                flask_app.config['WEBHOOK_USER'] = webhookCreds['username']
-                flask_app.config['WEBHOOK_PASS'] = webhookCreds['password']
-            else:
-                raise Exception(
-                    'Missing tower webhook notification credentials; '
-                    f'{vault} {flask_app.config["WEBHOOK_VAULT_PATH"]}'
-                )
-
-    except Exception as e:
-        logger.error(
-            f'Failed to load {flask_app.config["WEBHOOK_VAULT_PATH"]} tower'
-            f' webhook notification credentials {e!s}.'
-        )
 
     return flask_app

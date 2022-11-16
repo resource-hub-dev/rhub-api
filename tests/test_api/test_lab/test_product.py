@@ -11,6 +11,7 @@ from rhub.auth.keycloak import KeycloakClient
 
 
 API_BASE = '/v0'
+AUTH_HEADER = {'Authorization': 'Basic X190b2tlbl9fOmR1bW15Cg=='}
 
 
 @pytest.fixture(autouse=True)
@@ -44,7 +45,7 @@ def test_list_products(client):
 
     rv = client.get(
         f'{API_BASE}/lab/product',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200
@@ -80,7 +81,7 @@ def test_get_product(client):
 
     rv = client.get(
         f'{API_BASE}/lab/product/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200
@@ -113,7 +114,7 @@ def test_create_product(client, db_session_mock):
 
     rv = client.post(
         f'{API_BASE}/lab/product',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=product_data,
     )
 
@@ -141,7 +142,7 @@ def test_update_product(client, db_session_mock):
 
     rv = client.patch(
         f'{API_BASE}/lab/product/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'name': 'name change',
             'description': 'desc change',
@@ -171,7 +172,7 @@ def test_delete_product(client, db_session_mock):
 
     rv = client.delete(
         f'{API_BASE}/lab/product/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 204
