@@ -3,10 +3,9 @@ import logging
 from connexion import problem
 from flask import url_for
 
-from rhub.auth.keycloak import (
-    KeycloakClient, KeycloakGetError, problem_from_keycloak_error,
-)
-from rhub.auth.utils import route_require_admin
+from rhub.api import DEFAULT_PAGE_LIMIT
+from rhub.api.utils import db_sort
+from rhub.auth import model
 
 
 logger = logging.getLogger(__name__)
@@ -14,109 +13,40 @@ logger = logging.getLogger(__name__)
 
 def _group_href(group):
     return {
-        'group': url_for('.rhub_api_auth_group_get_group',
-                         group_id=group['id']),
-        'group_roles': url_for('.rhub_api_auth_group_list_group_roles',
-                               group_id=group['id']),
-        'group_users': url_for('.rhub_api_auth_group_list_group_users',
-                               group_id=group['id']),
+        'group': url_for('.rhub_api_auth_group_group_get',
+                         group_id=group.id),
     }
 
 
-def list_groups(keycloak: KeycloakClient):
-    try:
-        return [
-            group | {'_href': _group_href(group)}
-            for group in keycloak.group_list()
-        ]
-    except KeycloakGetError as e:
-        logger.exception(e)
-        return problem_from_keycloak_error(e)
-    except Exception as e:
-        logger.exception(e)
-        return problem(500, 'Unknown Error', str(e))
+def group_list(filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
+    groups = model.Group.query
+
+    if 'name' in filter_:
+        groups = groups.filter(model.Group.name.ilike(filter_['name']))
+
+    if 'user_id' in filter_ or 'user_name' in filter_:
+        groups = groups.join(model.User, model.Group.users)
+
+        if 'user_id' in filter_:
+            groups = groups.filter(model.User.id == filter_['user_id'])
+
+        if 'group_name' in filter_:
+            groups = groups.filter(model.User.name == filter_['user_name'])
+
+    if sort:
+        groups = db_sort(groups, sort)
+
+    return {
+        'data': [
+            group.to_dict() | {'_href': _group_href(group)}
+            for group in groups.limit(limit).offset(page * limit)
+        ],
+        'total': groups.count(),
+    }
 
 
-@route_require_admin
-def create_group(keycloak: KeycloakClient, body, user):
-    try:
-        group_id = keycloak.group_create(body)
-        logger.info(f'Created group {group_id}')
-        group_data = keycloak.group_get(group_id)
-        return group_data | {'_href': _group_href(group_data)}
-    except KeycloakGetError as e:
-        logger.exception(e)
-        return problem_from_keycloak_error(e)
-    except Exception as e:
-        logger.exception(e)
-        return problem(500, 'Unknown Error', str(e))
-
-
-def get_group(keycloak: KeycloakClient, group_id):
-    try:
-        group_data = keycloak.group_get(group_id)
-        return group_data | {'_href': _group_href(group_data)}
-    except KeycloakGetError as e:
-        logger.exception(e)
-        return problem_from_keycloak_error(e)
-    except Exception as e:
-        logger.exception(e)
-        return problem(500, 'Unknown Error', str(e))
-
-
-@route_require_admin
-def update_group(keycloak: KeycloakClient, group_id, body, user):
-    try:
-        keycloak.group_update(group_id, body)
-        logger.info(f'Updated group {group_id}')
-        group_data = keycloak.group_get(group_id)
-        return group_data | {'_href': _group_href(group_data)}
-    except KeycloakGetError as e:
-        logger.exception(e)
-        return problem_from_keycloak_error(e)
-    except Exception as e:
-        logger.exception(e)
-        return problem(500, 'Unknown Error', str(e))
-
-
-@route_require_admin
-def delete_group(keycloak: KeycloakClient, group_id, user):
-    try:
-        keycloak.group_delete(group_id)
-        logger.info(f'Deleted group {group_id}')
-        return {}, 200
-    except KeycloakGetError as e:
-        logger.exception(e)
-        return problem_from_keycloak_error(e)
-    except Exception as e:
-        logger.exception(e)
-        return problem(500, 'Unknown Error', str(e))
-
-
-def list_group_users(keycloak: KeycloakClient, group_id):
-    try:
-        from rhub.api.auth.user import _user_href
-        return [
-            user | {'_href': _user_href(user)}
-            for user in keycloak.group_user_list(group_id)
-        ]
-    except KeycloakGetError as e:
-        logger.exception(e)
-        return problem_from_keycloak_error(e)
-    except Exception as e:
-        logger.exception(e)
-        return problem(500, 'Unknown Error', str(e))
-
-
-def list_group_roles(group_id):
-    raise NotImplementedError
-
-
-@route_require_admin
-def add_group_role(group_id, body, user):
-    raise NotImplementedError
-
-
-@route_require_admin
-def delete_group_role(group_id, body, user):
-    raise NotImplementedError
+def group_get(group_id):
+    group_row = model.Group.query.get(group_id)
+    if not group_row:
+        return problem(404, 'Not Found', f'Group {group_id} does not exist')
+    return group_row.to_dict() | {'_href': _group_href(group_row)}

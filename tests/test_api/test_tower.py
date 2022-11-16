@@ -9,6 +9,7 @@ from rhub.lab import model as lab_model
 
 
 API_BASE = '/v0'
+AUTH_HEADER = {'Authorization': 'Basic X190b2tlbl9fOmR1bW15Cg=='}
 
 
 def _db_add_row_side_effect(data_added):
@@ -34,7 +35,7 @@ def test_list_servers(client):
 
     rv = client.get(
         f'{API_BASE}/tower/server',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200
@@ -68,7 +69,7 @@ def test_get_server(client):
 
     rv = client.get(
         f'{API_BASE}/tower/server/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Server.query.get.assert_called_with(1)
@@ -103,7 +104,7 @@ def test_create_server(client, db_session_mock, mocker):
 
     rv = client.post(
         f'{API_BASE}/tower/server',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=server_data,
     )
 
@@ -130,7 +131,7 @@ def test_update_server(client):
 
     rv = client.patch(
         f'{API_BASE}/tower/server/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'name': 'new',
             'description': 'new desc',
@@ -159,7 +160,7 @@ def test_delete_server(client, db_session_mock):
 
     rv = client.delete(
         f'{API_BASE}/tower/server/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Server.query.get.assert_called_with(1)
@@ -192,7 +193,7 @@ def test_list_templates(client):
 
     rv = client.get(
         f'{API_BASE}/tower/template',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200
@@ -246,7 +247,7 @@ def test_get_template(client, mocker, workflow):
 
     rv = client.get(
         f'{API_BASE}/tower/template/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Template.query.get.assert_called_with(1)
@@ -296,7 +297,7 @@ def test_get_template_towererror(client, mocker):
 
     rv = client.get(
         f'{API_BASE}/tower/template/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Template.query.get.assert_called_with(1)
@@ -324,7 +325,7 @@ def test_create_template(client, db_session_mock, mocker):
 
     rv = client.post(
         f'{API_BASE}/tower/template',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=template_data,
     )
 
@@ -351,7 +352,7 @@ def test_update_template(client, mocker):
 
     rv = client.patch(
         f'{API_BASE}/tower/template/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'name': 'new',
             'description': 'new desc',
@@ -379,7 +380,7 @@ def test_delete_template(client, db_session_mock):
 
     rv = client.delete(
         f'{API_BASE}/tower/template/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Template.query.get.assert_called_with(1)
@@ -426,7 +427,7 @@ def test_template_launch(client, db_session_mock, mocker, workflow):
 
     rv = client.post(
         f'{API_BASE}/tower/template/1/launch',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={'extra_vars': {'foo': 'bar'}},
     )
 
@@ -439,7 +440,7 @@ def test_template_launch(client, db_session_mock, mocker, workflow):
     assert rv.json == {
         'id': 1,
         'template_id': 1,
-        'launched_by': '00000000-0000-0000-0000-000000000000',
+        'launched_by': 1,
         'tower_job_id': tower_data['id'],
         'status': tower_data['status'],
         'created_at': tower_data['created'],
@@ -477,7 +478,7 @@ def test_template_launch_towererror(client, mocker):
 
     rv = client.post(
         f'{API_BASE}/tower/template/1/launch',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={'extra_vars': {'foo': 'bar'}},
     )
 
@@ -492,7 +493,7 @@ def test_job_relaunch(client, db_session_mock, mocker):
         id=1,
         template_id=1,
         tower_job_id=1,
-        launched_by='00000000-0000-0000-0000-000000000000',
+        launched_by=1,
     )
     template = job.template = model.Template(
         id=1,
@@ -520,7 +521,7 @@ def test_job_relaunch(client, db_session_mock, mocker):
 
     rv = client.post(
         f'{API_BASE}/tower/job/1/relaunch',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={'extra_vars': {'foo': 'bar'}},
     )
 
@@ -530,7 +531,7 @@ def test_job_relaunch(client, db_session_mock, mocker):
     assert rv.json == {
         'id': 10,
         'template_id': 1,
-        'launched_by': '00000000-0000-0000-0000-000000000000',
+        'launched_by': 1,
         'tower_job_id': tower_data['id'],
         'status': tower_data['status'],
         'created_at': tower_data['created'],
@@ -549,7 +550,7 @@ def test_list_jobs(client, mocker):
             id=1,
             template_id=1,
             tower_job_id=1,
-            launched_by='00000000-0000-0000-0000-000000000000',
+            launched_by=1,
         ),
     ]
     model.Job.query.count.return_value = 1
@@ -558,7 +559,7 @@ def test_list_jobs(client, mocker):
 
     rv = client.get(
         f'{API_BASE}/tower/job',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200
@@ -568,7 +569,7 @@ def test_list_jobs(client, mocker):
                 'id': 1,
                 'template_id': 1,
                 'tower_job_id': 1,
-                'launched_by': '00000000-0000-0000-0000-000000000000',
+                'launched_by': 1,
                 '_href': ANY,
             }
         ],
@@ -581,7 +582,7 @@ def test_get_job(client, mocker):
         id=1,
         template_id=1,
         tower_job_id=123,
-        launched_by='00000000-0000-0000-0000-000000000000',
+        launched_by=1,
     )
     template = job.template = model.Template(
         id=1,
@@ -607,7 +608,7 @@ def test_get_job(client, mocker):
 
     rv = client.get(
         f'{API_BASE}/tower/job/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Job.query.get.assert_called_with(1)
@@ -618,7 +619,7 @@ def test_get_job(client, mocker):
     assert rv.json == {
         'id': 1,
         'template_id': 1,
-        'launched_by': '00000000-0000-0000-0000-000000000000',
+        'launched_by': 1,
         'tower_job_id': tower_data['id'],
         'status': tower_data['status'],
         'created_at': tower_data['created'],
@@ -636,7 +637,7 @@ def test_get_job_towererror(client, mocker):
         id=1,
         template_id=1,
         tower_job_id=123,
-        launched_by='00000000-0000-0000-0000-000000000000',
+        launched_by=1,
     )
     template = job.template = model.Template(
         id=1,
@@ -661,7 +662,7 @@ def test_get_job_towererror(client, mocker):
 
     rv = client.get(
         f'{API_BASE}/tower/job/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Job.query.get.assert_called_with(1)
@@ -731,8 +732,7 @@ def test_webhook(client, mocker, payload):
 
     rv = client.post(
         f'{API_BASE}/tower/webhook_notification',
-        headers={
-            'Authorization': 'Basic ' + base64.b64encode(b'user:pass').decode(),
+        headers=AUTH_HEADER | {
             'Content-Type': 'application/json',
         },
         data=payload,

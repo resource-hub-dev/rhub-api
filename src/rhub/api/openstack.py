@@ -23,7 +23,7 @@ def _cloud_href(cloud):
     href = {
         'cloud': url_for('.rhub_api_openstack_cloud_get',
                          cloud_id=cloud.id),
-        'owner_group': url_for('.rhub_api_auth_group_get_group',
+        'owner_group': url_for('.rhub_api_auth_group_group_get',
                                group_id=cloud.owner_group_id)
     }
     return href
@@ -37,7 +37,7 @@ def _project_href(project):
                                   project_id=project.id),
         'cloud': url_for('.rhub_api_openstack_cloud_get',
                          cloud_id=project.cloud_id),
-        'owner': url_for('.rhub_api_auth_user_get_user',
+        'owner': url_for('.rhub_api_auth_user_user_get',
                          user_id=project.owner_id)
     }
     return href

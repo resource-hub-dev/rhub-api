@@ -11,6 +11,7 @@ from rhub.tower import model as tower_model
 
 
 API_BASE = '/v0'
+AUTH_HEADER = {'Authorization': 'Basic X190b2tlbl9fOmR1bW15Cg=='}
 
 
 @pytest.fixture(autouse=True)
@@ -232,7 +233,7 @@ def test_list_clusters(client, mocker, region, project, product):
 
     rv = client.get(
         f'{API_BASE}/lab/cluster',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200, rv.data
@@ -318,7 +319,7 @@ def test_get_cluster(client, mocker, region, project, product):
 
     rv = client.get(
         f'{API_BASE}/lab/cluster/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200
@@ -414,7 +415,7 @@ def test_create_cluster(client, db_session_mock, keycloak_mock, mocker,
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=cluster_data,
     )
 
@@ -481,7 +482,7 @@ def test_create_cluster_shared(client, db_session_mock, keycloak_mock, mocker,
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=cluster_data | {'shared': True},
     )
 
@@ -539,7 +540,7 @@ def test_create_cluster_in_disabled_region(client, db_session_mock, mocker,
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=cluster_data,
     )
 
@@ -561,7 +562,7 @@ def test_create_cluster_invalid_name(client, cluster_name, mocker, region, proje
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'name': cluster_name,
             'region_id': 1,
@@ -581,7 +582,7 @@ def test_create_cluster_exceeded_reservation(client, mocker, region, project):
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'name': 'testcluster',
             'region_id': 1,
@@ -604,7 +605,7 @@ def test_create_cluster_set_lifespan_forbidden(client, mocker, region, project):
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'name': 'testcluster',
             'region_id': 1,
@@ -646,7 +647,7 @@ def test_create_cluster_with_disabled_product(
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=cluster_data,
     )
 
@@ -683,7 +684,7 @@ def test_create_cluster_with_disabled_product_in_region(
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=cluster_data,
     )
 
@@ -751,7 +752,7 @@ def test_create_cluster_quota(
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=cluster_data,
     )
 
@@ -787,7 +788,7 @@ def test_update_cluster(client, db_session_mock, mocker,
 
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'description': 'test change',
         },
@@ -829,7 +830,7 @@ def test_update_cluster_ro_field(client, cluster_data, mocker,
 
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=cluster_data,
     )
 
@@ -861,7 +862,7 @@ def test_update_cluster_reservation(client, db_session_mock, mocker,
 
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'reservation_expiration': new_expiration,
         },
@@ -901,7 +902,7 @@ def test_update_cluster_exceeded_reservation(client, mocker, region, project, pr
 
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'reservation_expiration': new_expiration,
         },
@@ -937,7 +938,7 @@ def test_update_cluster_set_lifespan_forbidden(
 
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'lifespan_expiration': '2100-01-01T00:00:00Z',
         },
@@ -971,7 +972,7 @@ def test_delete_cluster(client, db_session_mock, mocker,
 
     rv = client.delete(
         f'{API_BASE}/lab/cluster/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 204
@@ -1039,7 +1040,7 @@ def test_get_cluster_events(client, mocker, project):
 
     rv = client.get(
         f'{API_BASE}/lab/cluster/1/events',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200
@@ -1090,7 +1091,7 @@ def test_get_cluster_event_stdout(client, mocker):
 
     rv = client.get(
         f'{API_BASE}/lab/cluster_event/1/stdout',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.data == b'Ansible output.'
@@ -1134,7 +1135,7 @@ def test_get_cluster_hosts(client, project):
 
     rv = client.get(
         f'{API_BASE}/lab/cluster/1/hosts',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200
@@ -1201,7 +1202,7 @@ def test_create_cluster_hosts(client, db_session_mock, project):
 
     rv = client.post(
         f'{API_BASE}/lab/cluster/1/hosts',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=hosts_data,
     )
 
@@ -1248,7 +1249,7 @@ def test_delete_cluster_hosts(client, db_session_mock, project):
 
     rv = client.delete(
         f'{API_BASE}/lab/cluster/1/hosts',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 204
@@ -1331,8 +1332,7 @@ def test_tower_webhook_cluster(client, mocker, messaging_mock, region, project, 
 
     rv = client.post(
         f'{API_BASE}/tower/webhook_notification',
-        headers={
-            'Authorization': 'Basic ' + base64.b64encode(b'user:pass').decode(),
+        headers=AUTH_HEADER | {
             'Content-Type': 'application/json',
         },
         json=payload,

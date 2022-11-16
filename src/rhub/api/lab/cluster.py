@@ -120,7 +120,7 @@ def _cluster_href(cluster):
                           region_id=cluster.region_id),
         'product': url_for('.rhub_api_lab_product_get_product',
                            product_id=cluster.product_id),
-        'owner': url_for('.rhub_api_auth_user_get_user',
+        'owner': url_for('.rhub_api_auth_user_user_get',
                          user_id=cluster.owner_id),
         'openstack': url_for('.rhub_api_openstack_cloud_get',
                              cloud_id=cluster.region.openstack_id),
@@ -128,7 +128,7 @@ def _cluster_href(cluster):
                            project_id=cluster.project_id),
     }
     if cluster.group_id:
-        href['group'] = url_for('.rhub_api_auth_group_get_group',
+        href['group'] = url_for('.rhub_api_auth_group_group_get',
                                 group_id=cluster.group_id)
     return href
 
@@ -141,7 +141,7 @@ def _cluster_event_href(cluster_event):
                          event_id=cluster_event.id)
     }
     if cluster_event.user_id:
-        href['user'] = url_for('.rhub_api_auth_user_get_user',
+        href['user'] = url_for('.rhub_api_auth_user_user_get',
                                user_id=cluster_event.user_id)
     if cluster_event.type == model.ClusterEventType.TOWER_JOB:
         href['tower'] = url_for('.rhub_api_tower_get_server',

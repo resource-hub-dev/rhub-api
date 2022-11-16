@@ -44,7 +44,7 @@ client for the API with the following configuration:
 * "Standard Flow Enabled" set to "off" because this client is not used to
   authenticate end-users but only from API.
 * "Service Accounts Enabled" set to "on".
-* Upon saving, under tab "Service Account Roles" select "realm-management" in 
+* Upon saving, under tab "Service Account Roles" select "realm-management" in
   "Client Roles" dropdown and assign "manage-user"
   and "manage-realm" roles.
 * Other parameters may remain at the default values.
@@ -94,12 +94,49 @@ file.
 * `VAULT_TYPE=file`
 * `VAULT_PATH` - path to YAML file with secrets, see example in `data/vault.yml`
 
-Credentials are required to allow Tower Webhook Notifications to be
-received by the API.  The path to the credentials in vault must be
-specified using the variable below.  Don't forget to add the credentials to
-vault, see example in `data/vault.yml`
+## Authentication
 
-* `WEBHOOK_VAULT_PATH`
+### Create token
+
+```sh
+flask create-user [-g <group-name>] <user-name>
+```
+
+The API token is printed only once and then it cannot be retrieved again, so
+write it down somewhere (eg. to `.env` as `TOKEN` variable).
+
+To create admin account, run the following command:
+
+```sh
+flask create-user -g rhub-admin admin
+```
+
+### Use token
+
+Tokens are passed to the API via `Authorization: Basic` HTTP header. Username is
+`__token__` and password is the API token.
+
+```sh
+curl -u __token__:$TOKEN http://localhost:8081/v0/me
+```
+
+```python
+requests.get(
+    'http://localhost:8081/v0/me',
+    auth=('__token__', os.environ['TOKEN']),
+)
+```
+
+#### Tower
+
+Credentials are required to allow Tower Webhook Notifications to be
+received by the API.
+
+Create admin account for use from Tower:
+
+```sh
+flask create-user -g rhub-admin tower
+```
 
 ## Running quality checks
 

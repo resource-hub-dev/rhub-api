@@ -175,7 +175,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cloud_create:
     summary: Create OpenStack cloud
@@ -207,7 +208,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cloud_get:
     summary: Get OpenStack cloud
@@ -227,7 +229,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cloud_update:
     summary: Update OpenStack cloud
@@ -247,7 +250,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cloud_delete:
     summary: Delete OpenStack cloud
@@ -261,7 +265,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   project_list:
     summary: Get OpenStack project list
@@ -326,7 +331,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   project_create:
     summary: Create OpenStack project
@@ -354,7 +360,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   project_get:
     summary: Get OpenStack project
@@ -374,7 +381,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   project_update:
     summary: Update OpenStack project
@@ -394,7 +402,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   project_delete:
     summary: Delete OpenStack project
@@ -408,7 +417,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   project_limits_get:
     summary: Get OpenStack project limits
@@ -473,4 +483,5 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []

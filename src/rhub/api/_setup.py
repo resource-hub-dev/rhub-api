@@ -1,18 +1,19 @@
 import logging
 
-import tenacity
 import flask_migrate
+import tenacity
 
 from rhub.api import db, di
-from rhub.auth import ADMIN_USER, ADMIN_GROUP, ADMIN_ROLE
+from rhub.auth import ADMIN_GROUP, ADMIN_ROLE, ADMIN_USER
+from rhub.auth import model as auth_model  # noqa: F401
 from rhub.auth.keycloak import KeycloakClient
-from rhub.tower import model as tower_model  # noqa: F401
-from rhub.lab import (SHAREDCLUSTER_USER, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_ROLE,
-                      CLUSTER_ADMIN_ROLE)
+from rhub.lab import (CLUSTER_ADMIN_ROLE, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_ROLE,
+                      SHAREDCLUSTER_USER)
 from rhub.lab import model as lab_model  # noqa: F401
 from rhub.policies import model as policies_model  # noqa: F401
-from rhub.scheduler import model as scheduler_model  # noqa: F401
 from rhub.scheduler import jobs as scheduler_jobs
+from rhub.scheduler import model as scheduler_model  # noqa: F401
+from rhub.tower import model as tower_model  # noqa: F401
 
 
 logger = logging.getLogger(__name__)
@@ -172,4 +173,10 @@ def setup():
     if lab_model.Location.query.count() == 0:
         for loc in locations:
             db.session.add(lab_model.Location(**loc))
+        db.session.commit()
+
+    groups = [ADMIN_GROUP, SHAREDCLUSTER_GROUP]
+    if auth_model.Group.query.count() == 0:
+        for group_name in groups:
+            db.session.add(auth_model.Group(name=group_name))
         db.session.commit()

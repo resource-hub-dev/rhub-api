@@ -29,7 +29,7 @@ def _region_href(region):
                                    region_id=region.id),
         'tower': url_for('.rhub_api_tower_get_server',
                          server_id=region.tower_id),
-        'owner_group': url_for('.rhub_api_auth_group_get_group',
+        'owner_group': url_for('.rhub_api_auth_group_group_get',
                                group_id=region.owner_group_id),
         'openstack_cloud': url_for('.rhub_api_openstack_cloud_get',
                                    cloud_id=region.openstack_id),
@@ -41,7 +41,7 @@ def _region_href(region):
         href['dns_server'] = url_for('.rhub_api_dns_server_get',
                                      server_id=region.dns_id)
     if region.users_group_id:
-        href['users_group'] = url_for('.rhub_api_auth_group_get_group',
+        href['users_group'] = url_for('.rhub_api_auth_group_group_get',
                                       group_id=region.users_group_id)
     return href
 

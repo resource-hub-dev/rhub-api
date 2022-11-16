@@ -6,6 +6,7 @@ from rhub.dns import model
 
 
 API_BASE = '/v0'
+AUTH_HEADER = {'Authorization': 'Basic X190b2tlbl9fOmR1bW15Cg=='}
 
 
 def _db_add_row_side_effect(data_added):
@@ -33,7 +34,7 @@ def test_list_servers(client, keycloak_mock):
 
     rv = client.get(
         f'{API_BASE}/dns/server',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200, rv.data
@@ -80,7 +81,7 @@ def test_get_server(client, keycloak_mock):
 
     rv = client.get(
         f'{API_BASE}/dns/server/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.DnsServer.query.get.assert_called_with(1)
@@ -116,7 +117,7 @@ def test_get_server_non_existent(client):
 
     rv = client.get(
         f'{API_BASE}/dns/server/{server_id}',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.DnsServer.query.get.assert_called_with(server_id)
@@ -141,7 +142,7 @@ def test_create_server(client, db_session_mock, keycloak_mock, mocker):
 
     rv = client.post(
         f'{API_BASE}/dns/server',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=server_data,
     )
 
@@ -231,7 +232,7 @@ def test_create_server_unauthorized(client, db_session_mock):
     ],
 )
 def test_create_server_missing_properties(
-    client, 
+    client,
     db_session_mock,
     keycloak_mock,
     server_data,
@@ -241,7 +242,7 @@ def test_create_server_missing_properties(
 
     rv = client.post(
         f'{API_BASE}/dns/server',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=server_data,
     )
 
@@ -260,8 +261,8 @@ def test_create_server_missing_properties(
     ],
 )
 def test_create_server_duplicate_properties(
-    client, 
-    db_session_mock, 
+    client,
+    db_session_mock,
     db_unique_violation,
     duplicate_property,
 ):
@@ -277,7 +278,7 @@ def test_create_server_duplicate_properties(
 
     rv = client.post(
         f'{API_BASE}/dns/server',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=server_data,
     )
 
@@ -307,7 +308,7 @@ def test_update_server(client, keycloak_mock):
 
     rv = client.patch(
         f'{API_BASE}/dns/server/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'name': 'new',
             'description': 'new desc',
@@ -356,9 +357,9 @@ def test_update_server_unauthorized(client):
     ],
 )
 def test_update_server_duplicate_properties(
-    client, 
-    db_unique_violation, 
-    server_data, 
+    client,
+    db_unique_violation,
+    server_data,
     duplicate_property
 ):
     server = model.DnsServer(
@@ -376,7 +377,7 @@ def test_update_server_duplicate_properties(
 
     rv = client.patch(
         f'{API_BASE}/dns/server/{server.id}',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=server_data,
     )
 
@@ -395,7 +396,7 @@ def test_update_server_non_existent(client):
 
     rv = client.patch(
         f'{API_BASE}/dns/server/{server_id}',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'name': 'new',
             'description': 'new desc',
@@ -425,7 +426,7 @@ def test_delete_server(client, db_session_mock, keycloak_mock):
 
     rv = client.delete(
         f'{API_BASE}/dns/server/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 204, rv.data
@@ -453,7 +454,7 @@ def test_delete_server_non_existent(client, db_session_mock):
 
     rv = client.delete(
         f'{API_BASE}/dns/server/{server_id}',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.DnsServer.query.get.assert_called_with(server_id)

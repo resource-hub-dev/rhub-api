@@ -8,6 +8,7 @@ from rhub.openstack import model
 
 
 API_BASE = '/v0'
+AUTH_HEADER = {'Authorization': 'Basic X190b2tlbl9fOmR1bW15Cg=='}
 
 
 def _db_add_row_side_effect(data_added):
@@ -37,7 +38,7 @@ def test_list_clouds(client, keycloak_mock):
 
     rv = client.get(
         f'{API_BASE}/openstack/cloud',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200, rv.data
@@ -88,7 +89,7 @@ def test_get_cloud(client, keycloak_mock):
 
     rv = client.get(
         f'{API_BASE}/openstack/cloud/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Cloud.query.get.assert_called_with(1)
@@ -116,7 +117,7 @@ def test_get_cloud_non_existent(client):
 
     rv = client.get(
         f'{API_BASE}/openstack/cloud/{cloud_id}',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Cloud.query.get.assert_called_with(cloud_id)
@@ -154,7 +155,7 @@ def test_create_cloud(client, db_session_mock, keycloak_mock, mocker):
 
     rv = client.post(
         f'{API_BASE}/openstack/cloud',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=cloud_data,
     )
 
@@ -188,7 +189,7 @@ def test_create_cloud_existing_name(
 
     rv = client.post(
         f'{API_BASE}/openstack/cloud',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=cloud_data,
     )
 
@@ -212,7 +213,7 @@ def test_create_cloud_missing_name(client, db_session_mock, vault_mock):
 
     rv = client.post(
         f'{API_BASE}/openstack/cloud',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=cloud_data,
     )
 
@@ -269,7 +270,7 @@ def test_update_cloud(client, keycloak_mock):
 
     rv = client.patch(
         f'{API_BASE}/openstack/cloud/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'name': 'new',
             'description': 'new desc',
@@ -307,7 +308,7 @@ def test_update_cloud_existing_name(
 
     rv = client.patch(
         f'{API_BASE}/openstack/cloud/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'name': 'new',
             'credentials': {'username': 'foo', 'password': 'bar'},
@@ -330,7 +331,7 @@ def test_update_cloud_non_existent(client, vault_mock):
 
     rv = client.patch(
         f'{API_BASE}/openstack/cloud/{cloud_id}',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'name': 'new',
             'description': 'new desc',
@@ -400,7 +401,7 @@ def test_delete_cloud(client, db_session_mock, keycloak_mock):
 
     rv = client.delete(
         f'{API_BASE}/openstack/cloud/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 204, rv.data
@@ -416,7 +417,7 @@ def test_delete_cloud_non_existent(client, db_session_mock):
 
     rv = client.delete(
         f'{API_BASE}/openstack/cloud/{cloud_id}',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Cloud.query.get.assert_called_with(cloud_id)
@@ -468,7 +469,7 @@ def test_list_projects(client, keycloak_mock):
 
     rv = client.get(
         f'{API_BASE}/openstack/project',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 200, rv.data
@@ -527,7 +528,7 @@ def test_get_project(client, keycloak_mock):
 
     rv = client.get(
         f'{API_BASE}/openstack/project/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Project.query.get.assert_called_with(1)
@@ -554,7 +555,7 @@ def test_get_project_non_existent(client):
 
     rv = client.get(
         f'{API_BASE}/openstack/project/{project_id}',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Project.query.get.assert_called_with(project_id)
@@ -604,7 +605,7 @@ def test_create_project(client, db_session_mock, keycloak_mock, mocker):
 
     rv = client.post(
         f'{API_BASE}/openstack/project',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=project_data,
     )
 
@@ -629,7 +630,7 @@ def test_create_project_existing_name(client, db_session_mock, db_unique_violati
 
     rv = client.post(
         f'{API_BASE}/openstack/project',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=project_data,
     )
 
@@ -649,7 +650,7 @@ def test_create_project_missing_name(client, db_session_mock):
 
     rv = client.post(
         f'{API_BASE}/openstack/project',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json=project_data,
     )
 
@@ -707,7 +708,7 @@ def test_update_project(client, keycloak_mock):
 
     rv = client.patch(
         f'{API_BASE}/openstack/project/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'description': 'new desc',
         },
@@ -727,7 +728,7 @@ def test_update_project_non_existent(client):
 
     rv = client.patch(
         f'{API_BASE}/openstack/project/{project_id}',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={
             'description': 'new desc',
         },
@@ -811,7 +812,7 @@ def test_update_project_ro_field(client, db_session_mock, field, value):
 
     rv = client.patch(
         f'{API_BASE}/openstack/project/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
         json={field: value},
     )
 
@@ -834,7 +835,7 @@ def test_delete_project(client, db_session_mock, keycloak_mock):
 
     rv = client.delete(
         f'{API_BASE}/openstack/project/1',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     assert rv.status_code == 204, rv.data
@@ -850,7 +851,7 @@ def test_delete_project_non_existent(client, db_session_mock):
 
     rv = client.delete(
         f'{API_BASE}/openstack/project/{project_id}',
-        headers={'Authorization': 'Bearer foobar'},
+        headers=AUTH_HEADER,
     )
 
     model.Project.query.get.assert_called_with(project_id)

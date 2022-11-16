@@ -11,17 +11,11 @@ components:
     basic:
       type: http
       scheme: basic
-      x-basicInfoFunc: rhub.api.auth.token.basic_auth
-    oauth2:
+      x-basicInfoFunc: rhub.api.auth.security.basic_auth
+    bearer:
       type: http
       scheme: bearer
-      bearerFormat: Bearer
-      x-bearerInfoFunc: rhub.api.auth.token.decode_token
-      x-tokenInfoFunc: rhub.api.auth.token.get_token_info
-    tower_webhook_notification_auth:
-      type: http
-      scheme: basic
-      x-basicInfoFunc: rhub.api.tower.webhook_auth
+      x-bearerInfoFunc: rhub.api.auth.security.bearer_auth
 
 tags:
   - name: auth
@@ -187,72 +181,18 @@ paths:
   /auth/user:
     get:
       $ref: 'auth.yml#/endpoints/user_list'
-    post:
-      $ref: 'auth.yml#/endpoints/user_create'
   /auth/user/{user_id}:
     get:
       $ref: 'auth.yml#/endpoints/user_get'
-    patch:
-      $ref: 'auth.yml#/endpoints/user_update'
-    delete:
-      $ref: 'auth.yml#/endpoints/user_delete'
-  /auth/user/{user_id}/groups:
+  /auth/user/{user_id}/token:
     get:
-      $ref: 'auth.yml#/endpoints/user_list_groups'
-    post:
-      $ref: 'auth.yml#/endpoints/user_add_group'
-    delete:
-      $ref: 'auth.yml#/endpoints/user_remove_group'
-  /auth/user/{user_id}/roles:
-    get:
-      $ref: 'auth.yml#/endpoints/user_list_roles'
-    post:
-      $ref: 'auth.yml#/endpoints/user_add_role'
-    delete:
-      $ref: 'auth.yml#/endpoints/user_remove_role'
+      $ref: 'auth.yml#/endpoints/token_list'
   /auth/group:
     get:
       $ref: 'auth.yml#/endpoints/group_list'
-    post:
-      $ref: 'auth.yml#/endpoints/group_create'
   /auth/group/{group_id}:
     get:
       $ref: 'auth.yml#/endpoints/group_get'
-    patch:
-      $ref: 'auth.yml#/endpoints/group_update'
-    delete:
-      $ref: 'auth.yml#/endpoints/group_delete'
-  /auth/group/{group_id}/users:
-    get:
-      $ref: 'auth.yml#/endpoints/group_list_users'
-  /auth/group/{group_id}/roles:
-    get:
-      $ref: 'auth.yml#/endpoints/group_list_roles'
-    post:
-      $ref: 'auth.yml#/endpoints/group_add_role'
-    delete:
-      $ref: 'auth.yml#/endpoints/group_remove_role'
-  /auth/role:
-    get:
-      $ref: 'auth.yml#/endpoints/role_list'
-    post:
-      $ref: 'auth.yml#/endpoints/role_create'
-  /auth/role/{role_id}:
-    get:
-      $ref: 'auth.yml#/endpoints/role_get'
-    patch:
-      $ref: 'auth.yml#/endpoints/role_update'
-    delete:
-      $ref: 'auth.yml#/endpoints/role_delete'
-  /auth/token:
-    get:
-      $ref: 'auth.yml#/endpoints/token_get_info'
-  /auth/token/create:
-    post:
-      $ref: 'auth.yml#/endpoints/token_create'
-  /auth/token/refresh:
-    post:
-      $ref: 'auth.yml#/endpoints/token_refresh'
   /me:
     get:
       $ref: 'auth.yml#/endpoints/me'

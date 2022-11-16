@@ -3,8 +3,7 @@ import logging
 import time
 
 from connexion import problem
-from flask import Response, current_app, request, url_for
-from werkzeug.exceptions import Unauthorized
+from flask import Response, request, url_for
 
 from rhub.api import DEFAULT_PAGE_LIMIT, db, di
 from rhub.api.utils import date_now, db_sort
@@ -446,27 +445,6 @@ def get_job_stdout(job_id, user):
     except Exception as e:
         logger.exception(e)
         return problem(500, 'Server Error', f'Unknown server error, {e}')
-
-
-def webhook_auth(username, password, required_scopes=None):
-    # Tower offers sending 'basic' auth credentials to protect access
-    # to the webhook_notification() endpoint.  The credentials are
-    # defined/stored in Vault.
-
-    try:
-        if (username == current_app.config['WEBHOOK_USER']
-                and password == current_app.config['WEBHOOK_PASS']):
-            return {'sub': 'webhook'}    # successful authentication
-
-    except KeyError as e:
-        logger.exception('Missing tower webhook notification credential(s)'
-                         f' {e}; notification ignored')
-
-    logger.warning('Incorrect tower webhook notification credentials supplied;'
-                   ' notification ignored')
-
-    raise Unauthorized('Incorrect tower webhook notification credentials'
-                       ' supplied')
 
 
 def webhook_notification():

@@ -591,7 +591,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   location_create:
     summary: Create location
@@ -613,7 +614,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   location_get:
     summary: Get location
@@ -633,7 +635,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   location_update:
     summary: Update location
@@ -653,7 +656,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   location_delete:
     summary: Delete location
@@ -667,7 +671,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   location_region_list:
     summary: Get list of regions in the location.
@@ -726,7 +731,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   region_list:
     summary: Get region list
@@ -796,7 +802,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   region_create:
     summary: Create region
@@ -830,7 +837,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   region_get:
     summary: Get region
@@ -850,7 +858,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   region_update:
     summary: Update region
@@ -877,7 +886,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   region_delete:
     summary: Delete region
@@ -891,7 +901,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   region_list_products:
     summary: Get list of products that can be installed in the selected region.
@@ -934,7 +945,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   region_add_product:
     summary: Add product to region or disable/enable product in region
@@ -968,7 +980,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   region_remove_product:
     summary: Remove product from region
@@ -993,7 +1006,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   region_get_usage:
     summary: Get region usage
@@ -1033,7 +1047,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   region_get_all_usage:
     summary: Get all region usage
@@ -1063,7 +1078,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   product_list:
     summary: Get product list
@@ -1122,7 +1138,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   product_create:
     summary: Create product
@@ -1150,7 +1167,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   product_get:
     summary: Get product
@@ -1170,7 +1188,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   product_update:
     summary: Update product
@@ -1190,7 +1209,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   product_delete:
     summary: Delete product
@@ -1204,7 +1224,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   product_list_regions:
     summary: Get list of regions where product can be installed.
@@ -1265,7 +1286,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cluster_list:
     summary: Get cluster list
@@ -1353,7 +1375,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cluster_create:
     summary: Create cluster
@@ -1421,7 +1444,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cluster_get:
     summary: Get cluster
@@ -1439,7 +1463,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cluster_update:
     summary: Update cluster
@@ -1465,7 +1490,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cluster_delete:
     summary: Delete cluster
@@ -1488,7 +1514,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cluster_list_events:
     summary: Get cluster events list
@@ -1508,7 +1535,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cluster_event_get:
     summary: Get cluster event
@@ -1526,7 +1554,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cluster_event_get_stdout:
     summary: Get cluster event output
@@ -1544,7 +1573,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cluster_hosts_list:
     summary: Get cluster hosts
@@ -1564,7 +1594,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cluster_hosts_create:
     summary: Create or update cluster hosts
@@ -1596,7 +1627,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cluster_hosts_delete:
     summary: Delete cluster hosts
@@ -1610,7 +1642,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   cluster_reboot:
     summary: Reboot cluster hosts
@@ -1683,4 +1716,5 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []

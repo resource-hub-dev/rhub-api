@@ -114,7 +114,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   server_create:
     summary: Create Satellite server
@@ -143,7 +144,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   server_get:
     summary: Get Satellite server
@@ -163,7 +165,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   server_update:
     summary: Update Satellite server
@@ -183,7 +186,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   server_delete:
     summary: Delete Satellite server
@@ -197,4 +201,5 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []

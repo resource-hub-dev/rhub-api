@@ -85,7 +85,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   bm_power_states_metrics_get:
     summary: Get summarized power states from Bare Metal hosts
@@ -106,7 +107,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   bm_metrics_get:
     summary: Bare Metal usage metrics
@@ -127,7 +129,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   vm_metrics_get:
     summary: VM (QuickVM) usage metrics
@@ -148,7 +151,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
 
   lab_metrics_get:
@@ -170,4 +174,5 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []

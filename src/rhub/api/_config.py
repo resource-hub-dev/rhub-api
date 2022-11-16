@@ -1,6 +1,6 @@
+import logging
 import os
 import urllib.parse
-import logging
 from datetime import timedelta
 from pathlib import Path
 
@@ -24,7 +24,8 @@ KEYCLOAK_SECRET = os.getenv('KEYCLOAK_SECRET')
 KEYCLOAK_ADMIN_USER = os.getenv('KEYCLOAK_ADMIN_USER')
 KEYCLOAK_ADMIN_PASS = os.getenv('KEYCLOAK_ADMIN_PASS')
 
-WEBHOOK_VAULT_PATH = os.getenv('WEBHOOK_VAULT_PATH')
+AUTH_OIDC_ENDPOINT = f'{KEYCLOAK_SERVER}/realms/{KEYCLOAK_REALM}'
+
 
 # DB_TYPE can be 'postgresq', 'postgresql+psycopg', ... any postgres
 # implementation.

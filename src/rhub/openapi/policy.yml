@@ -141,7 +141,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   policy_create:
     summary: Create policy
@@ -174,7 +175,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   policy_get:
     summary: Get policy
@@ -194,7 +196,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   policy_update:
     summary: Update policy
@@ -222,7 +225,8 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
 
   policy_delete:
     summary: Delete policy
@@ -236,4 +240,5 @@ endpoints:
       default:
         $ref: 'common.yml#/responses/problem'
     security:
-      - oauth2: []
+      - basic: []
+      - bearer: []
