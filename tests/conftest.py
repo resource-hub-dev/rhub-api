@@ -93,6 +93,23 @@ def db_unique_violation(mocker, db_session_mock):
 
 
 @pytest.fixture
+def db_foreign_key_violation(mocker, db_session_mock):
+    class FkViolationMock(mocker.Mock, sqlalchemy.exc.IntegrityError):
+        def __init__(self, name, value, table):
+            super().__init__()
+            self.orig = mocker.Mock(spec=psycopg2.errors.ForeignKeyViolation)
+            self.orig.diag = mocker.Mock(spec=psycopg2.extensions.Diagnostics)
+            self.orig.diag.message_detail = f'Key ({name})=({value}) is not present in table "{table}".'
+
+    def factory(name, value, table):
+        side_effect = FkViolationMock(name, value, table)
+        db_session_mock.flush.side_effect = side_effect
+        db_session_mock.commit.side_effect = side_effect
+
+    yield factory
+
+
+@pytest.fixture
 def client(mocker, temp_dir):
     mocker.patch.dict('os.environ', {
         'RHUB_DB_TYPE': 'postgresql',
