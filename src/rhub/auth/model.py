@@ -1,5 +1,5 @@
-import secrets
 import hashlib
+import secrets
 
 from sqlalchemy.dialects import postgresql
 
@@ -13,6 +13,7 @@ class User(db.Model, ModelMixin):
     id = db.Column(db.Integer, primary_key=True)
     external_uuid = db.Column(postgresql.UUID, nullable=True)
     name = db.Column(db.String(64), unique=True, nullable=True)
+    email = db.Column(db.String(128), nullable=True)
 
     groups = db.relationship('Group', secondary='auth_user_group')
     tokens = db.relationship('Token', back_populates='user',

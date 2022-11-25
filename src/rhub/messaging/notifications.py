@@ -7,8 +7,6 @@ import jinja2
 import kombu
 import kombu.mixins
 
-from rhub.auth.keycloak import KeycloakClient
-
 
 logger = logging.getLogger(__name__)
 
@@ -59,15 +57,18 @@ class Notifications(kombu.mixins.ConsumerMixin):
         ]
 
     def on_message(self, body, message):
-        from rhub.api import di
-
-        keycloak = di.get(KeycloakClient)
+        from rhub.auth import model as auth_model
 
         topic = message.delivery_info['routing_key']
         if topic in {'lab.cluster.create', 'lab.cluster.delete'}:
-            owner_id = body['owner_id']
-            owner_email = keycloak.user_get_email(owner_id)
-            self.send_email('email_cluster.j2', owner_email, body)
+            cluster_owner = auth_model.User.query.get(body['owner_id'])
+            if cluster_owner and cluster_owner.email:
+                self.send_email('email_cluster.j2', cluster_owner.email, body)
+            else:
+                logger.warning(
+                    f"User ID={cluster_owner.id} doesn't exist or doesn't have an "
+                    "email set."
+                )
 
         message.ack()
 

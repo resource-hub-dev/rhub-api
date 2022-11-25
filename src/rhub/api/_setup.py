@@ -7,8 +7,8 @@ from rhub.api import db, di
 from rhub.auth import ADMIN_GROUP, ADMIN_ROLE, ADMIN_USER
 from rhub.auth import model as auth_model  # noqa: F401
 from rhub.auth.keycloak import KeycloakClient
-from rhub.lab import (CLUSTER_ADMIN_ROLE, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_ROLE,
-                      SHAREDCLUSTER_USER)
+from rhub.lab import (CLUSTER_ADMIN_GROUP, CLUSTER_ADMIN_ROLE, SHAREDCLUSTER_GROUP,
+                      SHAREDCLUSTER_ROLE, SHAREDCLUSTER_USER)
 from rhub.lab import model as lab_model  # noqa: F401
 from rhub.policies import model as policies_model  # noqa: F401
 from rhub.scheduler import jobs as scheduler_jobs
@@ -127,8 +127,6 @@ def create_cronjob(cronjob):
 def setup():
     flask_migrate.upgrade()
 
-    setup_keycloak()
-
     create_cronjob(
         scheduler_model.SchedulerCronJob(
             name='Delete expired clusters',
@@ -175,7 +173,7 @@ def setup():
             db.session.add(lab_model.Location(**loc))
         db.session.commit()
 
-    groups = [ADMIN_GROUP, SHAREDCLUSTER_GROUP]
+    groups = [ADMIN_GROUP, SHAREDCLUSTER_GROUP, CLUSTER_ADMIN_GROUP]
     if auth_model.Group.query.count() == 0:
         for group_name in groups:
             db.session.add(auth_model.Group(name=group_name))

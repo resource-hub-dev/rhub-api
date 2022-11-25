@@ -4,11 +4,11 @@ from connexion import problem
 from flask import url_for
 from werkzeug.exceptions import Forbidden
 
+from rhub import auth
 from rhub.api import DEFAULT_PAGE_LIMIT, db
 from rhub.api.utils import db_sort
 from rhub.api.vault import Vault
-from rhub.auth import ADMIN_ROLE
-from rhub.auth.keycloak import KeycloakClient, KeycloakGetError
+from rhub.auth import model as auth_model
 from rhub.satellite import model
 
 
@@ -23,6 +23,8 @@ def _server_href(server):
     href = {
         'server': url_for('.rhub_api_satellite_server_get',
                           server_id=server.id),
+        'owner_group': url_for('.rhub_api_auth_group_group_get',
+                               group_id=server.owner_group_id),
     }
     return href
 
@@ -38,6 +40,13 @@ def server_list(filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
             model.SatelliteServer.owner_group_id == filter_['owner_group_id']
         )
 
+    if 'owner_group_name' in filter_:
+        servers = servers.outerjoin(
+            auth_model.Group,
+            auth_model.Group.id == model.SatelliteServer.owner_group_id,
+        )
+        servers = servers.filter(auth_model.Group.name == filter_['owner_group_name'])
+
     if sort:
         servers = db_sort(servers, sort)
 
@@ -50,18 +59,7 @@ def server_list(filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
     }
 
 
-def server_create(keycloak: KeycloakClient, vault: Vault, body, user):
-    try:
-        if body.get('owner_group_id'):
-            keycloak.group_get(body['owner_group_id'])
-    except KeycloakGetError as e:
-        logger.exception(e)
-        return problem(
-            400, 'Owner group does not exist',
-            f'Owner group {body["owner_group_id"]} does not exist in Keycloak, '
-            'you have to create group first or use existing group.'
-        )
-
+def server_create(vault: Vault, body, user):
     credentials = body.pop('credentials')
     if isinstance(credentials, str):
         body['credentials'] = credentials
@@ -93,13 +91,13 @@ def server_get(server_id):
     return server.to_dict() | {'_href': _server_href(server)}
 
 
-def server_update(keycloak: KeycloakClient, vault: Vault, server_id, body, user):
+def server_update(vault: Vault, server_id, body, user):
     server = model.SatelliteServer.query.get(server_id)
     if not server:
         return problem(404, 'Not Found', f'Server {server_id} does not exist')
 
-    if not keycloak.user_check_role(user, ADMIN_ROLE):
-        if not keycloak.user_check_group(user, server.owner_group_id):
+    if not auth.utils.user_is_admin(user):
+        if server.owner_group_id not in auth.utils.user_group_ids(user):
             raise Forbidden('You are not owner of this server.')
 
     credentials = body.pop('credentials', None)
@@ -122,13 +120,13 @@ def server_update(keycloak: KeycloakClient, vault: Vault, server_id, body, user)
     return server.to_dict() | {'_href': _server_href(server)}
 
 
-def server_delete(keycloak: KeycloakClient, server_id, user):
+def server_delete(server_id, user):
     server = model.SatelliteServer.query.get(server_id)
     if not server:
         return problem(404, 'Not Found', f'Server {server_id} does not exist')
 
-    if not keycloak.user_check_role(user, ADMIN_ROLE):
-        if not keycloak.user_check_group(user, server.owner_group_id):
+    if not auth.utils.user_is_admin(user):
+        if server.owner_group_id not in auth.utils.user_group_ids(user):
             raise Forbidden('You are not owner of this server.')
 
     db.session.delete(server)

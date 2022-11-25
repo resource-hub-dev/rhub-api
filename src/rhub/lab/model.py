@@ -6,9 +6,9 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import validates
 
-from rhub.api import db, di
+from rhub.api import db
 from rhub.api.utils import ModelMixin, ModelValueError, condition_eval
-from rhub.auth.keycloak import KeycloakClient
+from rhub.auth import model as auth_model
 from rhub.dns import model as dns_model
 from rhub.lab import SHAREDCLUSTER_GROUP
 from rhub.openstack import model as openstack_model
@@ -51,9 +51,11 @@ class Region(db.Model, ModelMixin):
     lifespan_length = db.Column(db.Integer, nullable=True)
     reservations_enabled = db.Column(db.Boolean, default=True)
     reservation_expiration_max = db.Column(db.Integer, nullable=True)
-    owner_group_id = db.Column(postgresql.UUID, nullable=False)
+    owner_group_id = db.Column(db.ForeignKey('auth_group.id'), nullable=False)
+    owner_group = db.relationship(auth_model.Group, foreign_keys=[owner_group_id])
     #: Limits use only to specific group of people. `NULL` == shared lab.
-    users_group_id = db.Column(postgresql.UUID, nullable=True, index=True)
+    users_group_id = db.Column(db.ForeignKey('auth_group.id'), nullable=True)
+    users_group = db.relationship(auth_model.Group, foreign_keys=[users_group_id])
     ...  # TODO policies?
     tower_id = db.Column(db.Integer, db.ForeignKey(tower_model.Server.id))
     #: :type: :class:`rhub.tower.model.Server`
@@ -99,24 +101,14 @@ class Region(db.Model, ModelMixin):
             return None
         return datetime.timedelta(days=self.reservation_expiration_max)
 
-    @property
-    def owner_group_name(self):
-        return di.get(KeycloakClient).group_get_name(self.owner_group_id)
-
-    @property
-    def users_group_name(self):
-        if self.users_group_id:
-            return di.get(KeycloakClient).group_get_name(self.users_group_id)
-        return None
-
     def to_dict(self):
         data = super().to_dict()
 
         del data['user_quota_id']
         del data['total_quota_id']
 
-        data['owner_group_name'] = self.owner_group_name
-        data['users_group_name'] = self.users_group_name
+        data['owner_group_name'] = self.owner_group.name
+        data['users_group_name'] = self.users_group.name if self.users_group else None
 
         return data
 
@@ -359,29 +351,21 @@ class Cluster(db.Model, ModelMixin):
     def owner_id(self):
         return self.project.owner_id
 
-    @owner_id.expression
-    def owner_id(self):
-        return openstack_model.Project.owner_id
-
-    @property
-    def owner_name(self):
-        return self.project.owner_name
+    @hybrid_property
+    def owner(self):
+        return self.project.owner
 
     @hybrid_property
     def group_id(self):
         return self.project.group_id
 
-    @group_id.expression
-    def group_id(self):
-        return openstack_model.Project.group_id
-
-    @property
-    def group_name(self):
-        return self.project.group_name
+    @hybrid_property
+    def group(self):
+        return self.project.group
 
     @property
     def shared(self):
-        return self.group_name == SHAREDCLUSTER_GROUP
+        return bool(self.group and self.group.name == SHAREDCLUSTER_GROUP)
 
     @property
     def tower_launch_extra_vars(self):
@@ -394,8 +378,8 @@ class Cluster(db.Model, ModelMixin):
             'rhub_region_name': self.region.name,
             'rhub_project_id': self.project.id,
             'rhub_project_name': self.project.name,
-            'rhub_user_id': self.owner_id,
-            'rhub_user_name': self.owner_name,
+            'rhub_user_id': self.owner.id,
+            'rhub_user_name': self.owner.name,
         }
         return rhub_extra_vars | self.product_params
 
@@ -404,9 +388,9 @@ class Cluster(db.Model, ModelMixin):
 
         data['region_name'] = self.region.name
         data['owner_id'] = self.owner_id
-        data['owner_name'] = self.owner_name
+        data['owner_name'] = self.owner.name
         data['group_id'] = self.group_id
-        data['group_name'] = self.group_name
+        data['group_name'] = self.group.name if self.group else None
         data['project_id'] = self.project.id
         data['project_name'] = self.project.name
         data['shared'] = self.shared
@@ -451,18 +435,12 @@ class ClusterEvent(db.Model, ModelMixin):
     id = db.Column(db.Integer, primary_key=True)
     type = db.Column(db.Enum(ClusterEventType))
     date = db.Column(db.DateTime(timezone=True))
-    user_id = db.Column(postgresql.UUID, nullable=True)
+    user_id = db.Column(db.ForeignKey('auth_user.id'), nullable=True)
+    user = db.relationship(auth_model.User)
     cluster_id = db.Column(db.Integer, db.ForeignKey('lab_cluster.id'),
                            nullable=False)
-
     #: :type: :class:`Cluster`
     cluster = db.relationship('Cluster', back_populates='events')
-
-    @property
-    def user_name(self):
-        if self.user_id:
-            return di.get(KeycloakClient).user_get_name(self.user_id)
-        return None
 
     def to_dict(self):
         data = {}
@@ -475,7 +453,7 @@ class ClusterEvent(db.Model, ModelMixin):
             if hasattr(self, i):
                 data[i] = getattr(self, i)
 
-        data['user_name'] = self.user_name
+        data['user_name'] = self.user.name if self.user else None
 
         return data
 

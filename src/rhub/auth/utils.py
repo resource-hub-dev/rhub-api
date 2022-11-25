@@ -12,12 +12,18 @@ def is_user_in_group(user_id, *group_name):
         .join(model.Group, model.User.groups)
         .filter(model.Group.name.in_(group_name))
     )
-    return q.count()
+    return q.count() > 0
 
 
 def user_is_admin(user_id):
     """Check if user is admin, belongs to :const:`rhub.auth.ADMIN_GROUP` group."""
     return is_user_in_group(user_id, ADMIN_GROUP)
+
+
+def user_group_ids(user_id):
+    """Returns a set of group IDs to which the user belongs."""
+    q = model.UserGroup.query.filter(model.UserGroup.user_id == user_id)
+    return set(row.group_id for row in q)
 
 
 def route_require_group(*group_name,

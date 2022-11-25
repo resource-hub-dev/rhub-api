@@ -4,6 +4,7 @@ from unittest.mock import ANY
 import pytest
 import sqlalchemy.exc
 
+from rhub.auth import model as auth_model
 from rhub.openstack import model
 
 
@@ -18,13 +19,31 @@ def _db_add_row_side_effect(data_added):
     return side_effect
 
 
-def test_list_clouds(client, keycloak_mock):
+@pytest.fixture
+def auth_user(mocker):
+    return auth_model.User(
+        id=1,
+        name='testuser',
+        email='testuser@example.com',
+    )
+
+
+@pytest.fixture
+def auth_group(mocker):
+    return auth_model.Group(
+        id=1,
+        name='testuser',
+    )
+
+
+def test_list_clouds(client, auth_group):
     model.Cloud.query.limit.return_value.offset.return_value = [
         model.Cloud(
             id=1,
             name='test',
             description='',
-            owner_group_id='00000000-0000-0000-0000-000000000000',
+            owner_group_id=auth_group.id,
+            owner_group=auth_group,
             url='https://openstack.example.com:13000',
             credentials='kv/test',
             domain_name='Default',
@@ -33,8 +52,6 @@ def test_list_clouds(client, keycloak_mock):
         ),
     ]
     model.Cloud.query.count.return_value = 1
-
-    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.get(
         f'{API_BASE}/openstack/cloud',
@@ -48,8 +65,8 @@ def test_list_clouds(client, keycloak_mock):
                 'id': 1,
                 'name': 'test',
                 'description': '',
-                'owner_group_id': '00000000-0000-0000-0000-000000000000',
-                'owner_group_name': 'test-group',
+                'owner_group_id': auth_group.id,
+                'owner_group_name': auth_group.name,
                 'url': 'https://openstack.example.com:13000',
                 'credentials': 'kv/test',
                 'domain_name': 'Default',
@@ -72,20 +89,19 @@ def test_list_clouds_unauthorized(client):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_get_cloud(client, keycloak_mock):
+def test_get_cloud(client, auth_group):
     model.Cloud.query.get.return_value = model.Cloud(
         id=1,
         name='test',
         description='',
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         url='https://openstack.example.com:13000',
         credentials='kv/test',
         domain_name='Default',
         domain_id='default',
         networks=['test_net'],
     )
-
-    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.get(
         f'{API_BASE}/openstack/cloud/1',
@@ -99,8 +115,8 @@ def test_get_cloud(client, keycloak_mock):
         'id': 1,
         'name': 'test',
         'description': '',
-        'owner_group_id': '00000000-0000-0000-0000-000000000000',
-        'owner_group_name': 'test-group',
+        'owner_group_id': auth_group.id,
+        'owner_group_name': auth_group.name,
         'url': 'https://openstack.example.com:13000',
         'credentials': 'kv/test',
         'domain_name': 'Default',
@@ -137,11 +153,11 @@ def test_get_cloud_unauthorized(client):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_create_cloud(client, db_session_mock, keycloak_mock, mocker):
+def test_create_cloud(client, db_session_mock, auth_group, mocker):
     cloud_data = {
         'name': 'test',
         'description': '',
-        'owner_group_id': '00000000-0000-0000-0000-000000000000',
+        'owner_group_id': auth_group.id,
         'url': 'https://openstack.example.com:13000',
         'credentials': 'kv/test',
         'domain_name': 'Default',
@@ -149,9 +165,10 @@ def test_create_cloud(client, db_session_mock, keycloak_mock, mocker):
         'networks': ['test_net'],
     }
 
-    db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
-
-    keycloak_mock.group_get_name.return_value = 'test-group'
+    db_session_mock.add.side_effect = _db_add_row_side_effect({
+        'id': 1,
+        'owner_group': auth_group,
+    })
 
     rv = client.post(
         f'{API_BASE}/openstack/cloud',
@@ -177,7 +194,7 @@ def test_create_cloud_existing_name(
     cloud_data = {
         'name': 'test-name',
         'description': '',
-        'owner_group_id': '00000000-0000-0000-0000-000000000000',
+        'owner_group_id': 1,
         'url': 'https://openstack.example.com:13000',
         'credentials': {'username': 'foo', 'password': 'bar'},
         'domain_name': 'Default',
@@ -203,7 +220,7 @@ def test_create_cloud_existing_name(
 def test_create_cloud_missing_name(client, db_session_mock, vault_mock):
     cloud_data = {
         'description': '',
-        'owner_group_id': '00000000-0000-0000-0000-000000000000',
+        'owner_group_id': 1,
         'url': 'https://openstack.example.com:13000',
         'credentials': {'username': 'foo', 'password': 'bar'},
         'domain_name': 'Default',
@@ -230,7 +247,7 @@ def test_create_cloud_unauthorized(client, db_session_mock, vault_mock):
     cloud_data = {
         'name': 'test',
         'description': '',
-        'owner_group_id': '00000000-0000-0000-0000-000000000000',
+        'owner_group_id': 1,
         'url': 'https://openstack.example.com:13000',
         'credentials': {'username': 'foo', 'password': 'bar'},
         'domain_name': 'Default',
@@ -252,12 +269,13 @@ def test_create_cloud_unauthorized(client, db_session_mock, vault_mock):
     vault_mock.write.assert_not_called()
 
 
-def test_update_cloud(client, keycloak_mock):
+def test_update_cloud(client, auth_group):
     cloud = model.Cloud(
         id=1,
         name='test',
         description='',
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         url='https://openstack.example.com:13000',
         credentials='kv/test',
         domain_name='Default',
@@ -265,8 +283,6 @@ def test_update_cloud(client, keycloak_mock):
         networks=['test_net'],
     )
     model.Cloud.query.get.return_value = cloud
-
-    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.patch(
         f'{API_BASE}/openstack/cloud/1',
@@ -289,13 +305,15 @@ def test_update_cloud_existing_name(
         client,
         db_session_mock,
         vault_mock,
+        auth_group,
         db_unique_violation,
     ):
     cloud = model.Cloud(
         id=1,
         name='test',
         description='',
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         url='https://openstack.example.com:13000',
         credentials='kv/test',
         domain_name='Default',
@@ -348,12 +366,13 @@ def test_update_cloud_non_existent(client, vault_mock):
     vault_mock.write.assert_not_called()
 
 
-def test_update_cloud_unauthorized(client, keycloak_mock, vault_mock):
+def test_update_cloud_unauthorized(client, auth_group, vault_mock):
     cloud = model.Cloud(
         id=1,
         name='test',
         description='',
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         url='https://openstack.example.com:13000',
         credentials='kv/test',
         domain_name='Default',
@@ -361,8 +380,6 @@ def test_update_cloud_unauthorized(client, keycloak_mock, vault_mock):
         networks=['test_net'],
     )
     model.Cloud.query.get.return_value = cloud
-
-    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.patch(
         f'{API_BASE}/openstack/cloud/{cloud.id}',
@@ -383,12 +400,13 @@ def test_update_cloud_unauthorized(client, keycloak_mock, vault_mock):
     vault_mock.write.assert_not_called()
 
 
-def test_delete_cloud(client, db_session_mock, keycloak_mock):
+def test_delete_cloud(client, db_session_mock, auth_group):
     cloud = model.Cloud(
         id=1,
         name='test',
         description='',
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         url='https://openstack.example.com:13000',
         credentials='kv/test',
         domain_name='Default',
@@ -396,8 +414,6 @@ def test_delete_cloud(client, db_session_mock, keycloak_mock):
         networks=['test_net'],
     )
     model.Cloud.query.get.return_value = cloud
-
-    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.delete(
         f'{API_BASE}/openstack/cloud/1',
@@ -440,12 +456,13 @@ def test_delete_cloud_unauthorized(client, db_session_mock):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_list_projects(client, keycloak_mock):
+def test_list_projects(client, auth_group, auth_user):
     cloud = model.Cloud(
         id=1,
         name='test_cloud',
         description='',
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         url='https://openstack.example.com:13000',
         credentials='kv/test',
         domain_name='Default',
@@ -460,12 +477,11 @@ def test_list_projects(client, keycloak_mock):
             cloud=cloud,
             name='test_project',
             description='',
-            owner_id='00000000-0000-0000-0000-000000000000',
+            owner_id=auth_user.id,
+            owner=auth_user,
         ),
     ]
     model.Project.query.count.return_value = 1
-
-    keycloak_mock.user_get_name.return_value = 'test-user'
 
     rv = client.get(
         f'{API_BASE}/openstack/project',
@@ -481,8 +497,8 @@ def test_list_projects(client, keycloak_mock):
                 'cloud_name': 'test_cloud',
                 'name': 'test_project',
                 'description': '',
-                'owner_id': '00000000-0000-0000-0000-000000000000',
-                'owner_name': 'test-user',
+                'owner_id': auth_user.id,
+                'owner_name': auth_user.name,
                 'group_id': None,
                 'group_name': None,
                 '_href': ANY,
@@ -502,12 +518,13 @@ def test_list_project_unauthorized(client):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_get_project(client, keycloak_mock):
+def test_get_project(client, auth_user, auth_group):
     cloud = model.Cloud(
         id=1,
         name='test_cloud',
         description='',
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         url='https://openstack.example.com:13000',
         credentials='kv/test',
         domain_name='Default',
@@ -521,10 +538,9 @@ def test_get_project(client, keycloak_mock):
         cloud=cloud,
         name='test_project',
         description='',
-        owner_id='00000000-0000-0000-0000-000000000000',
+        owner_id=auth_user.id,
+        owner=auth_user,
     )
-
-    keycloak_mock.user_get_name.return_value = 'test-user'
 
     rv = client.get(
         f'{API_BASE}/openstack/project/1',
@@ -540,8 +556,8 @@ def test_get_project(client, keycloak_mock):
         'cloud_name': 'test_cloud',
         'name': 'test_project',
         'description': '',
-        'owner_id': '00000000-0000-0000-0000-000000000000',
-        'owner_name': 'test-user',
+        'owner_id': auth_user.id,
+        'owner_name': auth_user.name,
         'group_id': None,
         'group_name': None,
         '_href': ANY,
@@ -575,12 +591,13 @@ def test_get_project_unauthorized(client):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_create_project(client, db_session_mock, keycloak_mock, mocker):
+def test_create_project(client, db_session_mock, auth_user, auth_group, mocker):
     cloud = model.Cloud(
         id=1,
         name='test_cloud',
         description='',
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         url='https://openstack.example.com:13000',
         credentials='kv/test',
         domain_name='Default',
@@ -592,16 +609,15 @@ def test_create_project(client, db_session_mock, keycloak_mock, mocker):
         'cloud_id': 1,
         'name': 'test_project',
         'description': '',
-        'owner_id': '00000000-0000-0000-0000-000000000000',
+        'owner_id': auth_user.id,
     }
 
     model.Project.query.filter.return_value.count.return_value = 0
     db_session_mock.add.side_effect = _db_add_row_side_effect({
         'id': 1,
         'cloud': cloud,
+        'owner': auth_user,
     })
-
-    keycloak_mock.user_get_name.return_value = 'test-user'
 
     rv = client.post(
         f'{API_BASE}/openstack/project',
@@ -623,7 +639,7 @@ def test_create_project_existing_name(client, db_session_mock, db_unique_violati
         'cloud_id': 1,
         'name': 'test_project',
         'description': '',
-        'owner_id': '00000000-0000-0000-0000-000000000000',
+        'owner_id': 1,
     }
 
     db_unique_violation('cloud_id, name', '1, test_project')
@@ -645,7 +661,7 @@ def test_create_project_missing_name(client, db_session_mock):
     project_data = {
         'cloud_id': 1,
         'description': '',
-        'owner_id': '00000000-0000-0000-0000-000000000000',
+        'owner_id': 1,
     }
 
     rv = client.post(
@@ -666,7 +682,7 @@ def test_create_project_unauthorized(client, db_session_mock):
         'cloud_id': 1,
         'name': 'test_project',
         'description': '',
-        'owner_id': '00000000-0000-0000-0000-000000000000',
+        'owner_id': 1,
     }
 
     rv = client.post(
@@ -681,12 +697,13 @@ def test_create_project_unauthorized(client, db_session_mock):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_update_project(client, keycloak_mock):
+def test_update_project(client, auth_user, auth_group):
     cloud = model.Cloud(
         id=1,
         name='test_cloud',
         description='',
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         url='https://openstack.example.com:13000',
         credentials='kv/test',
         domain_name='Default',
@@ -700,11 +717,10 @@ def test_update_project(client, keycloak_mock):
         cloud=cloud,
         name='test_project',
         description='',
-        owner_id='00000000-0000-0000-0000-000000000000',
+        owner_id=auth_user.id,
+        owner=auth_user,
     )
     model.Project.query.get.return_value = project
-
-    keycloak_mock.user_get_name.return_value = 'test-user'
 
     rv = client.patch(
         f'{API_BASE}/openstack/project/1',
@@ -741,12 +757,13 @@ def test_update_project_non_existent(client):
     assert rv.json['detail'] == f'Project {project_id} does not exist'
 
 
-def test_update_project_unauthorized(client, keycloak_mock):
+def test_update_project_unauthorized(client, auth_user, auth_group):
     cloud = model.Cloud(
         id=1,
         name='test_cloud',
         description='',
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         url='https://openstack.example.com:13000',
         credentials='kv/test',
         domain_name='Default',
@@ -760,11 +777,10 @@ def test_update_project_unauthorized(client, keycloak_mock):
         cloud=cloud,
         name='test_project',
         description='',
-        owner_id='00000000-0000-0000-0000-000000000000',
+        owner_id=auth_user.id,
+        owner=auth_user,
     )
     model.Project.query.get.return_value = project
-
-    keycloak_mock.user_get_name.return_value = 'test-user'
 
     rv = client.patch(
         f'{API_BASE}/openstack/project/{project.id}',
@@ -787,12 +803,15 @@ def test_update_project_unauthorized(client, keycloak_mock):
         pytest.param('cloud_id', 100, id='cluster_id'),
     ]
 )
-def test_update_project_ro_field(client, db_session_mock, field, value):
+def test_update_project_ro_field(
+    client, db_session_mock, auth_user, auth_group, field, value
+):
     cloud = model.Cloud(
         id=1,
         name='test_cloud',
         description='',
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         url='https://openstack.example.com:13000',
         credentials='kv/test',
         domain_name='Default',
@@ -806,7 +825,8 @@ def test_update_project_ro_field(client, db_session_mock, field, value):
         cloud=cloud,
         name='test_project',
         description='',
-        owner_id='00000000-0000-0000-0000-000000000000',
+        owner_id=auth_user.id,
+        owner=auth_user,
     )
     model.Project.query.get.return_value = project
 
@@ -823,13 +843,14 @@ def test_update_project_ro_field(client, db_session_mock, field, value):
     db_session_mock.commit.assert_not_called()
 
 
-def test_delete_project(client, db_session_mock, keycloak_mock):
+def test_delete_project(client, db_session_mock, auth_user):
     project = model.Project(
         id=1,
         cloud_id=1,
         name='test_project',
         description='',
-        owner_id='00000000-0000-0000-0000-000000000000',
+        owner_id=auth_user.id,
+        owner=auth_user,
     )
     model.Project.query.get.return_value = project
 

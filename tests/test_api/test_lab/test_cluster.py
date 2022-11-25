@@ -5,6 +5,7 @@ from unittest.mock import ANY
 import pytest
 from dateutil.tz import tzutc
 
+from rhub.auth import model as auth_model
 from rhub.lab import SHAREDCLUSTER_GROUP, SHAREDCLUSTER_USER, model
 from rhub.openstack import model as openstack_model
 from rhub.tower import model as tower_model
@@ -29,7 +30,77 @@ def _db_add_row_side_effect(data_added):
 
 
 @pytest.fixture
-def region(mocker):
+def auth_user(mocker):
+    mocker.patch('rhub.api.lab.cluster._user_can_access_region').return_value = True
+    mocker.patch('rhub.api.lab.cluster._user_is_cluster_admin').return_value = True
+    mocker.patch('rhub.api.lab.cluster._user_can_access_cluster').return_value = True
+    mocker.patch('rhub.api.lab.cluster._user_can_create_reservation').return_value = True
+    mocker.patch('rhub.api.lab.cluster._user_can_set_lifespan').return_value = False
+    mocker.patch('rhub.api.lab.cluster._user_can_disable_expiration').return_value = False
+    mocker.patch('rhub.api.lab.cluster._user_is_sharedcluster_account').return_value = False
+    mocker.patch('rhub.api.lab.cluster._user_can_create_sharedcluster').return_value = False
+
+    return auth_model.User(
+        id=1,
+        name='testuser',
+        email='testuser@example.com',
+    )
+
+
+@pytest.fixture
+def auth_group():
+    yield auth_model.Group(
+        id=1,
+        name='testgroup',
+    )
+
+
+@pytest.fixture
+def auth_shared_user(mocker):
+    mocker.patch('rhub.api.lab.cluster._user_can_access_region').return_value = True
+    mocker.patch('rhub.api.lab.cluster._user_is_cluster_admin').return_value = True
+    mocker.patch('rhub.api.lab.cluster._user_can_access_cluster').return_value = True
+    mocker.patch('rhub.api.lab.cluster._user_can_create_reservation').return_value = True
+    mocker.patch('rhub.api.lab.cluster._user_can_set_lifespan').return_value = True
+    mocker.patch('rhub.api.lab.cluster._user_can_disable_expiration').return_value = True
+    mocker.patch('rhub.api.lab.cluster._user_is_sharedcluster_account').return_value = True
+    mocker.patch('rhub.api.lab.cluster._user_can_create_sharedcluster').return_value = True
+
+    yield auth_model.User(
+        id=100,
+        name=SHAREDCLUSTER_USER,
+        email=f'{SHAREDCLUSTER_USER}@example.com',
+    )
+
+
+@pytest.fixture
+def auth_shared_group():
+    yield auth_model.Group(
+        id=100,
+        name=SHAREDCLUSTER_GROUP,
+    )
+
+
+@pytest.fixture
+def openstack_cloud(mocker, auth_group, di_mock):
+    mocker.patch('rhub.openstack.model.di', new=di_mock)
+    cloud = openstack_model.Cloud(
+        id=1,
+        name='test',
+        description='',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
+        url='https://openstack.example.com:13000',
+        credentials='kv/test',
+        domain_name='Default',
+        domain_id='default',
+        networks=['test_net'],
+    )
+    yield cloud
+
+
+@pytest.fixture
+def region(mocker, auth_group, openstack_cloud):
     region = model.Region(
         id=1,
         name='test',
@@ -47,21 +118,13 @@ def region(mocker):
         lifespan_length=None,
         reservations_enabled=True,
         reservation_expiration_max=None,
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         users_group_id=None,
+        users_group=None,
         tower_id=1,
-        openstack_id=1,
-        openstack=openstack_model.Cloud(
-            id=1,
-            name='test',
-            description='',
-            owner_group_id='00000000-0000-0000-0000-000000000000',
-            url='https://openstack.example.com:13000',
-            credentials='kv/test',
-            domain_name='Default',
-            domain_id='default',
-            networks=['test_net'],
-        ),
+        openstack_id=openstack_cloud.id,
+        openstack=openstack_cloud,
     )
 
     mocker.patch.object(model.Region, 'products_relation')
@@ -79,29 +142,17 @@ def region(mocker):
 
 
 @pytest.fixture
-def project(mocker):
-    mocker.patch.object(openstack_model.Cloud, 'owner_group_name', 'cloudowner')
-    mocker.patch.object(openstack_model.Project, 'owner_name', 'projectowner')
-    mocker.patch.object(openstack_model.Project, 'group_name', 'projectgroup')
-
+def project(mocker, auth_user, auth_group, openstack_cloud):
     project = openstack_model.Project(
         id=1,
-        cloud_id=1,
-        cloud=openstack_model.Cloud(
-            id=1,
-            name='test',
-            description='',
-            owner_group_id='00000000-0000-0000-0000-000000000000',
-            url='https://openstack.example.com:13000',
-            credentials='kv/test',
-            domain_name='Default',
-            domain_id='default',
-            networks=['test_net'],
-        ),
+        cloud_id=openstack_cloud.id,
+        cloud=openstack_cloud,
         name='test_project',
         description='',
-        owner_id='00000000-0000-0000-0000-000000000000',
-        group_id='00000000-0000-0000-0000-000000000001',
+        owner_id=auth_user.id,
+        owner=auth_user,
+        group_id=auth_group.id,
+        group=auth_group,
     )
 
     openstack_model.Project.query.get.return_value = project
@@ -114,29 +165,17 @@ def project(mocker):
 
 
 @pytest.fixture
-def shared_project(mocker):
-    mocker.patch.object(openstack_model.Cloud, 'owner_group_name', 'cloudowner')
-    mocker.patch.object(openstack_model.Project, 'owner_name', SHAREDCLUSTER_USER)
-    mocker.patch.object(openstack_model.Project, 'group_name', SHAREDCLUSTER_GROUP)
-
+def shared_project(mocker, auth_shared_user, auth_shared_group, openstack_cloud):
     project = openstack_model.Project(
         id=1,
-        cloud_id=1,
-        cloud=openstack_model.Cloud(
-            id=1,
-            name='test',
-            description='',
-            owner_group_id='00000000-0000-0000-0000-000000000000',
-            url='https://openstack.example.com:13000',
-            credentials='kv/test',
-            domain_name='Default',
-            domain_id='default',
-            networks=['test_net'],
-        ),
+        cloud_id=openstack_cloud.id,
+        cloud=openstack_cloud,
         name='test_project',
         description='',
-        owner_id='ffffffff-0000-0000-0000-000000000000',
-        group_id='ffffffff-0000-0000-0000-000000000001',
+        owner_id=auth_shared_user.id,
+        owner=auth_shared_user,
+        group_id=auth_shared_group.id,
+        group=auth_shared_group,
     )
 
     openstack_model.Project.query.get.return_value = project
@@ -209,7 +248,8 @@ def _cluster_href(mocker):
 
 
 def test_list_clusters(client, mocker, region, project, product):
-    model.Cluster.query.filter.return_value.limit.return_value.offset.return_value = [
+    q = model.Cluster.query.outerjoin.return_value.filter.return_value
+    q.limit.return_value.offset.return_value = [
         model.Cluster(
             id=1,
             name='testcluster',
@@ -227,9 +267,10 @@ def test_list_clusters(client, mocker, region, project, product):
             product=product,
         ),
     ]
+    q.count.return_value = 1
+
     mocker.patch.object(model.Cluster, 'hosts', [])
     mocker.patch.object(model.Cluster, 'quota', None)
-    model.Cluster.query.filter.return_value.count.return_value = 1
 
     rv = client.get(
         f'{API_BASE}/lab/cluster',
@@ -244,9 +285,9 @@ def test_list_clusters(client, mocker, region, project, product):
                 'name': 'testcluster',
                 'description': 'test cluster',
                 'owner_id': project.owner_id,
-                'owner_name': project.owner_name,
+                'owner_name': project.owner.name,
                 'group_id': project.group_id,
-                'group_name': project.group_name,
+                'group_name': project.group.name,
                 'created': '2021-01-01T01:00:00+00:00',
                 'region_id': region.id,
                 'region_name': region.name,
@@ -331,9 +372,9 @@ def test_get_cluster(client, mocker, region, project, product):
         'name': 'testcluster',
         'description': 'test cluster',
         'owner_id': project.owner_id,
-        'owner_name': project.owner_name,
+        'owner_name': project.owner.name,
         'group_id': project.group_id,
-        'group_name': project.group_name,
+        'group_name': project.group.name,
         'created': '2021-01-01T01:00:00+00:00',
         'region_id': region.id,
         'region_name': region.name,
@@ -385,7 +426,7 @@ def test_get_cluster(client, mocker, region, project, product):
     }
 
 
-def test_create_cluster(client, db_session_mock, keycloak_mock, mocker,
+def test_create_cluster(client, db_session_mock, mocker,
                         region, project, product, tower_client):
     cluster_data = {
         'name': 'testcluster',
@@ -411,8 +452,6 @@ def test_create_cluster(client, db_session_mock, keycloak_mock, mocker,
     tower_client.template_get.return_value = {'id': 123, 'name': 'dummy-create'}
     tower_client.template_launch.return_value = {'id': 321}
 
-    keycloak_mock.user_get_name.return_value = project.owner_name
-
     rv = client.post(
         f'{API_BASE}/lab/cluster',
         headers=AUTH_HEADER,
@@ -434,7 +473,7 @@ def test_create_cluster(client, db_session_mock, keycloak_mock, mocker,
             'rhub_project_id': project.id,
             'rhub_project_name': project.name,
             'rhub_user_id': project.owner_id,
-            'rhub_user_name': project.owner_name,
+            'rhub_user_name': project.owner.name,
         },
     })
 
@@ -454,7 +493,7 @@ def test_create_cluster(client, db_session_mock, keycloak_mock, mocker,
     assert rv.json['created'] == '2021-01-01T01:00:00+00:00'
 
 
-def test_create_cluster_shared(client, db_session_mock, keycloak_mock, mocker,
+def test_create_cluster_shared(client, db_session_mock, mocker,
                                region, shared_project, product, tower_client):
     cluster_data = {
         'name': 'testsharedcluster',
@@ -478,8 +517,6 @@ def test_create_cluster_shared(client, db_session_mock, keycloak_mock, mocker,
     tower_client.template_get.return_value = {'id': 123, 'name': 'dummy-create'}
     tower_client.template_launch.return_value = {'id': 321}
 
-    keycloak_mock.user_get_name.return_value = shared_project.owner_name
-
     rv = client.post(
         f'{API_BASE}/lab/cluster',
         headers=AUTH_HEADER,
@@ -501,7 +538,7 @@ def test_create_cluster_shared(client, db_session_mock, keycloak_mock, mocker,
             'rhub_project_id': shared_project.id,
             'rhub_project_name': shared_project.name,
             'rhub_user_id': shared_project.owner_id,
-            'rhub_user_name': shared_project.group_name,
+            'rhub_user_name': shared_project.group.name,
         },
     })
 
@@ -701,7 +738,7 @@ def test_create_cluster_with_disabled_product_in_region(
     ]
 )
 def test_create_cluster_quota(
-        client, db_session_mock, mocker, region, project, product, tower_client, keycloak_mock,
+        client, db_session_mock, mocker, region, project, product, tower_client,
         num_nodes, exceeded):
     cluster_data = {
         'name': 'testcluster',
@@ -747,8 +784,6 @@ def test_create_cluster_quota(
 
     tower_client.template_get.return_value = {'id': 123, 'name': 'dummy-create'}
     tower_client.template_launch.return_value = {'id': 321}
-
-    keycloak_mock.user_get_name.return_value = project.owner_name
 
     rv = client.post(
         f'{API_BASE}/lab/cluster',
@@ -990,7 +1025,7 @@ def test_delete_cluster(client, db_session_mock, mocker,
             'rhub_project_id': project.id,
             'rhub_project_name': project.name,
             'rhub_user_id': project.owner_id,
-            'rhub_user_name': project.owner_name,
+            'rhub_user_name': project.owner.name,
         },
     })
 
@@ -999,15 +1034,13 @@ def test_delete_cluster(client, db_session_mock, mocker,
     db_session_mock.commit.assert_called()
 
 
-def test_get_cluster_events(client, mocker, project):
-    mocker.patch.object(model.ClusterTowerJobEvent, 'user_name', 'test-user')
-    mocker.patch.object(model.ClusterReservationChangeEvent, 'user_name', 'test-user')
-
+def test_get_cluster_events(client, mocker, project, auth_user):
     events = [
         model.ClusterTowerJobEvent(
             id=1,
             date=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
-            user_id='00000000-0000-0000-0000-000000000000',
+            user_id=auth_user.id,
+            user=auth_user,
             cluster_id=1,
             tower_id=1,
             tower=tower_model.Server(id=1),
@@ -1017,7 +1050,8 @@ def test_get_cluster_events(client, mocker, project):
         model.ClusterReservationChangeEvent(
             id=2,
             date=datetime.datetime(2021, 1, 1, 2, 0, 0, tzinfo=tzutc()),
-            user_id='00000000-0000-0000-0000-000000000000',
+            user_id=auth_user.id,
+            user=auth_user,
             cluster_id=1,
             old_value=None,
             new_value=datetime.datetime(2021, 2, 1, 0, 0, 0, tzinfo=tzutc()),
@@ -1053,8 +1087,8 @@ def test_get_cluster_events(client, mocker, project):
             'type': model.ClusterEventType.TOWER_JOB.value,
             'cluster_id': 1,
             'date': '2021-01-01T01:00:00+00:00',
-            'user_id': '00000000-0000-0000-0000-000000000000',
-            'user_name': 'test-user',
+            'user_id': auth_user.id,
+            'user_name': auth_user.name,
             'tower_id': 1,
             'tower_job_id': 1,
             'status': model.ClusterStatus.POST_PROVISIONING.value,
@@ -1065,8 +1099,8 @@ def test_get_cluster_events(client, mocker, project):
             'type': model.ClusterEventType.RESERVATION_CHANGE.value,
             'cluster_id': 1,
             'date': '2021-01-01T02:00:00+00:00',
-            'user_id': '00000000-0000-0000-0000-000000000000',
-            'user_name': 'test-user',
+            'user_id': auth_user.id,
+            'user_name': auth_user.name,
             'old_value': None,
             'new_value': '2021-02-01T00:00:00+00:00',
             '_href': ANY,
@@ -1259,7 +1293,12 @@ def test_delete_cluster_hosts(client, db_session_mock, project):
     db_session_mock.commit.assert_called()
 
 
-def test_tower_webhook_cluster(client, mocker, messaging_mock, region, project, product, tower_client):
+def test_tower_webhook_cluster(
+    client, mocker, messaging_mock, auth_user, region, project, product, tower_client,
+    di_mock
+):
+    mocker.patch('rhub.api.tower.di', new=di_mock)
+
     cluster = model.Cluster(
         id=1,
         name='testcluster',
@@ -1303,8 +1342,8 @@ def test_tower_webhook_cluster(client, mocker, messaging_mock, region, project, 
               "rhub_region_name": "{region.name}",
               "rhub_project_id": {project.id},
               "rhub_project_name": "{project.name}",
-              "rhub_user_id": "00000000-0000-0000-0000-000000000000",
-              "rhub_user_name": "exampleuser"
+              "rhub_user_id": {auth_user.id},
+              "rhub_user_name": "{auth_user.name}"
             }}
         """,
         'hosts': {
@@ -1321,11 +1360,6 @@ def test_tower_webhook_cluster(client, mocker, messaging_mock, region, project, 
             },
         },
     }
-
-    mocker.patch.dict(client.application.config, {
-        'WEBHOOK_USER': 'user',
-        'WEBHOOK_PASS': 'pass',
-    })
 
     tower_client.template_get.return_value = {'id': 123, 'name': 'rhub-example-delete'}
     tower_client.template_launch.return_value = {'id': 321}

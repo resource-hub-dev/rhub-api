@@ -1,4 +1,3 @@
-from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import validates
 
 from rhub.api import db, di, utils
@@ -86,11 +85,8 @@ class Job(db.Model, ModelMixin):
                             nullable=False)
     #: ID of job in Tower.
     tower_job_id = db.Column(db.Integer, nullable=False)
-    #: UUID of user who launched job.
-    #: See: :meth:`rhub.auth.keycloak.KeycloakClient.user_get`.
-    #:
-    #: :type: `str`
-    launched_by = db.Column(postgresql.UUID, nullable=False, index=True)
+    #: ID of user who launched job.
+    launched_by = db.Column(db.ForeignKey('auth_user.id'), nullable=False)
 
     #: :type: :class:`Template`
     template = db.relationship('Template')

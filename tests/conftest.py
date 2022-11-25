@@ -2,13 +2,13 @@ import functools
 import pathlib
 import tempfile
 
+import injector
 import psycopg2.errors
 import pytest
 import sqlalchemy.exc
 
 from rhub.api import create_app
 from rhub.api.vault import Vault
-from rhub.auth.keycloak import KeycloakClient
 from rhub.messaging import Messaging
 
 
@@ -18,32 +18,36 @@ def temp_dir():
         yield pathlib.Path(tmp)
 
 
-@pytest.fixture(autouse=True, scope='session')
-def keycloak_mock(session_mocker):
-    keycloak_mock = session_mocker.Mock(spec=KeycloakClient)
-    keycloak_mock.user_check_role.return_value = True
+@pytest.fixture
+def di_mock(mocker, vault_mock, messaging_mock):
+    class TestsInjector(injector.Injector):
+        def get(self, interface, *args, **kwargs):
+            if interface is Vault:
+                return vault_mock
+            elif interface is Messaging:
+                return messaging_mock
+            return super().get(interface, *args, **kwargs)
 
-    m = session_mocker.patch('rhub.auth.keycloak.KeycloakModule._create_keycloak')
-    m.return_value = keycloak_mock
+    di = TestsInjector()
+    mocker.patch('rhub.api.di', new=di)
+    yield di
 
-    yield keycloak_mock
 
+@pytest.fixture(autouse=True)
+def vault_mock(mocker):
+    vault_mock = mocker.Mock(spec=Vault)
 
-@pytest.fixture(autouse=True, scope='session')
-def vault_mock(session_mocker):
-    vault_mock = session_mocker.Mock(spec=Vault)
-
-    m = session_mocker.patch('rhub.api.vault.VaultModule._create_vault')
+    m = mocker.patch('rhub.api.vault.VaultModule._create_vault')
     m.return_value = vault_mock
 
     yield vault_mock
 
 
-@pytest.fixture(autouse=True, scope='session')
-def messaging_mock(session_mocker):
-    messaging_mock = session_mocker.Mock(spec=Messaging)
+@pytest.fixture(autouse=True)
+def messaging_mock(mocker):
+    messaging_mock = mocker.Mock(spec=Messaging)
 
-    m = session_mocker.patch('rhub.messaging.MessagingModule._create_messaging')
+    m = mocker.patch('rhub.messaging.MessagingModule._create_messaging')
     m.return_value = messaging_mock
 
     yield messaging_mock
@@ -51,9 +55,10 @@ def messaging_mock(session_mocker):
 
 @pytest.fixture(autouse=True)
 def auth_mock(mocker):
-    m = mocker.patch(f'rhub.api.auth.security.basic_auth')
-    m.return_value = {'uid': 1}
-    yield m
+    user_data = {'uid': 1}
+    mocker.patch('rhub.api.auth.security.basic_auth').return_value = user_data
+    mocker.patch('rhub.auth.utils.is_user_in_group').return_value = True
+    yield user_data
 
 
 @pytest.fixture(autouse=True, scope='function')
@@ -110,7 +115,7 @@ def db_foreign_key_violation(mocker, db_session_mock):
 
 
 @pytest.fixture
-def client(mocker, temp_dir):
+def client(mocker):
     mocker.patch.dict('os.environ', {
         'RHUB_DB_TYPE': 'postgresql',
         'RHUB_DB_HOST': 'localhost',
@@ -127,7 +132,7 @@ def client(mocker, temp_dir):
 
 @pytest.fixture(autouse=True, scope='session')
 def scheduler_mock(session_mocker):
-    scheduler_mock = session_mocker.Mock(spec=Vault)
+    scheduler_mock = session_mocker.Mock()
 
     m = session_mocker.patch('rhub.scheduler.SchedulerModule._create_scheduler')
     m.return_value = scheduler_mock

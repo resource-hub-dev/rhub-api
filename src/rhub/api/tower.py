@@ -5,9 +5,9 @@ import time
 from connexion import problem
 from flask import Response, request, url_for
 
+from rhub import auth
 from rhub.api import DEFAULT_PAGE_LIMIT, db, di
 from rhub.api.utils import date_now, db_sort
-from rhub.auth.utils import route_require_admin, user_is_admin
 from rhub.lab import model as lab_model
 from rhub.messaging import Messaging
 from rhub.tower import model
@@ -84,7 +84,7 @@ def list_servers(filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
     }
 
 
-@route_require_admin
+@auth.utils.route_require_admin
 def create_server(body, user):
     body.setdefault('description', '')
 
@@ -115,7 +115,7 @@ def get_server(server_id):
     return server.to_dict() | {'_href': _server_href(server)}
 
 
-@route_require_admin
+@auth.utils.route_require_admin
 def update_server(server_id, body, user):
     server = model.Server.query.get(server_id)
     if not server:
@@ -132,7 +132,7 @@ def update_server(server_id, body, user):
     return server.to_dict() | {'_href': _server_href(server)}
 
 
-@route_require_admin
+@auth.utils.route_require_admin
 def delete_server(server_id, user):
     server = model.Server.query.get(server_id)
     if not server:
@@ -168,7 +168,7 @@ def list_templates(filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
     }
 
 
-@route_require_admin
+@auth.utils.route_require_admin
 def create_template(body, user):
     body.setdefault('description', '')
 
@@ -222,7 +222,7 @@ def get_template(template_id):
         return problem(500, 'Server Error', f'Unknown server error, {e}')
 
 
-@route_require_admin
+@auth.utils.route_require_admin
 def update_template(template_id, body, user):
     template = model.Template.query.get(template_id)
     if not template:
@@ -239,7 +239,7 @@ def update_template(template_id, body, user):
     return template.to_dict() | {'_href': _template_href(template)}
 
 
-@route_require_admin
+@auth.utils.route_require_admin
 def delete_template(template_id, user):
     template = model.Template.query.get(template_id)
     if not template:
@@ -308,7 +308,7 @@ def launch_template(template_id, body, user):
 def list_template_jobs(template_id, user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
     jobs = model.Job.query.filter(model.Job.template_id == template_id)
 
-    if not user_is_admin(user):
+    if not auth.utils.user_is_admin(user):
         jobs = jobs.filter(model.Job.launched_by == user)
 
     if 'launched_by' in filter_:
@@ -326,7 +326,7 @@ def list_template_jobs(template_id, user, filter_, page=0, limit=DEFAULT_PAGE_LI
 def list_jobs(user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
     jobs = model.Job.query
 
-    if not user_is_admin(user):
+    if not auth.utils.user_is_admin(user):
         jobs = jobs.filter(model.Job.launched_by == user)
 
     if 'launched_by' in filter_:
@@ -346,7 +346,7 @@ def get_job(job_id, user):
     if not job:
         return problem(404, 'Not Found', f'Job {job_id} does not exist')
 
-    if not user_is_admin(user) and job.launched_by != user:
+    if not auth.utils.user_is_admin(user) and job.launched_by != user:
         return problem(403, 'Forbidden',
                        f"You don't have permissions to view job {job_id}")
 
@@ -375,7 +375,7 @@ def relaunch_job(job_id, user):
     if not job:
         return problem(404, 'Not Found', f'Job {job_id} does not exist')
 
-    if not user_is_admin(user) and job.launched_by != user:
+    if not auth.utils.user_is_admin(user) and job.launched_by != user:
         return problem(403, 'Forbidden',
                        f"You don't have permissions to relaunch job {job_id}")
 
@@ -427,7 +427,7 @@ def get_job_stdout(job_id, user):
     if not job:
         return problem(404, 'Not Found', f'Job {job_id} does not exist')
 
-    if not user_is_admin(user) and job.launched_by != user:
+    if not auth.utils.user_is_admin(user) and job.launched_by != user:
         return problem(403, 'Forbidden',
                        f"You don't have permissions to view job {job_id} stdout")
 
@@ -541,7 +541,7 @@ def cluster_notification_handler(payload, cluster_id):
 
     msg_extra = {
         'owner_id': cluster.owner_id,
-        'owner_name': cluster.owner_name,
+        'owner_name': cluster.owner.name,
         'cluster_id': cluster.id,
         'cluster_name': cluster.name,
         'tower_id': cluster.region.tower_id,
@@ -573,3 +573,5 @@ def cluster_notification_handler(payload, cluster_id):
                 update_cluster_status(lab_model.ClusterStatus.CREATE_FAILED)
             else:
                 update_cluster_status(lab_model.ClusterStatus.DELETE_FAILED)
+
+    raise ValueError(job_status)
