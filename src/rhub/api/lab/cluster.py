@@ -6,13 +6,13 @@ from connexion import problem
 from dateutil.parser import isoparse as date_parse
 from flask import Response, url_for
 
-from rhub.api import DEFAULT_PAGE_LIMIT, db, di
+from rhub.api import DEFAULT_PAGE_LIMIT, db
+from rhub.api.lab.region import _user_can_access_region
 from rhub.api.utils import date_now, db_sort
-from rhub.auth import ADMIN_ROLE
-from rhub.auth.keycloak import KeycloakClient
-from rhub.auth.utils import route_require_admin
-from rhub.lab import (CLUSTER_ADMIN_ROLE, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_ROLE,
-                      SHAREDCLUSTER_USER, model)
+from rhub.auth import ADMIN_GROUP
+from rhub.auth import model as auth_model
+from rhub.auth import utils as auth_utils
+from rhub.lab import CLUSTER_ADMIN_GROUP, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_USER, model
 from rhub.lab import utils as lab_utils
 from rhub.openstack import model as openstack_model
 
@@ -22,87 +22,70 @@ logger = logging.getLogger(__name__)
 
 def _user_is_cluster_admin(user_id):
     """Check if user is cluster admin."""
-    keycloak = di.get(KeycloakClient)
-    if keycloak.user_check_role(user_id, ADMIN_ROLE):
-        return True
-    return keycloak.user_check_role(user_id, CLUSTER_ADMIN_ROLE)
+    return auth_utils.is_user_in_group(user_id, ADMIN_GROUP, CLUSTER_ADMIN_GROUP)
 
 
 def _user_can_access_cluster(cluster, user_id):
     """Check if user can access cluster."""
-    keycloak = di.get(KeycloakClient)
     if _user_is_cluster_admin(user_id):
         return True
     if cluster.owner_id == user_id:
         return True
     if cluster.group_id is not None:
-        return keycloak.user_check_group(user_id, cluster.group_id)
+        return cluster.group_id in auth_utils.user_group_ids(user_id)
     return False
-
-
-def _user_can_access_region(region, user_id):
-    """Check if user can access region."""
-    keycloak = di.get(KeycloakClient)
-    if keycloak.user_check_role(user_id, ADMIN_ROLE):
-        return True
-    if region.users_group_id is None:  # shared region
-        return True
-    return keycloak.user_check_group_any(
-        user_id, [region.users_group_id, region.owner_group_id]
-    )
 
 
 def _user_can_create_reservation(region, user_id):
     """Check if user can create in reservations in the region."""
-    keycloak = di.get(KeycloakClient)
-    if keycloak.user_check_role(user_id, ADMIN_ROLE):
+    if auth_utils.user_is_admin(user_id):
         return True
     if region.reservations_enabled:
         return True
-    return keycloak.user_check_group(user_id, region.owner_group_id)
+    return region.owner_group_id in auth_utils.user_group_ids(user_id)
 
 
 def _user_can_set_lifespan(region, user_id):
     """Check if user can set/change lifespan expiration of cluster in the region."""
-    keycloak = di.get(KeycloakClient)
-    if keycloak.user_check_role(user_id, ADMIN_ROLE):
+    if auth_utils.is_user_in_group(user_id, ADMIN_GROUP, SHAREDCLUSTER_GROUP):
         return True
-    if keycloak.user_check_role(user_id, SHAREDCLUSTER_ROLE):
-        return True
-    return keycloak.user_check_group(user_id, region.owner_group_id)
+    return region.owner_group_id in auth_utils.user_group_ids(user_id)
 
 
 def _user_can_disable_expiration(region, user_id):
     """Check if user can disable cluster reservation expiration."""
-    keycloak = di.get(KeycloakClient)
-    if keycloak.user_check_role(user_id, ADMIN_ROLE):
+    if auth_utils.is_user_in_group(user_id, ADMIN_GROUP, SHAREDCLUSTER_GROUP):
         return True
-    if keycloak.user_check_role(user_id, SHAREDCLUSTER_ROLE):
-        return True
-    return keycloak.user_check_group(user_id, region.owner_group_id)
+    return region.owner_group_id in auth_utils.user_group_ids(user_id)
+
+
+def _user_is_sharedcluster_account(user_id):
+    return _get_sharedcluster_user_id() == user_id
+
+
+def _user_can_create_sharedcluster(user_id):
+    sharedcluster_group_id = _get_sharedcluster_group_id()
+    if not sharedcluster_group_id:
+        raise ValueError('Group for shared clusters does not exist.')
+
+    return auth_utils.is_user_in_group(user_id, ADMIN_GROUP, SHAREDCLUSTER_GROUP)
 
 
 @functools.lru_cache()
 def _get_sharedcluster_user_id():
-    keycloak = di.get(KeycloakClient)
-    user_search = keycloak.user_list({'username': SHAREDCLUSTER_USER})
-    if user_search:
-        return user_search[0]['id']
-    logger.error(
-        f'{SHAREDCLUSTER_USER=} does not exist in Keycloak'
-    )
+    q = auth_model.User.query.filter(auth_model.User.name == SHAREDCLUSTER_USER)
+    if q.count():
+        return q.first().id
+    logger.error(f'{SHAREDCLUSTER_USER=} does not exist')
     return None
 
 
 @functools.lru_cache()
 def _get_sharedcluster_group_id():
-    keycloak = di.get(KeycloakClient)
-    for group in keycloak.group_list():
-        if group['name'] == SHAREDCLUSTER_GROUP:
-            return group['id']
-    logger.error(
-        f'{SHAREDCLUSTER_GROUP=} does not exist in Keycloak'
-    )
+    q = auth_model.Group.query.filter(auth_model.Group.name == SHAREDCLUSTER_GROUP)
+    if q.count():
+        return q.first().id
+    logger.error(f'{SHAREDCLUSTER_GROUP=} does not exist')
     return None
 
 
@@ -159,18 +142,22 @@ def _cluster_host_href(cluster_host):
     return href
 
 
-def list_clusters(keycloak: KeycloakClient,
-                  user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
+def list_clusters(user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
     if _user_is_cluster_admin(user):
         clusters = model.Cluster.query
     else:
-        user_groups = [group['id'] for group in keycloak.user_group_list(user)]
+        user_groups = auth_utils.user_group_ids(user)
         if sharedcluster_group_id := _get_sharedcluster_group_id():
-            user_groups.append(sharedcluster_group_id)
+            user_groups.add(sharedcluster_group_id)
         clusters = model.Cluster.query.filter(sqlalchemy.or_(
             model.Cluster.owner_id == user,
             model.Cluster.group_id.in_(user_groups),
         ))
+
+    clusters = clusters.outerjoin(
+        openstack_model.Project,
+        openstack_model.Project.id == model.Cluster.project_id,
+    )
 
     if 'name' in filter_:
         clusters = clusters.filter(model.Cluster.name.ilike(filter_['name']))
@@ -181,8 +168,22 @@ def list_clusters(keycloak: KeycloakClient,
     if 'owner_id' in filter_:
         clusters = clusters.filter(model.Cluster.owner_id == filter_['owner_id'])
 
+    if 'owner_name' in filter_:
+        owner = sqlalchemy.orm.aliased(auth_model.User)
+        clusters = clusters.outerjoin(
+            owner, owner.id == openstack_model.Project.owner_id
+        )
+        clusters = clusters.filter(owner.name == filter_['owner_name'])
+
     if 'group_id' in filter_:
         clusters = clusters.filter(model.Cluster.group_id == filter_['group_id'])
+
+    if 'group_name' in filter_:
+        group = sqlalchemy.orm.aliased(auth_model.Group)
+        clusters = clusters.outerjoin(
+            group, group.id == openstack_model.Project.group_id
+        )
+        clusters = clusters.filter(group.name == filter_['group_name'])
 
     if 'status' in filter_:
         clusters = clusters.filter(
@@ -230,7 +231,7 @@ def list_clusters(keycloak: KeycloakClient,
     }
 
 
-def create_cluster(keycloak: KeycloakClient, body, user):
+def create_cluster(body, user):
     region = model.Region.query.get(body['region_id'])
     if not region:
         return problem(404, 'Not Found', f'Region {body["region_id"]} does not exist')
@@ -271,18 +272,11 @@ def create_cluster(keycloak: KeycloakClient, body, user):
     cluster_data['created'] = date_now()
 
     shared = cluster_data.pop('shared', False)
-    if shared or user == _get_sharedcluster_user_id():
-        sharedcluster_group_id = _get_sharedcluster_group_id()
-
-        if not sharedcluster_group_id:
-            return problem(500, 'Internal error',
-                           'Group for shared clusters does not exist.')
-
-        if not (keycloak.user_check_role(user, SHAREDCLUSTER_ROLE)
-                or keycloak.user_check_role(user, ADMIN_ROLE)):
+    if shared or _user_is_sharedcluster_account(user):
+        if not _user_can_create_sharedcluster(user):
             return problem(
                 404, 'Forbidden',
-                f'Only users with role {SHAREDCLUSTER_ROLE} can create shared clusters.'
+                "You don't have necessary permissions to create shared clusters."
             )
 
         cluster_data['lifespan_expiration'] = None
@@ -351,8 +345,8 @@ def create_cluster(keycloak: KeycloakClient, body, user):
             )
 
     else:
-        user_name = keycloak.user_get_name(user)
-        project_name = f'ql_{user_name}'
+        user_row = auth_model.User.query.get(user)
+        project_name = f'ql_{user_row.name}'
 
         project_query = openstack_model.Project.query.filter(
             db.and_(
@@ -687,7 +681,7 @@ def list_cluster_hosts(cluster_id, user):
     ]
 
 
-@route_require_admin
+@auth_utils.route_require_admin
 def create_cluster_hosts(cluster_id, body, user):
     cluster = model.Cluster.query.get(cluster_id)
     if not cluster:
@@ -714,7 +708,7 @@ def create_cluster_hosts(cluster_id, body, user):
     ]
 
 
-@route_require_admin
+@auth_utils.route_require_admin
 def delete_cluster_hosts(cluster_id, user):
     cluster = model.Cluster.query.get(cluster_id)
     if not cluster:

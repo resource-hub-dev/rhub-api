@@ -6,7 +6,7 @@ from flask import url_for
 from rhub.api import DEFAULT_PAGE_LIMIT, db
 from rhub.api.lab.region import _region_href
 from rhub.api.utils import db_sort
-from rhub.auth.utils import route_require_admin
+from rhub.auth import utils as auth_utils
 from rhub.lab import model
 
 
@@ -38,7 +38,7 @@ def location_list(sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
     }
 
 
-@route_require_admin
+@auth_utils.route_require_admin
 def location_create(body, user):
     body.setdefault('description', '')
 
@@ -69,7 +69,7 @@ def location_get(location_id):
     return location.to_dict() | {'_href': _location_href(location)}
 
 
-@route_require_admin
+@auth_utils.route_require_admin
 def location_update(location_id, body, user):
     location = model.Location.query.get(location_id)
     if not location:
@@ -86,7 +86,7 @@ def location_update(location_id, body, user):
     return location.to_dict() | {'_href': _location_href(location)}
 
 
-@route_require_admin
+@auth_utils.route_require_admin
 def location_delete(location_id, user):
     location = model.Location.query.get(location_id)
     if not location:

@@ -3,6 +3,7 @@ from unittest.mock import ANY
 
 import pytest
 
+from rhub.auth import model as auth_model
 from rhub.satellite import model
 
 
@@ -17,21 +18,37 @@ def _db_add_row_side_effect(data_added):
     return side_effect
 
 
-def test_list_servers(client, keycloak_mock):
+@pytest.fixture
+def auth_user(mocker):
+    return auth_model.User(
+        id=1,
+        name='testuser',
+        email='testuser@example.com',
+    )
+
+
+@pytest.fixture
+def auth_group(mocker):
+    return auth_model.Group(
+        id=1,
+        name='testuser',
+    )
+
+
+def test_list_servers(client, auth_group):
     model.SatelliteServer.query.limit.return_value.offset.return_value = [
         model.SatelliteServer(
             id=1,
             name='test',
             description='',
-            owner_group_id='00000000-0000-0000-0000-000000000000',
+            owner_group_id=auth_group.id,
+            owner_group=auth_group,
             hostname='satellite.example.com',
             insecure=False,
             credentials='kv/test',
         ),
     ]
     model.SatelliteServer.query.count.return_value = 1
-
-    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.get(
         f'{API_BASE}/satellite/server',
@@ -45,8 +62,8 @@ def test_list_servers(client, keycloak_mock):
                 'id': 1,
                 'name': 'test',
                 'description': '',
-                'owner_group_id': '00000000-0000-0000-0000-000000000000',
-                'owner_group_name': 'test-group',
+                'owner_group_id': auth_group.id,
+                'owner_group_name': auth_group.name,
                 'hostname': 'satellite.example.com',
                 'insecure': False,
                 'credentials': 'kv/test',
@@ -67,18 +84,17 @@ def test_list_servers_unauthorized(client):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_get_server(client, keycloak_mock):
+def test_get_server(client, auth_group):
     model.SatelliteServer.query.get.return_value = model.SatelliteServer(
         id=1,
         name='test',
         description='',
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         hostname='satellite.example.com',
         insecure=False,
         credentials='kv/test',
     )
-
-    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.get(
         f'{API_BASE}/satellite/server/1',
@@ -92,8 +108,8 @@ def test_get_server(client, keycloak_mock):
         'id': 1,
         'name': 'test',
         'description': '',
-        'owner_group_id': '00000000-0000-0000-0000-000000000000',
-        'owner_group_name': 'test-group',
+        'owner_group_id': auth_group.id,
+        'owner_group_name': auth_group.name,
         'hostname': 'satellite.example.com',
         'insecure': False,
         'credentials': 'kv/test',
@@ -128,19 +144,20 @@ def test_get_server_non_existent(client):
     assert rv.json['detail'] == f'Server {server_id} does not exist'
 
 
-def test_create_server(client, db_session_mock, keycloak_mock, mocker):
+def test_create_server(client, db_session_mock, auth_group, mocker):
     server_data = {
         'name': 'test',
-        'owner_group_id': '00000000-0000-0000-0000-000000000000',
+        'owner_group_id': auth_group.id,
         'hostname': 'satellite.example.com',
         'insecure': True,
         'credentials': 'kv/test',
     }
 
     model.SatelliteServer.query.filter.return_value.count.return_value = 0
-    db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
-
-    keycloak_mock.group_get_name.return_value = 'test-group'
+    db_session_mock.add.side_effect = _db_add_row_side_effect({
+        'id': 1,
+        'owner_group': auth_group,
+    })
 
     rv = client.post(
         f'{API_BASE}/satellite/server',
@@ -162,7 +179,7 @@ def test_create_server(client, db_session_mock, keycloak_mock, mocker):
     [
         pytest.param(
             {
-                'owner_group_id': '00000000-0000-0000-0000-000000000000',
+                'owner_group_id': 1,
                 'hostname': 'satellite.example.com',
                 'insecure': True,
                 'credentials': 'kv/test',
@@ -183,7 +200,7 @@ def test_create_server(client, db_session_mock, keycloak_mock, mocker):
         pytest.param(
             {
                 'name': 'test',
-                'owner_group_id': '00000000-0000-0000-0000-000000000000',
+                'owner_group_id': 1,
                 'insecure': True,
                 'credentials': 'kv/test',
             },
@@ -193,7 +210,7 @@ def test_create_server(client, db_session_mock, keycloak_mock, mocker):
         pytest.param(
             {
                 'name': 'test',
-                'owner_group_id': '00000000-0000-0000-0000-000000000000',
+                'owner_group_id': 1,
                 'hostname': 'satellite.example.com',
                 'insecure': True,
             },
@@ -236,7 +253,7 @@ def test_create_server_duplicate_properties(
 ):
     server_data = {
         'name': 'test',
-        'owner_group_id': '00000000-0000-0000-0000-000000000000',
+        'owner_group_id': 1,
         'hostname': 'satellite.example.com',
         'insecure': True,
         'credentials': 'kv/test',
@@ -263,7 +280,7 @@ def test_create_server_duplicate_properties(
 def test_create_server_unauthorized(client, db_session_mock):
     server_data = {
         'name': 'test',
-        'owner_group_id': '00000000-0000-0000-0000-000000000000',
+        'owner_group_id': 1,
         'hostname': 'satellite.example.com',
         'insecure': True,
         'credentials': 'kv/test',
@@ -281,20 +298,18 @@ def test_create_server_unauthorized(client, db_session_mock):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_update_server(client, keycloak_mock):
+def test_update_server(client, auth_group):
     server = model.SatelliteServer(
         id=1,
         name='test',
         description='',
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         hostname='satellite.example.com',
         insecure=False,
         credentials='kv/test',
     )
     model.SatelliteServer.query.get.return_value = server
-
-    keycloak_mock.group_get_name.return_value = 'test-group'
-
     model.SatelliteServer.query.filter.return_value.count.side_effect = [0, 0]
 
     rv = client.patch(
@@ -325,7 +340,7 @@ def test_update_server_duplicate_properties(
         id=1,
         name='test',
         description='',
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=1,
         hostname='satellite.example.com',
         insecure=False,
         credentials='kv/test',
@@ -391,19 +406,18 @@ def test_update_server_non_existent(client, vault_mock):
     vault_mock.write.assert_not_called()
 
 
-def test_delete_server(client, db_session_mock, keycloak_mock):
+def test_delete_server(client, db_session_mock, auth_group):
     server = model.SatelliteServer(
         id=1,
         name='test',
         description='',
-        owner_group_id='00000000-0000-0000-0000-000000000000',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         hostname='satellite.example.com',
         insecure=False,
         credentials='kv/test',
     )
     model.SatelliteServer.query.get.return_value = server
-
-    keycloak_mock.group_get_name.return_value = 'test-group'
 
     rv = client.delete(
         f'{API_BASE}/satellite/server/1',

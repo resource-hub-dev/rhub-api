@@ -3,6 +3,7 @@ import datetime
 import pytest
 
 from rhub.api import db
+from rhub.auth import model as auth_model
 from rhub.auth.keycloak import KeycloakClient
 from rhub.lab import model as lab_model
 from rhub.policies import model
@@ -17,6 +18,14 @@ def _db_add_row_side_effect(data_added):
         for k, v in data_added.items():
             setattr(row, k, v)
     return side_effect
+
+
+@pytest.fixture
+def auth_group(mocker):
+    return auth_model.Group(
+        id=1,
+        name='testuser',
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -71,10 +80,12 @@ def test_list_policy_unauthorized(client):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_get_policy(client):
+def test_get_policy(client, auth_group):
     model.Policy.query.get.return_value = model.Policy(
         id=1,
         name='test',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         department='',
         constraint_sched_avail=[
             datetime.datetime(2000, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
@@ -100,6 +111,8 @@ def test_get_policy(client):
     assert rv.json == {
         'id': 1,
         'name': 'test',
+        'owner_group_id': auth_group.id,
+        'owner_group_name': auth_group.name,
         'department': '',
         'constraint': {
             'sched_avail': ['2000-01-01T12:00:00+00:00', '2100-01-01T12:00:00+00:00'],
@@ -145,27 +158,23 @@ def test_get_policy_non_existent(client):
     assert rv.json['detail'] == f'Policy {policy_id} does not exist'
 
 
-def test_create_policy(client, keycloak_mock, db_session_mock):
-    user_id = 1
-    user_data = {'id': 'uuid', 'name': 'user'}
+def test_create_policy(client, auth_group, db_session_mock):
     policy_data = {
         'name': 'test',
+        'owner_group_id': auth_group.id,
         'department': 'test server',
     }
-    group_id = '00000004-0003-0002-0001-000000000000'
 
-    db_session_mock.add.side_effect = _db_add_row_side_effect({'id': 1})
-
-    keycloak_mock.group_create.return_value = group_id
+    db_session_mock.add.side_effect = _db_add_row_side_effect({
+        'id': 1,
+        'owner_group': auth_group,
+    })
 
     rv = client.post(
         f'{API_BASE}/policies',
         headers=AUTH_HEADER,
         json=policy_data,
     )
-
-    keycloak_mock.group_role_add.assert_called_with('policy-owner', group_id)
-    keycloak_mock.group_user_add.assert_called_with(user_id, group_id)
 
     server = db_session_mock.add.call_args.args[0]
     for k, v in policy_data.items():
@@ -174,11 +183,7 @@ def test_create_policy(client, keycloak_mock, db_session_mock):
     assert rv.status_code == 200
 
 
-def test_create_policy_unauthorized(
-    client,
-    keycloak_mock,
-    db_session_mock
-):
+def test_create_policy_unauthorized(client, db_session_mock):
     policy_data = {
         'name': 'test',
         'department': 'test server',
@@ -189,12 +194,7 @@ def test_create_policy_unauthorized(
         json=policy_data,
     )
 
-    db_session_mock.add.assert_not_called()
-
-    keycloak_mock.reset_mock() # keycloak_mock has a 'session' scope
-    keycloak_mock.group_create.assert_not_called()
-    keycloak_mock.group_user_add.assert_not_called()
-    keycloak_mock.group_role_add.assert_not_called()
+    db_session_mock.commit.assert_not_called()
 
     assert rv.status_code == 401, rv.data
     assert rv.json['title'] == 'Unauthorized'
@@ -222,7 +222,6 @@ def test_create_policy_unauthorized(
 )
 def test_create_policy_missing_properties(
     client,
-    keycloak_mock,
     db_session_mock,
     policy_data,
     missing_property
@@ -235,21 +234,17 @@ def test_create_policy_missing_properties(
 
     db_session_mock.add.assert_not_called()
 
-    keycloak_mock.group_create.assert_not_called()
-    keycloak_mock.group_user_add.assert_not_called()
-    keycloak_mock.group_role_add.assert_not_called()
-
     assert rv.status_code == 400, rv.data
     assert rv.json['title'] == 'Bad Request'
     assert rv.json['detail'] == f'\'{missing_property}\' is a required property'
 
 
-def test_delete_policy(client, keycloak_mock, db_session_mock):
-    user_id = '00000000-0000-0000-0000-000000000000'
-
+def test_delete_policy(client, auth_group, db_session_mock):
     policy = model.Policy(
         id=1,
         name='test',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         department='',
         constraint_sched_avail=[
             datetime.datetime(2000, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
@@ -265,8 +260,6 @@ def test_delete_policy(client, keycloak_mock, db_session_mock):
     )
     model.Policy.query.get.return_value = policy
     model.Policy.query.delete.return_value = policy
-
-    keycloak_mock.group_list.return_value = [{'id': 'uuid', 'name': 'policy-1-owners'}]
 
     rv = client.delete(
         f'{API_BASE}/policies/1',
@@ -309,11 +302,12 @@ def test_delete_policy_non_existent(client, db_session_mock):
     assert rv.json['detail'] == 'Record Does Not Exist'
 
 
-def test_update_policy(client, db_session_mock):
-    user_id = '00000000-0000-0000-0000-000000000000'
+def test_update_policy(client, db_session_mock, auth_group):
     policy = model.Policy(
         id=1,
         name='test',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
         department='test2',
         constraint_sched_avail=[
             datetime.datetime(2000, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
@@ -344,6 +338,8 @@ def test_update_policy(client, db_session_mock):
     assert rv.json == {
         'id': 1,
         'name': 'new',
+        'owner_group_id': auth_group.id,
+        'owner_group_name': auth_group.name,
         'department': 'new desc',
         'constraint': {
             'sched_avail': ['2000-01-01T12:00:00+00:00', '2100-01-01T12:00:00+00:00'],

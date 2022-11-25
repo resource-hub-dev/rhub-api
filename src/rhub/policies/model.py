@@ -1,5 +1,6 @@
 from rhub.api import db
 from rhub.api.utils import ModelMixin
+from rhub.auth import model as auth_model
 
 
 class Policy(db.Model, ModelMixin):
@@ -7,6 +8,8 @@ class Policy(db.Model, ModelMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256), nullable=False)
+    owner_group_id = db.Column(db.ForeignKey('auth_group.id'), primary_key=True)
+    owner_group = db.relationship(auth_model.Group)
     department = db.Column(db.Text, nullable=False)
     constraint_sched_avail = db.Column(db.ARRAY(db.Text), nullable=True)
     constraint_serv_avail = db.Column(db.Numeric, nullable=True)
@@ -20,6 +23,7 @@ class Policy(db.Model, ModelMixin):
 
     def to_dict(self):
         data = {}
+        data['owner_group_name'] = self.owner_group.name
         data['constraint'] = {}
         for column in self.__table__.columns:
             key = column.name

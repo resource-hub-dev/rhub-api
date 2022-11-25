@@ -50,9 +50,7 @@ model:
         maxLength: 32
         example: rdu2-a
       location_id:
-        anyOf:
-          - $ref: 'common.yml#/model/ID'
-          - nullable: true
+        $ref: 'common.yml#/model/ID_null'
       location:
         readOnly: true
         anyOf:
@@ -92,17 +90,12 @@ model:
           num_volumes: 40000
           volumes_gb: 540000
       owner_group_id:
-        type: string
-        format: uuid
-        example: 7670ac07-cb21-448d-af8a-6e3882216be3
+        $ref: 'common.yml#/model/ID'
       owner_group_name:
         type: string
-        nullable: true
         readOnly: true
       users_group_id:
-        type: string
-        format: uuid
-        nullable: true
+        $ref: 'common.yml#/model/ID_null'
       users_group_name:
         type: string
         nullable: true
@@ -190,18 +183,16 @@ model:
       description:
         type: string
       owner_id:
-        type: string
-        format: uuid
-        readOnly: true
+        allOf:
+          - $ref: 'common.yml#/model/ID'
+          - readOnly: true
       owner_name:
         type: string
         readOnly: true
-        nullable: true
       group_id:
-        type: string
-        format: uuid
-        nullable: true
-        readOnly: true
+        allOf:
+          - $ref: 'common.yml#/model/ID_null'
+          - readOnly: true
       group_name:
         type: string
         nullable: true
@@ -281,9 +272,7 @@ model:
         format: date-time
         readOnly: true
       user_id:
-        type: string
-        format: uuid
-        nullable: true
+        $ref: 'common.yml#/model/ID_null'
       user_name:
         type: string
         nullable: true
@@ -760,6 +749,14 @@ endpoints:
               type: boolean
             reservations_enabled:
               type: boolean
+            owner_group_id:
+              $ref: 'common.yml#/model/ID'
+            owner_group_name:
+              type: string
+            users_group_id:
+              $ref: 'common.yml#/model/ID'
+            users_group_name:
+              type: string
       - name: sort
         in: query
         description: Sort regions by attribute.
@@ -1311,15 +1308,19 @@ endpoints:
               type: integer
               minimum: 1
               description: ID of the region.
-            user_id:
+            owner_id:
               description: ID of the user.
+              type: integer
+              minimum: 1
+            owner_name:
               type: string
-              format: uuid
             group_id:
-              type: string
-              format: uuid
+              type: integer
+              minimum: 1
               nullable: true
               description: ID of the group or ``null``.
+            group_name:
+              type: string
             status:
               $ref: '#/model/ClusterStatus'
             status_flag:

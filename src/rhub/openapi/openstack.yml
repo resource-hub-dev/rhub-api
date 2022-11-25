@@ -16,12 +16,10 @@ model:
         nullable: true
         example: Private cloud for RHub located in RDU.
       owner_group_id:
-        type: string
-        format: uuid
+        $ref: 'common.yml#/model/ID'
       owner_group_name:
         type: string
         readOnly: true
-        nullable: true
       url:
         type: string
         maxLength: 256
@@ -78,17 +76,12 @@ model:
         type: string
         nullable: true
       owner_id:
-        type: string
-        format: uuid
-        description: Defaults to user who created a project.
+        $ref: 'common.yml#/model/ID'
       owner_name:
         type: string
         readOnly: true
-        nullable: true
       group_id:
-        type: string
-        format: uuid
-        nullable: true
+        $ref: 'common.yml#/model/ID_null'
       group_name:
         type: string
         nullable: true
@@ -134,8 +127,9 @@ endpoints:
                 Name of a cloud. Wildcard ``%`` can be used to match zero, one,
                 or multiple characters
             owner_group_id:
+              $ref: 'common.yml#/model/ID_null'
+            owner_group_name:
               type: string
-              format: uuid
               nullable: true
       - name: sort
         in: query
@@ -290,8 +284,9 @@ endpoints:
                 Name of a project. Wildcard ``%`` can be used to match zero, one,
                 or multiple characters
             owner_id:
+              $ref: 'common.yml#/model/ID_null'
+            owner_name:
               type: string
-              format: uuid
               nullable: true
       - name: sort
         in: query

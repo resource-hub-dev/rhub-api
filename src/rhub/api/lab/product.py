@@ -6,9 +6,7 @@ from flask import url_for
 
 from rhub.api import DEFAULT_PAGE_LIMIT, db
 from rhub.api.utils import db_sort
-from rhub.auth import ADMIN_ROLE
-from rhub.auth.keycloak import KeycloakClient
-from rhub.auth.utils import route_require_admin
+from rhub.auth import utils as auth_utils
 from rhub.lab import model
 
 
@@ -46,7 +44,7 @@ def list_products(user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
     }
 
 
-@route_require_admin
+@auth_utils.route_require_admin
 def create_product(body, user):
     query = model.Product.query.filter(model.Product.name == body['name'])
     if query.count() > 0:
@@ -78,7 +76,7 @@ def get_product(product_id):
     return product.to_dict() | {'_href': _product_href(product)}
 
 
-@route_require_admin
+@auth_utils.route_require_admin
 def update_product(product_id, body, user):
     product = model.Product.query.get(product_id)
     if not product:
@@ -96,7 +94,7 @@ def update_product(product_id, body, user):
     return product.to_dict() | {'_href': _product_href(product)}
 
 
-@route_require_admin
+@auth_utils.route_require_admin
 def delete_product(product_id, user):
     product = model.Product.query.get(product_id)
     if not product:
@@ -124,16 +122,15 @@ def delete_product(product_id, user):
     )
 
 
-def list_product_regions(keycloak: KeycloakClient, product_id, user, filter_,
-                         page=0, limit=DEFAULT_PAGE_LIMIT):
+def list_product_regions(product_id, user, filter_, page=0, limit=DEFAULT_PAGE_LIMIT):
     product = model.Product.query.get(product_id)
     if not product:
         return problem(404, 'Not Found', f'Product {product_id} does not exist')
 
     regions_relation = product.regions_relation
 
-    if not keycloak.user_check_role(user, ADMIN_ROLE):
-        user_groups = [group['id'] for group in keycloak.user_group_list(user)]
+    if not auth_utils.user_is_admin(user):
+        user_groups = auth_utils.user_group_ids(user)
         regions_relation = regions_relation.filter(sqlalchemy.or_(
             model.Region.users_group.is_(None),
             model.Region.users_group.in_(user_groups),

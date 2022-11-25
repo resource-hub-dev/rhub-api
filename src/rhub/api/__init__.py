@@ -23,7 +23,6 @@ from werkzeug import Response
 
 from rhub import ROOT_PKG_PATH
 from rhub.api.vault import VaultModule
-from rhub.auth.keycloak import KeycloakModule
 from rhub.messaging import MessagingModule
 from rhub.scheduler import SchedulerModule
 from rhub.worker import celery
@@ -226,7 +225,6 @@ def create_app(extra_config=None):
         app=flask_app,
         injector=di,
         modules=[
-            KeycloakModule(flask_app),
             VaultModule(flask_app),
             SchedulerModule(flask_app),
             MessagingModule(flask_app),

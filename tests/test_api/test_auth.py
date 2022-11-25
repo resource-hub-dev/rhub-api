@@ -3,9 +3,9 @@ from unittest.mock import ANY
 
 import pytest
 
-from rhub.auth.keycloak import KeycloakClient
 from rhub.api import DEFAULT_PAGE_LIMIT
 from rhub.auth import model
+from rhub.auth.keycloak import KeycloakClient
 
 
 API_BASE = '/v0'
@@ -16,6 +16,7 @@ def test_me(client):
     model.User.query.get.return_value = model.User(
         id=1,
         name='test',
+        email='test@example.com',
     )
 
     rv = client.get(
@@ -28,6 +29,7 @@ def test_me(client):
         'id': 1,
         'external_uuid': None,
         'name': 'test',
+        'email': 'test@example.com',
         '_href': ANY,
     }
 
@@ -37,6 +39,7 @@ def test_list_users(client):
         model.User(
             id=1,
             name='test',
+            email='test@example.com',
         )
     ]
     model.User.query.count.return_value = 1
@@ -53,6 +56,7 @@ def test_list_users(client):
                 'id': 1,
                 'external_uuid': None,
                 'name': 'test',
+                'email': 'test@example.com',
                 '_href': ANY,
             },
         ],
@@ -64,6 +68,7 @@ def test_get_user(client):
     model.User.query.get.return_value = model.User(
         id=1,
         name='test',
+        email='test@example.com',
     )
 
     rv = client.get(
@@ -76,6 +81,7 @@ def test_get_user(client):
         'id': 1,
         'external_uuid': None,
         'name': 'test',
+        'email': 'test@example.com',
         '_href': ANY,
     }
 
@@ -104,7 +110,7 @@ def test_list_token(client):
     }
 
 
-def test_list_groups(client, keycloak_mock):
+def test_list_groups(client):
     model.Group.query.limit.return_value.offset.return_value = [
         model.Group(
             id=1,
@@ -131,7 +137,7 @@ def test_list_groups(client, keycloak_mock):
     }
 
 
-def test_get_group(client, keycloak_mock):
+def test_get_group(client):
     model.Group.query.get.return_value = model.Group(
         id=1,
         name='test',

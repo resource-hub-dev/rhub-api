@@ -16,12 +16,10 @@ model:
         nullable: true
         example: Satellite server for RDU site.
       owner_group_id:
-        type: string
-        format: uuid
+        $ref: 'common.yml#/model/ID'
       owner_group_name:
         type: string
         readOnly: true
-        nullable: true
       hostname:
         type: string
         maxLength: 256
@@ -73,9 +71,9 @@ endpoints:
                 Hostname of a server. Wildcard ``%`` can be used to match zero,
                 one, or multiple characters
             owner_group_id:
+              $ref: 'common.yml#/model/ID'
+            owner_group_name:
               type: string
-              format: uuid
-              nullable: true
       - name: sort
         in: query
         description: Sort servers by attribute.

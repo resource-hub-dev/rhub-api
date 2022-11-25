@@ -1,13 +1,12 @@
 import logging
 
 import openstack
-from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import validates
 
 from rhub.api import db, di, utils
 from rhub.api.utils import ModelMixin, ModelValueError
 from rhub.api.vault import Vault
-from rhub.auth.keycloak import KeycloakClient
+from rhub.auth import model as auth_model
 
 
 logger = logging.getLogger(__name__)
@@ -19,7 +18,8 @@ class Cloud(db.Model, ModelMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(32), unique=True, nullable=False)
     description = db.Column(db.Text, nullable=False, default='')
-    owner_group_id = db.Column(postgresql.UUID, nullable=False)
+    owner_group_id = db.Column(db.ForeignKey('auth_group.id'), nullable=False)
+    owner_group = db.relationship(auth_model.Group)
     url = db.Column(db.String(256), nullable=False)
     #: OpenStack credentials path in Vault
     credentials = db.Column(db.String(256), nullable=False)
@@ -31,13 +31,9 @@ class Cloud(db.Model, ModelMixin):
     #: :type: list of :class:`Project`
     projects = db.relationship('Project', back_populates='cloud')
 
-    @property
-    def owner_group_name(self):
-        return di.get(KeycloakClient).group_get_name(self.owner_group_id)
-
     def to_dict(self):
         data = super().to_dict()
-        data['owner_group_name'] = self.owner_group_name
+        data['owner_group_name'] = self.owner_group.name
         return data
 
     @validates('credentials')
@@ -71,24 +67,16 @@ class Project(db.Model, ModelMixin):
 
     name = db.Column(db.String(64), nullable=False)
     description = db.Column(db.Text, nullable=False, default='')
-    owner_id = db.Column(postgresql.UUID, nullable=False)
-    group_id = db.Column(postgresql.UUID, nullable=True)
-
-    @property
-    def owner_name(self):
-        return di.get(KeycloakClient).user_get_name(self.owner_id)
-
-    @property
-    def group_name(self):
-        if self.group_id:
-            return di.get(KeycloakClient).group_get_name(self.group_id)
-        return None
+    owner_id = db.Column(db.ForeignKey('auth_user.id'), nullable=False)
+    owner = db.relationship(auth_model.User)
+    group_id = db.Column(db.ForeignKey('auth_group.id'), nullable=True)
+    group = db.relationship(auth_model.Group)
 
     def to_dict(self):
         data = super().to_dict()
         data['cloud_name'] = self.cloud.name
-        data['owner_name'] = self.owner_name
-        data['group_name'] = self.group_name
+        data['owner_name'] = self.owner.name
+        data['group_name'] = self.group.name if self.group else None
         return data
 
     def create_openstack_client(self):

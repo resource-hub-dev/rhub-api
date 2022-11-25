@@ -12,6 +12,10 @@ model:
         description: Name
         type: string
         maxLength: 256
+      owner_group_id:
+        $ref: 'common.yml#/model/ID'
+      owner_group_name:
+        type: string
       department:
         description: Department Name
         type: string
@@ -62,6 +66,10 @@ model:
           - readOnly: true
       name:
         description: Name
+        type: string
+      owner_group_id:
+        $ref: 'common.yml#/model/ID'
+      owner_group_name:
         type: string
       department:
         description: Department Name

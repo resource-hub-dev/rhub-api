@@ -7,13 +7,11 @@ from flask import request, url_for
 from werkzeug.exceptions import Forbidden
 
 from rhub.api import DEFAULT_PAGE_LIMIT, db
-from rhub.api.lab.cluster import _user_can_access_region
 from rhub.api.utils import db_sort
 from rhub.api.vault import Vault
-from rhub.auth import ADMIN_ROLE
-from rhub.auth.keycloak import KeycloakClient, KeycloakGetError
+from rhub.auth import model as auth_model
+from rhub.auth import utils as auth_utils
 from rhub.lab import model
-from rhub.tower import model as tower_model
 
 
 logger = logging.getLogger(__name__)
@@ -46,12 +44,28 @@ def _region_href(region):
     return href
 
 
-def list_regions_with_permissions(keycloak, user):
+def _user_can_access_region(region, user_id):
+    """Check if user can access region."""
+    if auth_utils.user_is_admin(user_id):
+        return True
+    if region.users_group_id is None:  # shared region
+        return True
+    user_groups = auth_utils.user_group_ids(user_id)
+    return region.users_group_id in user_groups or region.owner_group_id in user_groups
+
+
+def _user_can_modify_region(region, user_id):
+    if auth_utils.user_is_admin(user_id):
+        return True
+    return region.owner_group_id not in auth_utils.user_group_ids(user_id)
+
+
+def _query_regions_with_permissions(user):
     # list regions for users with valid permissions
-    if keycloak.user_check_role(user, ADMIN_ROLE):
+    if auth_utils.user_is_admin(user):
         return model.Region.query
     else:
-        user_groups = [group['id'] for group in keycloak.user_group_list(user)]
+        user_groups = auth_utils.user_group_ids(user)
         return model.Region.query.filter(sqlalchemy.or_(
             model.Region.users_group_id.is_(None),
             model.Region.users_group_id.in_(user_groups),
@@ -59,9 +73,8 @@ def list_regions_with_permissions(keycloak, user):
         ))
 
 
-def list_regions(keycloak: KeycloakClient,
-                 user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
-    regions = list_regions_with_permissions(keycloak, user)
+def list_regions(user, filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
+    regions = _query_regions_with_permissions(user)
 
     regions = regions.outerjoin(
         model.Location,
@@ -82,6 +95,32 @@ def list_regions(keycloak: KeycloakClient,
             model.Region.reservations_enabled == filter_['reservations_enabled']
         )
 
+    if 'owner_group_id' in filter_:
+        regions = regions.filter(
+            model.Region.owner_group_id == filter_['owner_group_id']
+        )
+
+    if 'owner_group_name' in filter_:
+        owner_group = sqlalchemy.orm.aliased(auth_model.Group)
+        regions = regions.outerjoin(
+            owner_group,
+            owner_group.id == model.Region.owner_group_id,
+        )
+        regions = regions.filter(owner_group.name == filter_['owner_group_name'])
+
+    if 'users_group_id' in filter_:
+        regions = regions.filter(
+            model.Region.users_group_id == filter_['users_group_id']
+        )
+
+    if 'users_group_name' in filter_:
+        users_group = sqlalchemy.orm.aliased(auth_model.Group)
+        regions = regions.outerjoin(
+            users_group,
+            users_group.id == model.Region.users_group_id,
+        )
+        regions = regions.filter(users_group.name == filter_['users_group_name'])
+
     if sort:
         regions = db_sort(regions, sort, {
             'name': 'lab_region.name',
@@ -97,29 +136,7 @@ def list_regions(keycloak: KeycloakClient,
     }
 
 
-def create_region(keycloak: KeycloakClient, vault: Vault, body, user):
-    for key in ['owner_group_id', 'users_group_id']:
-        try:
-            if group_id := body.get(key):
-                keycloak.group_get(group_id)
-        except KeycloakGetError as e:
-            logger.exception(e)
-            return problem(400, 'Group does not exist',
-                           f'Group {body[key]} does not exist in Keycloak, '
-                           'you have to create group first or use existing group.')
-
-    tower = tower_model.Server.query.get(body['tower_id'])
-    if not tower:
-        return problem(400, 'Not Found',
-                       f'Tower instance with ID {body["tower_id"]} does not exist')
-
-    query = model.Region.query.filter(model.Region.name == body['name'])
-    if query.count() > 0:
-        return problem(
-            400, 'Bad Request',
-            f'Region with name {body["name"]!r} already exists',
-        )
-
+def create_region(vault: Vault, body, user):
     region = model.Region.from_dict(body)
 
     db.session.add(region)
@@ -133,38 +150,24 @@ def create_region(keycloak: KeycloakClient, vault: Vault, body, user):
     return region.to_dict() | {'_href': _region_href(region)}
 
 
-def get_region(keycloak: KeycloakClient, region_id, user):
+def get_region(region_id, user):
     region = model.Region.query.get(region_id)
     if not region:
         return problem(404, 'Not Found', f'Region {region_id} does not exist')
 
-    if region.users_group_id is not None:
-        if not keycloak.user_check_role(user, ADMIN_ROLE):
-            if not keycloak.user_check_group_any(
-                    user, [region.users_group_id, region.owner_group_id]):
-                raise Forbidden("You don't have access to this region.")
+    if not _user_can_access_region(region, user):
+        raise Forbidden("You don't have access to this region.")
 
     return region.to_dict() | {'_href': _region_href(region)}
 
 
-def update_region(keycloak: KeycloakClient, vault: Vault, region_id, body, user):
+def update_region(vault: Vault, region_id, body, user):
     region = model.Region.query.get(region_id)
     if not region:
         return problem(404, 'Not Found', f'Region {region_id} does not exist')
 
-    if not keycloak.user_check_role(user, ADMIN_ROLE):
-        if not keycloak.user_check_group(user, region.owner_group_id):
-            raise Forbidden("You don't have write access to this region.")
-
-    for key in ['owner_group_id', 'users_group_id']:
-        try:
-            if group_id := body.get(key):
-                keycloak.group_get(group_id)
-        except KeycloakGetError as e:
-            logger.exception(e)
-            return problem(400, 'Group does not exist',
-                           f'Group {body[key]} does not exist in Keycloak, '
-                           'you have to create group first or use existing group.')
+    if not _user_can_modify_region(region, user):
+        raise Forbidden("You don't have write access to this region.")
 
     region.update_from_dict(body)
 
@@ -178,14 +181,13 @@ def update_region(keycloak: KeycloakClient, vault: Vault, region_id, body, user)
     return region.to_dict() | {'_href': _region_href(region)}
 
 
-def delete_region(keycloak: KeycloakClient, region_id, user):
+def delete_region(region_id, user):
     region = model.Region.query.get(region_id)
     if not region:
         return problem(404, 'Not Found', f'Region {region_id} does not exist')
 
-    if not keycloak.user_check_role(user, ADMIN_ROLE):
-        if not keycloak.user_check_group(user, region.owner_group_id):
-            raise Forbidden("You don't have write access to this region.")
+    if not _user_can_modify_region(region, user):
+        raise Forbidden("You don't have write access to this region.")
 
     q = model.RegionProduct.query.filter(
         model.RegionProduct.region_id == region.id,
@@ -204,16 +206,13 @@ def delete_region(keycloak: KeycloakClient, region_id, user):
     )
 
 
-def list_region_products(keycloak: KeycloakClient, region_id, user, filter_):
+def list_region_products(region_id, user, filter_):
     region = model.Region.query.get(region_id)
     if not region:
         return problem(404, 'Not Found', f'Region {region_id} does not exist')
 
-    if region.users_group_id is not None:
-        if not keycloak.user_check_role(user, ADMIN_ROLE):
-            if not keycloak.user_check_group_any(
-                    user, [region.users_group_id, region.owner_group_id]):
-                raise Forbidden("You don't have access to this region.")
+    if not _user_can_access_region(region, user):
+        raise Forbidden("You don't have access to this region.")
 
     products_relation = region.products_relation
 
@@ -241,14 +240,13 @@ def list_region_products(keycloak: KeycloakClient, region_id, user, filter_):
     ]
 
 
-def add_region_product(keycloak: KeycloakClient, region_id, body, user):
+def add_region_product(region_id, body, user):
     region = model.Region.query.get(region_id)
     if not region:
         return problem(404, 'Not Found', f'Region {region_id} does not exist')
 
-    if not keycloak.user_check_role(user, ADMIN_ROLE):
-        if not keycloak.user_check_group(user, region.owner_group_id):
-            raise Forbidden("You don't have write access to this region.")
+    if not _user_can_modify_region(region, user):
+        raise Forbidden("You don't have write access to this region.")
 
     product = model.Product.query.get(body['id'])
     if not product:
@@ -278,14 +276,13 @@ def add_region_product(keycloak: KeycloakClient, region_id, body, user):
     )
 
 
-def delete_region_product(keycloak: KeycloakClient, region_id, user):
+def delete_region_product(region_id, user):
     region = model.Region.query.get(region_id)
     if not region:
         return problem(404, 'Not Found', f'Region {region_id} does not exist')
 
-    if not keycloak.user_check_role(user, ADMIN_ROLE):
-        if not keycloak.user_check_group(user, region.owner_group_id):
-            raise Forbidden("You don't have write access to this region.")
+    if not _user_can_modify_region(region, user):
+        raise Forbidden("You don't have write access to this region.")
 
     product = model.Product.query.get(request.json['id'])
     if not product:
@@ -329,12 +326,11 @@ def get_usage(region_id, user, with_openstack_limits=None):
     return data
 
 
-def get_all_usage(keycloak: KeycloakClient, user):
-    regions = [
-        region for region in list_regions_with_permissions(keycloak, user)
-    ]
+def get_all_usage(user):
+    regions = list(_query_regions_with_permissions(user))
     if not regions:
         return problem(404, 'Not Found', 'No regions exist')
+
     data = {"all": region_to_usage(regions[0], user)}
     data[str(regions[0].id)] = region_to_usage(regions[0], user)
 

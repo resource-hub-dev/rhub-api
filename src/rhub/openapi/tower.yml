@@ -569,9 +569,8 @@ endpoints:
           type: object
           properties:
             launched_by:
-              type: string
-              format: uuid
               description: ID of the user who launched template
+              $ref: 'common.yml#/model/ID'
       - name: page
         in: query
         description: Page number (``0`` indexed).
@@ -618,9 +617,8 @@ endpoints:
           type: object
           properties:
             launched_by:
-              type: string
-              format: uuid
               description: ID of the user who launched template
+              $ref: 'common.yml#/model/ID'
       - name: page
         in: query
         description: Page number (``0`` indexed).
