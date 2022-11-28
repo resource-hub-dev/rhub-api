@@ -4,6 +4,7 @@ import pathlib
 
 from setuptools import find_packages, setup
 
+
 here = pathlib.Path(__file__).parent.resolve()
 
 # Get the long description from the README file
@@ -55,7 +56,6 @@ setup(
         "psycopg2-binary",
         "python-dateutil",
         "python-ironicclient",
-        "python-keycloak >=2, <3",
         "pyyaml",
         "requests",
         "SQLAlchemy",

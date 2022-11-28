@@ -5,7 +5,6 @@ import pytest
 
 from rhub.api import DEFAULT_PAGE_LIMIT
 from rhub.auth import model
-from rhub.auth.keycloak import KeycloakClient
 
 
 API_BASE = '/v0'

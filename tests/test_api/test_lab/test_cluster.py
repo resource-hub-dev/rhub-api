@@ -6,7 +6,7 @@ import pytest
 from dateutil.tz import tzutc
 
 from rhub.auth import model as auth_model
-from rhub.lab import SHAREDCLUSTER_GROUP, SHAREDCLUSTER_USER, model
+from rhub.lab import SHAREDCLUSTER_GROUP, model
 from rhub.openstack import model as openstack_model
 from rhub.tower import model as tower_model
 
@@ -37,7 +37,6 @@ def auth_user(mocker):
     mocker.patch('rhub.api.lab.cluster._user_can_create_reservation').return_value = True
     mocker.patch('rhub.api.lab.cluster._user_can_set_lifespan').return_value = False
     mocker.patch('rhub.api.lab.cluster._user_can_disable_expiration').return_value = False
-    mocker.patch('rhub.api.lab.cluster._user_is_sharedcluster_account').return_value = False
     mocker.patch('rhub.api.lab.cluster._user_can_create_sharedcluster').return_value = False
 
     return auth_model.User(
@@ -63,13 +62,12 @@ def auth_shared_user(mocker):
     mocker.patch('rhub.api.lab.cluster._user_can_create_reservation').return_value = True
     mocker.patch('rhub.api.lab.cluster._user_can_set_lifespan').return_value = True
     mocker.patch('rhub.api.lab.cluster._user_can_disable_expiration').return_value = True
-    mocker.patch('rhub.api.lab.cluster._user_is_sharedcluster_account').return_value = True
     mocker.patch('rhub.api.lab.cluster._user_can_create_sharedcluster').return_value = True
 
     yield auth_model.User(
         id=100,
-        name=SHAREDCLUSTER_USER,
-        email=f'{SHAREDCLUSTER_USER}@example.com',
+        name='sharedclusters',
+        email=f'sharedcluster@example.com',
     )
 
 
@@ -185,13 +183,6 @@ def shared_project(mocker, auth_shared_user, auth_shared_group, openstack_cloud)
     query.first.return_value = project
 
     yield project
-
-
-@pytest.fixture(autouse=True)
-def _get_sharedcluster_user_id(mocker, shared_project):
-    m = mocker.patch('rhub.api.lab.cluster._get_sharedcluster_user_id')
-    m.return_value = shared_project.owner_id
-    yield m
 
 
 @pytest.fixture(autouse=True)
@@ -498,6 +489,7 @@ def test_create_cluster_shared(client, db_session_mock, mocker,
     cluster_data = {
         'name': 'testsharedcluster',
         'description': 'test shared cluster',
+        'shared': True,
         'region_id': 1,
         'product_id': 1,
         'product_params': {},

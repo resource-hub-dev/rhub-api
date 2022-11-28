@@ -17,15 +17,7 @@ RHUB_LINKS = {
 }
 
 
-KEYCLOAK_SERVER = os.getenv('KEYCLOAK_SERVER')
-KEYCLOAK_RESOURCE = os.getenv('KEYCLOAK_RESOURCE')
-KEYCLOAK_REALM = os.getenv('KEYCLOAK_REALM')
-KEYCLOAK_SECRET = os.getenv('KEYCLOAK_SECRET')
-KEYCLOAK_ADMIN_USER = os.getenv('KEYCLOAK_ADMIN_USER')
-KEYCLOAK_ADMIN_PASS = os.getenv('KEYCLOAK_ADMIN_PASS')
-
-AUTH_OIDC_ENDPOINT = f'{KEYCLOAK_SERVER}/realms/{KEYCLOAK_REALM}'
-
+AUTH_OIDC_ENDPOINT = os.getenv('AUTH_OIDC_ENDPOINT')
 
 # DB_TYPE can be 'postgresq', 'postgresql+psycopg', ... any postgres
 # implementation.

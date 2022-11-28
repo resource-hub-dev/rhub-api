@@ -6,7 +6,6 @@ import sqlalchemy.exc
 
 from rhub.api.vault import Vault
 from rhub.auth import model as auth_model
-from rhub.auth.keycloak import KeycloakClient, KeycloakGetError
 from rhub.lab import model
 from rhub.openstack import model as openstack_model
 

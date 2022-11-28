@@ -7,7 +7,6 @@ Usage:
 ```bash
 # creates new configuration files for customization...
 cp -n .env.defaults .env
-cp -n config/keycloak-config.json.defaults config/keycloak-config.json
 cp -n data/vault.example.yml data/vault.yml
 
 # Build and start containers
@@ -28,44 +27,9 @@ $ make test           # run unit tests (needs PYTHONPATH or virtualenv set)
 
 ## Requirements
 
-The API requires other services (keycloak, database, etc) in order to function.
+The API requires other services (database, etc) in order to function.
 Some of the configuration comes from environment variables. Docker-compose in
 this repository is configured to read variables from the customized `.env` file.
-
-### Keycloak
-
-You may wish to start by creating a separate "realm" in Keycloak for the
-Resource Hub. If so, also create an admin account which can be used by the API
-to make authenticated requests to keycloak. Then within the realm create a new
-client for the API with the following configuration:
-
-* "Access Type" of the client must be set to "confidential", otherwise it is not
-  possible to make changes in realm (manage users, groups and roles)
-* "Standard Flow Enabled" set to "off" because this client is not used to
-  authenticate end-users but only from API.
-* "Service Accounts Enabled" set to "on".
-* Upon saving, under tab "Service Account Roles" select "realm-management" in
-  "Client Roles" dropdown and assign "manage-user"
-  and "manage-realm" roles.
-* Other parameters may remain at the default values.
-
-Once you have configured the Keycloak, go to your client configuration, open the
-"Installation" tab and select "Keycloak OIDC JSON". Generated file contains
-parameters that are required by the API/backed, copy-paste them to appropriate
-variables in `.env` file (see below).
-
-* `KEYCLOAK_ADMIN_PASS` - .admin password
-* `KEYCLOAK_ADMIN_USER` - .admin username or any user that can manage users,
-  groups an roles in Keycloak (has "manage-user" and "manage-realm" roles)
-* `KEYCLOAK_REALM` - .realm from OIDC JSON
-* `KEYCLOAK_RESOURCE` - .resource from OIDC JSON
-* `KEYCLOAK_SECRET` - .credentials.secret from OIDC JSON
-* `KEYCLOAK_SERVER` - .auth-server-url from OIDC JSON
-
-You might need to restart the API container after the first restart since it needs
-to pick up the newer values in the .env file that you just modified. Just reloading
-the container is not enough since these variables are in the originating shell
-environment that started the container.
 
 ### PostgreSQL
 
