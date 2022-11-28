@@ -4,7 +4,6 @@ import pytest
 
 from rhub.api import db
 from rhub.auth import model as auth_model
-from rhub.auth.keycloak import KeycloakClient
 from rhub.lab import model as lab_model
 from rhub.policies import model
 

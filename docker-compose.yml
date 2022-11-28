@@ -68,23 +68,6 @@ services:
     healthcheck:
       disable: true
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:${RHUB_IMAGE_KEYCLOAK_VERSION:-15.0.2}
-    environment:
-      - KEYCLOAK_FRONTEND_URL=http://localhost:8080/auth
-    env_file:
-      - .env
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./config/keycloak-config.json:/srv/rhub-keycloak-config.json:delegated,z
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080" ]
-      interval: 20s
-      retries: 10
-      start_period: 90s
-      timeout: 10s
-
   postgres:
     image: postgres:${RHUB_IMAGE_POSTGRES_VERSION:-13}
     env_file:

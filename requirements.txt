@@ -89,8 +89,6 @@ dogpile-cache==1.1.8
     #   python-ironicclient
 dpath==2.0.6
     # via rhub (setup.py)
-ecdsa==0.18.0
-    # via python-jose
 flask==2.2.2
     # via
     #   connexion
@@ -248,10 +246,6 @@ prompt-toolkit==3.0.31
     # via click-repl
 psycopg2-binary==2.9.4
     # via rhub (setup.py)
-pyasn1==0.4.8
-    # via
-    #   python-jose
-    #   rsa
 pycparser==2.21
     # via cffi
 pycryptodomex==3.15.0
@@ -276,10 +270,6 @@ python-dateutil==2.8.2
     #   flask-apscheduler
     #   rhub (setup.py)
 python-ironicclient==5.0.1
-    # via rhub (setup.py)
-python-jose==3.3.0
-    # via python-keycloak
-python-keycloak==2.6.0
     # via rhub (setup.py)
 pytz==2022.4
     # via
@@ -308,17 +298,11 @@ requests==2.28.1
     #   prance
     #   pyjwkest
     #   python-ironicclient
-    #   python-keycloak
-    #   requests-toolbelt
     #   rhub (setup.py)
-requests-toolbelt==0.9.1
-    # via python-keycloak
 requestsexceptions==1.4.0
     # via openstacksdk
 resolvelib==0.8.1
     # via ansible-core
-rsa==4.9
-    # via python-jose
 ruamel-yaml==0.17.21
     # via prance
 ruamel-yaml-clib==0.2.6
@@ -331,7 +315,6 @@ six==1.16.0
     # via
     #   apscheduler
     #   click-repl
-    #   ecdsa
     #   flask-cors
     #   keystoneauth1
     #   munch
@@ -361,9 +344,7 @@ tzdata==2022.5
 tzlocal==4.2
     # via apscheduler
 urllib3==1.26.12
-    # via
-    #   python-keycloak
-    #   requests
+    # via requests
 vine==5.0.0
     # via
     #   amqp

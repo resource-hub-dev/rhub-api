@@ -1,8 +1,8 @@
 import logging
 
 from flask import current_app
-from werkzeug.exceptions import Unauthorized
 from oic import oic
+from werkzeug.exceptions import Unauthorized
 
 from rhub.auth import model as auth_model
 
@@ -25,22 +25,32 @@ def basic_auth(username, password):
 def bearer_auth(token):
     logger = logging.getLogger(f'{__name__}.bearer_auth')
 
-    client = oic.Client()
-    client.provider_config(current_app.config['AUTH_OIDC_ENDPOINT'])
-
-    user_info = client.do_user_info_request(token=token)
-    if 'error' in user_info:
-        logger.error(f'invalid token, {user_info["error_description"]}')
+    oidc_endpoint = current_app.config.get('AUTH_OIDC_ENDPOINT')
+    if not oidc_endpoint:
+        logger.warning('OIDC auth is disabled')
         raise Unauthorized()
 
-    external_uuid = user_info['sub']
+    try:
+        client = oic.Client()
+        client.provider_config(oidc_endpoint)
 
-    user_query = auth_model.User.query.filter(
-        auth_model.User.external_uuid == external_uuid
-    )
-    if user_query.count() != 1:
-        logger.error(f'user with {external_uuid=} does not exist')
+        user_info = client.do_user_info_request(token=token)
+        if 'error' in user_info:
+            logger.error(f'invalid token, {user_info["error_description"]}')
+            raise Unauthorized()
+
+        external_uuid = user_info['sub']
+
+        user_query = auth_model.User.query.filter(
+            auth_model.User.external_uuid == external_uuid
+        )
+        if user_query.count() != 1:
+            logger.error(f'user with {external_uuid=} does not exist')
+            raise Unauthorized()
+
+        user = user_query.first()
+        return {'uid': user.id}
+
+    except Exception:
+        logger.exception('OIDC auth failed')
         raise Unauthorized()
-
-    user = user_query.first()
-    return {'uid': user.id}
