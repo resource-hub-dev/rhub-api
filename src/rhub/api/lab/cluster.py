@@ -12,7 +12,7 @@ from rhub.api.utils import date_now, db_sort
 from rhub.auth import ADMIN_GROUP
 from rhub.auth import model as auth_model
 from rhub.auth import utils as auth_utils
-from rhub.lab import CLUSTER_ADMIN_GROUP, SHAREDCLUSTER_GROUP, SHAREDCLUSTER_USER, model
+from rhub.lab import CLUSTER_ADMIN_GROUP, SHAREDCLUSTER_GROUP, model
 from rhub.lab import utils as lab_utils
 from rhub.openstack import model as openstack_model
 
@@ -59,25 +59,8 @@ def _user_can_disable_expiration(region, user_id):
     return region.owner_group_id in auth_utils.user_group_ids(user_id)
 
 
-def _user_is_sharedcluster_account(user_id):
-    return _get_sharedcluster_user_id() == user_id
-
-
 def _user_can_create_sharedcluster(user_id):
-    sharedcluster_group_id = _get_sharedcluster_group_id()
-    if not sharedcluster_group_id:
-        raise ValueError('Group for shared clusters does not exist.')
-
     return auth_utils.is_user_in_group(user_id, ADMIN_GROUP, SHAREDCLUSTER_GROUP)
-
-
-@functools.lru_cache()
-def _get_sharedcluster_user_id():
-    q = auth_model.User.query.filter(auth_model.User.name == SHAREDCLUSTER_USER)
-    if q.count():
-        return q.first().id
-    logger.error(f'{SHAREDCLUSTER_USER=} does not exist')
-    return None
 
 
 @functools.lru_cache()
@@ -272,7 +255,7 @@ def create_cluster(body, user):
     cluster_data['created'] = date_now()
 
     shared = cluster_data.pop('shared', False)
-    if shared or _user_is_sharedcluster_account(user):
+    if shared:
         if not _user_can_create_sharedcluster(user):
             return problem(
                 404, 'Forbidden',

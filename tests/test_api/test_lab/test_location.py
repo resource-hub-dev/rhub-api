@@ -1,13 +1,12 @@
 import datetime
-from unittest.mock import ANY
 from contextlib import contextmanager
+from unittest.mock import ANY
 
 import pytest
 from dateutil.tz import tzutc
 
-from rhub.lab import model
 from rhub.api.vault import Vault
-from rhub.auth.keycloak import KeycloakClient
+from rhub.lab import model
 
 
 API_BASE = '/v0'
