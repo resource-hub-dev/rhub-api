@@ -112,8 +112,8 @@ class Region(db.Model, ModelMixin):
 
         return data
 
-    def get_user_quota_usage(self, user_id):
-        query = (
+    def _query_cluster_hosts_usage(self):
+        return (
             db.session.query(
                 db.func.coalesce(db.func.sum(ClusterHost.num_vcpus), 0),
                 db.func.coalesce(db.func.sum(ClusterHost.ram_mb), 0),
@@ -124,11 +124,21 @@ class Region(db.Model, ModelMixin):
                 Cluster,
                 ClusterHost.cluster_id == Cluster.id,
             )
-            .where(
-                db.and_(
-                    Cluster.region_id == self.id,
-                    Cluster.owner_id == user_id,
-                )
+            .join(
+                openstack_model.Project,
+                Cluster.project_id == openstack_model.Project.id,
+            )
+            .join(
+                auth_model.User,
+                openstack_model.Project.owner_id == auth_model.User.id,
+            )
+        )
+
+    def get_user_quota_usage(self, user_id):
+        query = self._query_cluster_hosts_usage().where(
+            db.and_(
+                Cluster.region_id == self.id,
+                Cluster.owner_id == user_id,
             )
         )
         result = query.first()
@@ -136,20 +146,8 @@ class Region(db.Model, ModelMixin):
         return dict(zip(Quota.FIELDS, result))
 
     def get_total_quota_usage(self):
-        query = (
-            db.session.query(
-                db.func.coalesce(db.func.sum(ClusterHost.num_vcpus), 0),
-                db.func.coalesce(db.func.sum(ClusterHost.ram_mb), 0),
-                db.func.coalesce(db.func.sum(ClusterHost.num_volumes), 0),
-                db.func.coalesce(db.func.sum(ClusterHost.volumes_gb), 0),
-            )
-            .join(
-                Cluster,
-                ClusterHost.cluster_id == Cluster.id,
-            )
-            .where(
-                Cluster.region_id == self.id,
-            )
+        query = self._query_cluster_hosts_usage().where(
+            Cluster.region_id == self.id,
         )
         result = query.first()
 
@@ -351,6 +349,10 @@ class Cluster(db.Model, ModelMixin):
     def owner_id(self):
         return self.project.owner_id
 
+    @owner_id.expression
+    def owner_id(self):
+        return openstack_model.Project.owner_id
+
     @hybrid_property
     def owner(self):
         return self.project.owner
@@ -358,6 +360,10 @@ class Cluster(db.Model, ModelMixin):
     @hybrid_property
     def group_id(self):
         return self.project.group_id
+
+    @group_id.expression
+    def group_id(self):
+        return openstack_model.Project.group_id
 
     @hybrid_property
     def group(self):
