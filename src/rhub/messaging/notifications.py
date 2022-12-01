@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 @attr.s
 class Notifications(kombu.mixins.ConsumerMixin):
+    flask_app = attr.ib()
     broker_url = attr.ib(repr=False)
     exchange_name = attr.ib()
     smtp_server = attr.ib()
@@ -59,18 +60,19 @@ class Notifications(kombu.mixins.ConsumerMixin):
     def on_message(self, body, message):
         from rhub.auth import model as auth_model
 
-        topic = message.delivery_info['routing_key']
-        if topic in {'lab.cluster.create', 'lab.cluster.delete'}:
-            cluster_owner = auth_model.User.query.get(body['owner_id'])
-            if cluster_owner and cluster_owner.email:
-                self.send_email('email_cluster.j2', cluster_owner.email, body)
-            else:
-                logger.warning(
-                    f"User ID={cluster_owner.id} doesn't exist or doesn't have an "
-                    "email set."
-                )
+        with self.flask_app.app_context():
+            topic = message.delivery_info['routing_key']
+            if topic in {'lab.cluster.create', 'lab.cluster.delete'}:
+                cluster_owner = auth_model.User.query.get(body['owner_id'])
+                if cluster_owner and cluster_owner.email:
+                    self.send_email('email_cluster.j2', cluster_owner.email, body)
+                else:
+                    logger.warning(
+                        f"User ID={cluster_owner.id} doesn't exist or doesn't have an "
+                        "email set."
+                    )
 
-        message.ack()
+            message.ack()
 
     def send_email(self, template_name, email_to, data):
         with smtplib.SMTP(self.smtp_server, self.smtp_port) as smtp:

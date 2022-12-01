@@ -71,6 +71,7 @@ class MessagingModule(injector.Module):
     def _create_notifications(self):
         if self.app.config['SMTP_SERVER']:
             notifications = Notifications(
+                flask_app=self.app,
                 broker_url=self.app.config['RHUB_BROKER_URL'],
                 exchange_name=self.app.config['RHUB_BROKER_MESSAGING_EXCHANGE'],
                 smtp_server=self.app.config['SMTP_SERVER'],
