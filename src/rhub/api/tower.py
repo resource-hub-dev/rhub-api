@@ -573,5 +573,3 @@ def cluster_notification_handler(payload, cluster_id):
                 update_cluster_status(lab_model.ClusterStatus.CREATE_FAILED)
             else:
                 update_cluster_status(lab_model.ClusterStatus.DELETE_FAILED)
-
-    raise ValueError(job_status)
