@@ -66,6 +66,16 @@ def test_list_products(client):
     }
 
 
+def test_list_products_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/lab/product',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_get_product(client):
     model.Product.query.get.return_value = model.Product(
         id=1,
@@ -95,6 +105,33 @@ def test_get_product(client):
         'flavors': {},
         '_href': ANY,
     }
+
+
+def test_get_product_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/lab/product/1',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
+def test_get_product_non_existent(client):
+    product_id = 1
+
+    model.Product.query.get.return_value = None
+
+    rv = client.get(
+        f'{API_BASE}/lab/product/{product_id}',
+        headers=AUTH_HEADER,
+    )
+
+    model.Product.query.get.assert_called_with(product_id)
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Product {product_id} does not exist'
 
 
 def test_create_product(client, db_session_mock):
@@ -127,6 +164,131 @@ def test_create_product(client, db_session_mock):
         assert getattr(product, k) == v
 
 
+def test_create_product_duplicate_name(client, db_session_mock):
+    product_data = {
+        'name': 'dummy',
+        'description': 'dummy',
+        'enabled': True,
+        'tower_template_name_create': 'dummy',
+        'tower_template_name_delete': 'dummy',
+        'parameters': [],
+        'flavors': {},
+    }
+
+    model.Product.query.filter.return_value.count.return_value = 1
+
+    rv = client.post(
+        f'{API_BASE}/lab/product',
+        headers=AUTH_HEADER,
+        json=product_data,
+    )
+
+    db_session_mock.add.assert_not_called()
+
+    assert rv.status_code == 400, rv.data
+    assert rv.json['title'] == 'Bad Request'
+    assert rv.json['detail'] == (
+        f'Product with name {product_data["name"]!r} already exists'
+    )
+
+
+@pytest.mark.parametrize(
+    'product_data, missing_property',
+    [
+        pytest.param(
+            {
+                'description': 'dummy',
+                'enabled': True,
+                'tower_template_name_create': 'dummy',
+                'tower_template_name_delete': 'dummy',
+                'parameters': [],
+                'flavors': {},
+            },
+            'name',
+            id='missing_name',
+        ),
+        pytest.param(
+            {
+                'name': 'dummy',
+                'description': 'dummy',
+                'enabled': True,
+                'tower_template_name_delete': 'dummy',
+                'parameters': [],
+                'flavors': {},
+            },
+            'tower_template_name_create',
+            id='missing_tower_template_name_create',
+        ),
+        pytest.param(
+            {
+                'name': 'dummy',
+                'description': 'dummy',
+                'enabled': True,
+                'tower_template_name_create': 'dummy',
+                'parameters': [],
+                'flavors': {},
+            },
+            'tower_template_name_delete',
+            id='missing_tower_template_name_delete',
+        ),
+        pytest.param(
+            {
+                'name': 'dummy',
+                'description': 'dummy',
+                'enabled': True,
+                'tower_template_name_create': 'dummy',
+                'tower_template_name_delete': 'dummy',
+                'flavors': {},
+            },
+            'parameters',
+            id='missing_parameters',
+        ),
+    ],
+)
+def test_create_product_missing_properties(
+    client,
+    db_session_mock, 
+    product_data, 
+    missing_property,
+):
+    model.Product.query.filter.return_value.count.return_value = 0
+
+    rv = client.post(
+        f'{API_BASE}/lab/product',
+        headers=AUTH_HEADER,
+        json=product_data,
+    )
+
+    db_session_mock.add.assert_not_called()
+
+    assert rv.status_code == 400, rv.data
+    assert rv.json['title'] == 'Bad Request'
+    assert rv.json['detail'] == f'\'{missing_property}\' is a required property'
+
+
+def test_create_product_unauthorized(client, db_session_mock):
+    product_data = {
+        'name': 'dummy',
+        'description': 'dummy',
+        'enabled': True,
+        'tower_template_name_create': 'dummy',
+        'tower_template_name_delete': 'dummy',
+        'parameters': [],
+        'flavors': {},
+    }
+
+    rv = client.post(
+        f'{API_BASE}/lab/product',
+        json=product_data,
+    )
+
+    db_session_mock.add.assert_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_update_product(client, db_session_mock):
     product = model.Product(
         id=1,
@@ -156,6 +318,76 @@ def test_update_product(client, db_session_mock):
     assert product.description == 'desc change'
 
 
+def test_update_product_duplicate_name(client, db_unique_violation):
+    product = model.Product(
+        id=1,
+        name='dummy',
+        description='dummy',
+        enabled=True,
+        tower_template_name_create='dummy',
+        tower_template_name_delete='dummy',
+        parameters=[],
+    )
+    model.Product.query.get.return_value = product
+
+    new_data = {'name': 'name change'}
+
+    db_unique_violation('name', new_data['name'])
+
+    rv = client.patch(
+        f'{API_BASE}/lab/product/{product.id}',
+        headers=AUTH_HEADER,
+        json=new_data,
+    )
+
+    model.Product.query.get.assert_called_with(product.id)
+
+    assert rv.status_code == 400, rv.data
+    assert rv.json['title'] == 'Bad Request'
+    assert rv.json['detail'] == (
+        f'Key (name)=({new_data["name"]}) already exists.'
+    )
+
+
+def test_update_product_unauthorized(client, db_session_mock):
+    rv = client.patch(
+        f'{API_BASE}/lab/product/1',
+        json={
+            'name': 'name change',
+            'description': 'desc change',
+        },
+    )
+
+    db_session_mock.commit.assert_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
+def test_update_product_non_existent(client, db_session_mock):
+    product_id = 1
+
+    model.Product.query.get.return_value = None
+
+    rv = client.patch(
+        f'{API_BASE}/lab/product/{product_id}',
+        headers=AUTH_HEADER,
+        json={
+            'name': 'name change',
+            'description': 'desc change',
+        },
+    )
+
+    model.Product.query.get.assert_called_with(product_id)
+
+    db_session_mock.commit.assert_not_called()
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Product {product_id} does not exist'
+
+
 def test_delete_product(client, db_session_mock):
     product = model.Product(
         id=1,
@@ -178,6 +410,37 @@ def test_delete_product(client, db_session_mock):
 
     db_session_mock.delete.assert_called_with(product)
     db_session_mock.commit.assert_called()
+
+
+def test_delete_product_unauthorized(client, db_session_mock):
+    rv = client.delete(
+        f'{API_BASE}/lab/product/1',
+    )
+
+    db_session_mock.delete.assert_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
+def test_delete_product_non_existent(client, db_session_mock):
+    product_id = 1
+
+    model.Product.query.get.return_value = None
+
+    rv = client.delete(
+        f'{API_BASE}/lab/product/{product_id}',
+        headers=AUTH_HEADER,
+    )
+
+    model.Product.query.get.assert_called_with(product_id)
+
+    db_session_mock.delete.assert_not_called()
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Product {product_id} does not exist'
 
 
 @contextmanager
