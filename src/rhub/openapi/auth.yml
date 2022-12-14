@@ -19,6 +19,7 @@ model:
       name:
         type: string
         maxLength: 64
+        nullable: true
       email:
         type: string
         format: email
