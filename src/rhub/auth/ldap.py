@@ -51,9 +51,15 @@ class LdapClient:
 
         for dict_key, ldap_attr in self.config['user_attrs'].items():
             if dict_key == 'ssh_keys':
-                user_dict[dict_key] = self._extract_ssh_keys(user, ldap_attr)
+                if ldap_attr in user:
+                    user_dict[dict_key] = self._extract_ssh_keys(user, ldap_attr)
+                else:
+                    user_dict[dict_key] = []
             else:
-                user_dict[dict_key] = user[ldap_attr].value
+                if ldap_attr in user:
+                    user_dict[dict_key] = user[ldap_attr].value
+                else:
+                    user_dict[dict_key] = None
 
         return user_dict
 
@@ -71,7 +77,10 @@ class LdapClient:
         }
 
         for dict_key, ldap_attr in self.config['group_attrs'].items():
-            group_dict[dict_key] = group[ldap_attr].value
+            if ldap_attr in group:
+                group_dict[dict_key] = group[ldap_attr].value
+            else:
+                group_dict[dict_key] = None
 
         return group_dict
 
