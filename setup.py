@@ -70,7 +70,7 @@ setup(
             "check-manifest>=0.42",
             "coverage",
             "pip-tools",
-            "tox",
+            "tox >= 4",
         ],
     },
     classifiers=[
