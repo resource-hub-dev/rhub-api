@@ -7,6 +7,10 @@ model:
         allOf:
           - $ref: 'common.yml#/model/ID'
           - readOnly: true
+      ldap_dn:
+        type: string
+        nullable: true
+        example: uid=testuser,ou=users,dc=example,dc=com
       external_uuid:
         type: string
         format: uuid
@@ -15,6 +19,17 @@ model:
       name:
         type: string
         maxLength: 64
+      email:
+        type: string
+        format: email
+        nullable: true
+      ssh_keys:
+        type: array
+        items:
+          type: string
+          example: ssh-ed25519 AAAAexamplesshkeyexamplesshkeyexamplesshkeyABCD
+    allOf:
+      - $ref: 'common.yml#/model/TimestampModel'
 
   Token:
     type: object
@@ -141,6 +156,22 @@ endpoints:
     security:
       - basic: []
       - bearer: []
+
+  user_ssh_keys:
+    summary: Get user's SSH keys
+    tags: [auth]
+    description: |
+      Endpoint to get user's SSH keys.
+
+      Response is plain text in authorized_keys format and this endpoint does
+      not require authentication, so it can be used in `AuthorizedKeysCommand`
+      script (see [SSH manual](https://www.openssh.com/manual.html)).
+    operationId: rhub.api.auth.user.user_ssh_keys
+    parameters:
+      - $ref: '#/parameters/user_id'
+    responses:
+      '200':
+        $ref: 'common.yml#/responses/ssh_authorized_keys'
 
   token_list:
     summary: List tokens

@@ -53,5 +53,12 @@ def user_get(user_id):
     return user_row.to_dict() | {'_href': _user_href(user_row)}
 
 
+def user_ssh_keys(user_id):
+    user_row = model.User.query.get(user_id)
+    if not user_row:
+        return problem(404, 'Not Found', f'User {user_id} does not exist')
+    return '\n'.join(user_row.ssh_keys) + '\n'
+
+
 def get_current_user(user):
     return user_get(user)

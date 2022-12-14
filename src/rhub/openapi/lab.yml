@@ -1467,6 +1467,23 @@ endpoints:
       - basic: []
       - bearer: []
 
+  cluster_authorized_keys:
+    summary: Get cluser authorized keys
+    tags: [lab]
+    description: |
+      Endpoint to get SSH keys of all users that should have access to the
+      cluster hosts.
+
+      Response is plain text in authorized_keys format and this endpoint does
+      not require authentication, so it can be used in `AuthorizedKeysCommand`
+      script (see [SSH manual](https://www.openssh.com/manual.html)).
+    operationId: rhub.api.lab.cluster.cluster_authorized_keys
+    parameters:
+      - $ref: '#/parameters/cluster_id'
+    responses:
+      '200':
+        $ref: 'common.yml#/responses/ssh_authorized_keys'
+
   cluster_update:
     summary: Update cluster
     description: |

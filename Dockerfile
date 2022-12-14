@@ -26,6 +26,7 @@ RUN export RHUB_DB_TYPE='postgresql'; \
     export FLASK_APP='rhub.api:create_app()'; \
     export PROMETHEUS_MULTIPROC_DIR=/tmp/ ; \
     export RHUB_RETURN_INITIAL_FLASK_APP=True; \
+    export RHUB_CONFIG=config/rhub.default.toml; \
     python3 -m flask routes;
 
 ENTRYPOINT ["./bin/entrypoint.sh"]

@@ -3,6 +3,7 @@ import datetime
 import socket
 import urllib.parse
 
+from sqlalchemy import event
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import declarative_mixin, declared_attr
 from sqlalchemy.sql import functions
@@ -158,5 +159,9 @@ class TimestampMixin:
             db.DateTime(timezone=True),
             server_default=functions.now(),
             nullable=False,
-            server_onupdate=functions.now(),  # TODO: why is alembic ignoring this?
         )
+
+
+@event.listens_for(TimestampMixin, 'before_update', propagate=True)
+def timestamp_update(mapper, conn, instance):
+    instance.updated_at = date_now()

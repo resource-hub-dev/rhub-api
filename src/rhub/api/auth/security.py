@@ -1,9 +1,13 @@
+import datetime
 import logging
 
 from flask import current_app
 from oic import oic
 from werkzeug.exceptions import Unauthorized
 
+from rhub.api import db, di
+from rhub.api.utils import date_now
+from rhub.auth import ldap
 from rhub.auth import model as auth_model
 
 
@@ -41,16 +45,47 @@ def bearer_auth(token):
 
         external_uuid = user_info['sub']
 
-        user_query = auth_model.User.query.filter(
+        user_row = auth_model.User.query.filter(
             auth_model.User.external_uuid == external_uuid
-        )
-        if user_query.count() != 1:
-            logger.error(f'user with {external_uuid=} does not exist')
+        ).first()
+
+        try:
+            ldap_client = di.get(ldap.LdapClient)
+            user_row = _user_sync(ldap_client, external_uuid, user_row)
+        except Exception:
+            logger.exception('failed to sync user data from LDAP')
+
+        if not user_row:
             raise Unauthorized()
 
-        user = user_query.first()
-        return {'uid': user.id}
+        return {'uid': user_row.id}
 
     except Exception:
         logger.exception('OIDC auth failed')
         raise Unauthorized()
+
+
+def _user_sync(ldap_client, external_uuid, user_row):
+    logger = logging.getLogger(f'{__name__}.user_sync')
+
+    if user_row:
+        update_threshold = date_now() - datetime.timedelta(hours=12)
+        if user_row.updated_at < update_threshold:
+            logger.info(
+                f'user with {external_uuid=} exists, will try to update data from LDAP'
+            )
+            user_row.update_from_ldap(ldap_client)
+            db.session.commit()
+            logger.info(f'updated user ID={user_row.id} {external_uuid=} in the DB')
+
+    else:
+        logger.info(
+            f'user with {external_uuid=} does not exist, will try to '
+            'create it from LDAP'
+        )
+        user_row = auth_model.User.create_from_ldap(ldap_client, external_uuid)
+        db.session.add(user_row)
+        db.session.commit()
+        logger.info(f'created user ID={user_row.id} {external_uuid=} in the DB')
+
+    return user_row

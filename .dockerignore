@@ -11,3 +11,4 @@
 !requirements.txt
 !setup.cfg
 !setup.py
+!config/rhub.default.toml

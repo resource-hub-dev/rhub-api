@@ -4,16 +4,20 @@ import secrets
 from sqlalchemy.dialects import postgresql
 
 from rhub.api import db
-from rhub.api.utils import ModelMixin
+from rhub.api.utils import ModelMixin, TimestampMixin
+from rhub.auth import ldap
 
 
-class User(db.Model, ModelMixin):
+class User(db.Model, ModelMixin, TimestampMixin):
     __tablename__ = 'auth_user'
 
     id = db.Column(db.Integer, primary_key=True)
     external_uuid = db.Column(postgresql.UUID, nullable=True)
     name = db.Column(db.String(64), unique=True, nullable=True)
     email = db.Column(db.String(128), nullable=True)
+    ssh_keys = db.Column(db.ARRAY(db.Text), server_default='{}', nullable=False)
+
+    ldap_dn = db.Column(db.String(256), nullable=True)
 
     groups = db.relationship('Group', secondary='auth_user_group')
     tokens = db.relationship('Token', back_populates='user',
@@ -22,6 +26,22 @@ class User(db.Model, ModelMixin):
     @property
     def is_external(self):
         return self.external_uuid is not None
+
+    @classmethod
+    def create_from_ldap(cls, ldap_client: ldap.LdapClient, external_uuid):
+        user_data = ldap_client.get_user_by_uuid(external_uuid)
+        user_data['external_uuid'] = external_uuid
+
+        user_groups = user_data.pop('groups')  # noqa TODO
+
+        return cls.from_dict(user_data)
+
+    def update_from_ldap(self, ldap_client: ldap.LdapClient):
+        user_data = ldap_client.get_user_by_uuid(self.external_uuid)
+
+        user_groups = user_data.pop('groups')  # noqa TODO
+
+        self.update_from_dict(user_data)
 
 
 class Token(db.Model, ModelMixin):
@@ -59,7 +79,7 @@ class Group(db.Model, ModelMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
 
-    users = db.relationship('Group', secondary='auth_user_group')
+    users = db.relationship('User', secondary='auth_user_group')
 
 
 class UserGroup(db.Model):
