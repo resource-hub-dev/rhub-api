@@ -26,6 +26,7 @@ from rhub.api.vault import VaultModule
 from rhub.messaging import MessagingModule
 from rhub.scheduler import SchedulerModule
 from rhub.worker import celery
+from rhub.auth.ldap import LdapModule
 
 
 logger = logging.getLogger(__name__)
@@ -228,6 +229,7 @@ def create_app(extra_config=None):
             VaultModule(flask_app),
             SchedulerModule(flask_app),
             MessagingModule(flask_app),
+            LdapModule(flask_app),
         ],
     )
 

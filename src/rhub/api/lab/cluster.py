@@ -756,3 +756,10 @@ def reboot_hosts(cluster_id, body, user):
         return problem(500, 'Server Error', 'Failed to reboot nodes')
 
     return [{'id': host.id, 'fqdn': host.fqdn} for host in rebooted_hosts]
+
+
+def cluster_authorized_keys(cluster_id):
+    cluster = model.Cluster.query.get(cluster_id)
+    if not cluster:
+        return problem(404, 'Not Found', f'Cluster {cluster_id} does not exist')
+    return '\n'.join(cluster.authorized_keys) + '\n'

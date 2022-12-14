@@ -10,6 +10,7 @@ include src/rhub/bare_metal/model/data/ironic_template_data.json
 include src/rhub/bare_metal/model/data/kickstart_debug_script.sh
 include src/rhub/bare_metal/tasks/playbooks/*.yml
 include src/rhub/config/otel.yaml
+include config/rhub.default.toml
 
 recursive-include config blackbox.yaml
 recursive-include config otel*json

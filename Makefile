@@ -5,6 +5,7 @@ default:
 init:
 	-cp -n .env.defaults .env
 	-cp -n data/vault.example.yml data/vault.yml
+	-cp -n config/rhub.default.toml config/rhub.toml
 
 build:
 	docker build -t quay.io/resource-hub-dev/rhub-api --progress=plain .

@@ -35,6 +35,7 @@ setup(
         "connexion[swagger-ui] ~= 2.14",
         "cron-validator >= 1.0.5",
         "dpath",
+        "dynaconf",
         "flask",
         "flask-apscheduler",
         "flask-cors",
@@ -48,6 +49,7 @@ setup(
         "inotify",
         "jinja2",
         "kombu",
+        "ldap3",
         "oic",
         "openapi_spec_validator < 0.5",  # https://github.com/RonnyPfannschmidt/prance/issues/131
         "openstacksdk",

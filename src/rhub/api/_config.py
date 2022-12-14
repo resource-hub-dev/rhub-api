@@ -4,12 +4,18 @@ import urllib.parse
 from datetime import timedelta
 from pathlib import Path
 
+import dynaconf
 import yaml
 
 
-RHUB_CONFIG_DIR = Path(os.getenv('RHUB_DATA_DIR', '/tmp/config'))
-RHUB_DATA_DIR = Path(os.getenv('RHUB_DATA_DIR', '/tmp/data'))
+config = dynaconf.Dynaconf(
+    settings_files=os.environ['RHUB_CONFIG'].split(':'),
+    envvar_prefix='RHUB',
+)
 
+
+RHUB_CONFIG_DIR = Path(os.getenv('RHUB_CONFIG_DIR', '/tmp/config'))
+RHUB_DATA_DIR = Path(os.getenv('RHUB_DATA_DIR', '/tmp/data'))
 
 RHUB_LINKS = {
     k.removeprefix('RHUB_LINK_').replace('_', ' '): os.environ[k]
@@ -98,3 +104,6 @@ SMTP_SERVER = os.getenv('SMTP_SERVER')
 SMTP_PORT = int(os.environ['SMTP_PORT']) if os.getenv('SMTP_PORT') else 25
 EMAIL_FROM = os.getenv('EMAIL_FROM')
 EMAIL_REPLY_TO = os.getenv('EMAIL_REPLY_TO')
+
+
+LDAP = config.ldap

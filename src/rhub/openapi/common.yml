@@ -85,3 +85,15 @@ responses:
           "title": "Unauthorized",
           "type": "about:blank"
         }
+
+  ssh_authorized_keys:
+    description: |
+      Plain text response containing a list of SSH public keys in
+      *authorized_keys* format (see [SSH
+      manual](https://www.openssh.com/manual.html)).
+    content:
+      text/plain:
+        schema:
+          type: string
+        example: |
+          ssh-ed25519 AAAAexamplesshkeyexamplesshkeyexamplesshkeyABCD

@@ -374,6 +374,14 @@ class Cluster(db.Model, ModelMixin):
         return bool(self.group and self.group.name == SHAREDCLUSTER_GROUP)
 
     @property
+    def authorized_keys(self):
+        keys = set(self.owner.ssh_keys)
+        if self.group:
+            for user in self.group.users:
+                keys |= set(user.ssh_keys)
+        return list(keys)
+
+    @property
     def tower_launch_extra_vars(self):
         rhub_extra_vars = {
             'rhub_cluster_id': self.id,

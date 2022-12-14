@@ -1,0 +1,15 @@
+[ldap]
+server = "ldap://ldap.example.com"
+users_base = "ou=users,dc=example,dc=com"
+# users_filter = "(objectClass=examplePerson)"
+users_search = "(exampleUUID={})"
+groups_base = "ou=groups,dc=example,dc=com"
+# groups_filter = "(objectClass=exampleGroup)"
+
+[ldap.user_attrs]
+name = "uid"
+email = "mail"
+ssh_keys = "sshPublicKey"
+
+[ldap.group_attrs]
+name = "cn"

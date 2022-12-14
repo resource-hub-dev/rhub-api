@@ -158,6 +158,9 @@ paths:
       $ref: 'lab.yml#/endpoints/cluster_update'
     delete:
       $ref: 'lab.yml#/endpoints/cluster_delete'
+  /lab/cluster/{cluster_id}/authorized_keys:
+    get:
+      $ref: 'lab.yml#/endpoints/cluster_authorized_keys'
   /lab/cluster/{cluster_id}/events:
     get:
       $ref: 'lab.yml#/endpoints/cluster_list_events'
@@ -184,6 +187,9 @@ paths:
   /auth/user/{user_id}:
     get:
       $ref: 'auth.yml#/endpoints/user_get'
+  /auth/user/{user_id}/ssh_keys:
+    get:
+      $ref: 'auth.yml#/endpoints/user_ssh_keys'
   /auth/user/{user_id}/token:
     get:
       $ref: 'auth.yml#/endpoints/token_list'

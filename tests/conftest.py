@@ -1,6 +1,7 @@
 import functools
 import pathlib
 import tempfile
+from pathlib import Path
 
 import injector
 import psycopg2.errors
@@ -10,6 +11,7 @@ import sqlalchemy.exc
 from rhub.api import create_app
 from rhub.api.vault import Vault
 from rhub.messaging import Messaging
+from rhub.auth.ldap import LdapClient
 
 
 @pytest.fixture
@@ -19,13 +21,15 @@ def temp_dir():
 
 
 @pytest.fixture
-def di_mock(mocker, vault_mock, messaging_mock):
+def di_mock(mocker, vault_mock, messaging_mock, ldap_client_mock):
     class TestsInjector(injector.Injector):
         def get(self, interface, *args, **kwargs):
             if interface is Vault:
                 return vault_mock
             elif interface is Messaging:
                 return messaging_mock
+            elif interface is LdapClient:
+                return ldap_client_mock
             return super().get(interface, *args, **kwargs)
 
     di = TestsInjector()
@@ -51,6 +55,16 @@ def messaging_mock(mocker):
     m.return_value = messaging_mock
 
     yield messaging_mock
+
+
+@pytest.fixture(autouse=True)
+def ldap_client_mock(mocker):
+    ldap_client_mock = mocker.Mock(spec=LdapClient)
+
+    m = mocker.patch('rhub.auth.ldap.LdapModule._create_ldap_client')
+    m.return_value = ldap_client_mock
+
+    yield ldap_client_mock
 
 
 @pytest.fixture(autouse=True)
@@ -116,7 +130,10 @@ def db_foreign_key_violation(mocker, db_session_mock):
 
 @pytest.fixture
 def client(mocker):
+    config_file = Path(__file__).parent / '..' / 'config' / 'rhub.default.toml'
+
     mocker.patch.dict('os.environ', {
+        'RHUB_CONFIG': str(config_file),
         'RHUB_DB_TYPE': 'postgresql',
         'RHUB_DB_HOST': 'localhost',
         'RHUB_DB_PORT': '5432',
