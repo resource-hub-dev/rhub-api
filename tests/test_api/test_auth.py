@@ -1,6 +1,6 @@
 import base64
-from unittest.mock import ANY
 import datetime
+from unittest.mock import ANY
 
 import pytest
 from dateutil.tz import tzutc
@@ -147,6 +147,7 @@ def test_list_groups(client):
         model.Group(
             id=1,
             name='test',
+            ldap_dn=None,
         )
     ]
     model.Group.query.count.return_value = 1
@@ -162,6 +163,7 @@ def test_list_groups(client):
             {
                 'id': 1,
                 'name': 'test',
+                'ldap_dn': None,
                 '_href': ANY,
             },
         ],
@@ -173,6 +175,7 @@ def test_get_group(client):
     model.Group.query.get.return_value = model.Group(
         id=1,
         name='test',
+        ldap_dn=None,
     )
 
     rv = client.get(
@@ -184,5 +187,6 @@ def test_get_group(client):
     assert rv.json == {
         'id': 1,
         'name': 'test',
+        'ldap_dn': None,
         '_href': ANY,
     }

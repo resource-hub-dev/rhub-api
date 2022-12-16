@@ -32,14 +32,28 @@ class User(db.Model, ModelMixin, TimestampMixin):
         user_data = ldap_client.get_user_by_uuid(external_uuid)
         user_data['external_uuid'] = external_uuid
 
-        user_groups = user_data.pop('groups')  # noqa TODO
+        user_groups = user_data.pop('groups')
+        user_groups_dn = [i['ldap_dn'] for i in user_groups]
+        user_groups_in_db = Group.query.filter(Group.ldap_dn.in_(user_groups_dn)).all()
+
+        user_data['groups'] = user_groups_in_db
 
         return cls.from_dict(user_data)
 
     def update_from_ldap(self, ldap_client: ldap.LdapClient):
         user_data = ldap_client.get_user_by_uuid(self.external_uuid)
 
-        user_groups = user_data.pop('groups')  # noqa TODO
+        user_groups = user_data.pop('groups')
+        user_groups_dn = [i['ldap_dn'] for i in user_groups]
+        user_groups_in_db = Group.query.filter(Group.ldap_dn.in_(user_groups_dn)).all()
+
+        for group in user_groups_in_db:
+            if group not in self.groups:
+                self.groups.append(group)
+
+        for group in list(self.groups):
+            if group.ldap_dn and group.ldap_dn not in user_groups_dn:
+                self.groups.remove(group)
 
         self.update_from_dict(user_data)
 
@@ -78,6 +92,8 @@ class Group(db.Model, ModelMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
+
+    ldap_dn = db.Column(db.String(256), nullable=True)
 
     users = db.relationship('User', secondary='auth_user_group')
 
