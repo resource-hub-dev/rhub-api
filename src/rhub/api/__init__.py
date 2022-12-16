@@ -83,6 +83,27 @@ def create_user_command(user_name, group_name):
     )
 
 
+@click.command('create-token')
+@click.argument('user_name')
+def create_token_command(user_name):
+    from rhub.auth import model as auth_model
+
+    user = auth_model.User.query.filter(auth_model.User.name == user_name).first()
+    if not user:
+        raise click.Abort
+
+    token_plain, token = auth_model.Token.generate(user_id=user.id)
+    db.session.add(token)
+    db.session.commit()
+    click.secho(
+        '\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'
+        f'  User ID:    {user.id}\n'
+        f'  API Token:  {token_plain}\n'
+        '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n',
+        bold=True,
+    )
+
+
 def log_request():
     try:
         path = flask.request.path.rstrip('/')
@@ -209,6 +230,7 @@ def create_app(extra_config=None):
 
     flask_app.cli.add_command(init_command)
     flask_app.cli.add_command(create_user_command)
+    flask_app.cli.add_command(create_token_command)
 
     if logger.isEnabledFor(logging.DEBUG):
         flask_app.before_request(log_request)
