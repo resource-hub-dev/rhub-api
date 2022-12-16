@@ -30,7 +30,7 @@ def group_list(filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
         if 'user_id' in filter_:
             groups = groups.filter(model.User.id == filter_['user_id'])
 
-        if 'group_name' in filter_:
+        if 'user_name' in filter_:
             groups = groups.filter(model.User.name == filter_['user_name'])
 
     if sort:
