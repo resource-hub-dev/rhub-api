@@ -23,6 +23,10 @@ def basic_auth(username, password):
         logger.error('token does not exist in the DB')
         raise Unauthorized()
 
+    if token_row.is_expired:
+        logger.error(f'token ID={token_row.id} has expired')
+        raise Unauthorized('Token has expired.')
+
     return {'uid': token_row.user_id}
 
 

@@ -2,9 +2,10 @@ import hashlib
 import secrets
 
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.sql import functions
 
 from rhub.api import db
-from rhub.api.utils import ModelMixin, TimestampMixin
+from rhub.api.utils import ModelMixin, TimestampMixin, date_now
 from rhub.auth import ldap
 
 
@@ -65,6 +66,15 @@ class Token(db.Model, ModelMixin):
     user_id = db.Column(db.ForeignKey('auth_user.id'), nullable=False)
     user = db.relationship('User', back_populates='tokens')
     token = db.Column(db.String(64), nullable=False, index=True)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False,
+                           server_default=functions.now())
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    @property
+    def is_expired(self):
+        if self.expires_at is None:
+            return False
+        return self.expires_at < date_now()
 
     @classmethod
     def generate(cls, **kwargs):
