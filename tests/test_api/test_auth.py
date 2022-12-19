@@ -122,6 +122,8 @@ def test_list_token(client):
     model.Token.query.filter.return_value.all.return_value = [
         model.Token(
             id=1,
+            created_at=DATE,
+            expires_at=DATE,
         ),
     ]
     model.Token.query.filter.return_value.count.return_value = 1
@@ -136,6 +138,8 @@ def test_list_token(client):
         'data': [
             {
                 'id': 1,
+                'created_at': DATE_STR,
+                'expires_at': DATE_STR,
             },
         ],
         'total': 1,

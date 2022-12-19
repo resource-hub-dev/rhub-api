@@ -43,6 +43,13 @@ model:
         description: Secret, returned only when creating a new token.
         type: string
         readOnly: true
+      created_at:
+        type: string
+        format: date-time
+        readOnly: true
+      expires_at:
+        type: string
+        format: date-time
 
   Group:
     type: object
