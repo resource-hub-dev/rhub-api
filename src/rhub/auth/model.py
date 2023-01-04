@@ -63,12 +63,13 @@ class Token(db.Model, ModelMixin):
     __tablename__ = 'auth_token'
 
     id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(256), nullable=True, default=None)
     user_id = db.Column(db.ForeignKey('auth_user.id'), nullable=False)
     user = db.relationship('User', back_populates='tokens')
     token = db.Column(db.String(64), nullable=False, index=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False,
                            server_default=functions.now())
-    expires_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=True, default=None)
 
     @property
     def is_expired(self):

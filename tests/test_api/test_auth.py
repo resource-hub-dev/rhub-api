@@ -13,8 +13,13 @@ API_BASE = '/v0'
 AUTH_HEADER = {'Authorization': 'Basic X190b2tlbl9fOmR1bW15Cg=='}
 
 SSH_KEY = 'ssh-ed25519 AAAAexamplesshkeyexamplesshkeyexamplesshkeyABCD'
-DATE = datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc())
-DATE_STR = '2021-01-01T01:00:00+00:00'
+DATE = datetime.datetime(2100, 1, 1, 1, 0, 0, tzinfo=tzutc())
+DATE_STR = '2100-01-01T01:00:00+00:00'
+
+
+@pytest.fixture
+def user_is_admin_mock(mocker):
+    yield mocker.patch('rhub.auth.utils.user_is_admin')
 
 
 def test_me(client):
@@ -122,6 +127,7 @@ def test_list_token(client):
     model.Token.query.filter.return_value.all.return_value = [
         model.Token(
             id=1,
+            name='test token',
             created_at=DATE,
             expires_at=DATE,
         ),
@@ -138,12 +144,116 @@ def test_list_token(client):
         'data': [
             {
                 'id': 1,
+                'name': 'test token',
                 'created_at': DATE_STR,
                 'expires_at': DATE_STR,
             },
         ],
         'total': 1,
     }
+
+
+@pytest.mark.parametrize('expires_at', [None, DATE_STR])
+def test_create_token(client, db_session_mock, expires_at):
+    token_data = {
+        'name': 'test token',
+        'expires_at': expires_at,
+    }
+
+    def db_add(row):
+        row.id = 1
+        row.created_at = DATE
+
+    db_session_mock.add.side_effect = db_add
+
+    rv = client.post(
+        f'{API_BASE}/auth/user/1/token',
+        headers=AUTH_HEADER,
+        json=token_data,
+    )
+
+    assert rv.status_code == 200
+    assert rv.json == {
+        'id': 1,
+        'name': 'test token',
+        'created_at': DATE_STR,
+        'expires_at': expires_at,
+        'token': ANY,
+    }
+
+    db_session_mock.add.assert_called()
+    db_session_mock.commit.assert_called()
+
+
+@pytest.mark.parametrize('expires_at', ['foobar', '1970-01-01T12:00:00Z'])
+def test_create_token_invalid_expiration(client, db_session_mock, expires_at):
+    token_data = {
+        'expires_at': expires_at,
+    }
+
+    def db_add(row):
+        row.id = 1
+        row.created_at = DATE
+
+    db_session_mock.add.side_effect = db_add
+
+    rv = client.post(
+        f'{API_BASE}/auth/user/1/token',
+        headers=AUTH_HEADER,
+        json=token_data,
+    )
+
+    assert rv.status_code == 400
+    assert rv.json['detail'] == 'Invalid expiration date.'
+
+    db_session_mock.add.assert_not_called()
+    db_session_mock.commit.assert_not_called()
+
+
+def test_delete_token(client, db_session_mock, user_is_admin_mock):
+    token_row = model.Token(
+        id=1,
+        user_id=1,
+        name='test token',
+        created_at=DATE,
+        expires_at=DATE,
+    )
+    model.Token.query.get.return_value = token_row
+
+    user_is_admin_mock.return_value = True
+
+    rv = client.delete(
+        f'{API_BASE}/auth/user/1/token/1',
+        headers=AUTH_HEADER,
+    )
+
+    assert rv.status_code == 204
+
+    db_session_mock.delete.assert_called_with(token_row)
+    db_session_mock.commit.assert_called()
+
+
+def test_delete_token_forbidden(client, db_session_mock, user_is_admin_mock):
+    token_row = model.Token(
+        id=1,
+        user_id=1234,
+        name='test token',
+        created_at=DATE,
+        expires_at=DATE,
+    )
+    model.Token.query.get.return_value = token_row
+
+    user_is_admin_mock.return_value = False
+
+    rv = client.delete(
+        f'{API_BASE}/auth/user/1234/token/1',
+        headers=AUTH_HEADER,
+    )
+
+    assert rv.status_code == 403
+
+    db_session_mock.delete.assert_not_called()
+    db_session_mock.commit.assert_not_called()
 
 
 def test_list_groups(client):

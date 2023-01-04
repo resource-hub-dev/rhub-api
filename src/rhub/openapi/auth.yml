@@ -39,6 +39,11 @@ model:
         allOf:
           - $ref: 'common.yml#/model/ID'
           - readOnly: true
+      name:
+        description: For example, the application using the token or the purpose of the token.
+        type: string
+        maxLength: 256
+        nullable: true
       token:
         description: Secret, returned only when creating a new token.
         type: string
@@ -50,6 +55,7 @@ model:
       expires_at:
         type: string
         format: date-time
+        nullable: true
 
   Group:
     type: object
@@ -203,6 +209,47 @@ endpoints:
                   type: integer
                   minimum: 0
                   description: The total number of items
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - basic: []
+      - bearer: []
+
+  token_create:
+    summary: Create a new token
+    tags: [auth]
+    operationId: rhub.api.auth.token.token_create
+    parameters:
+      - $ref: '#/parameters/user_id'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/model/Token'
+    responses:
+      '200':
+        description: Token
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Token'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - basic: []
+      - bearer: []
+
+  token_delete:
+    summary: Delete the token
+    tags: [auth]
+    operationId: rhub.api.auth.token.token_delete
+    parameters:
+      - $ref: '#/parameters/user_id'
+      - $ref: '#/parameters/token_id'
+    responses:
+      '204':
+        description: Success
       default:
         $ref: 'common.yml#/responses/problem'
     security:
