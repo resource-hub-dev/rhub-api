@@ -193,6 +193,11 @@ paths:
   /auth/user/{user_id}/token:
     get:
       $ref: 'auth.yml#/endpoints/token_list'
+    post:
+      $ref: 'auth.yml#/endpoints/token_create'
+  /auth/user/{user_id}/token/{token_id}:
+    delete:
+      $ref: 'auth.yml#/endpoints/token_delete'
   /auth/group:
     get:
       $ref: 'auth.yml#/endpoints/group_list'
