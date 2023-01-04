@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def token_list(user_id, user):
-    if not utils.user_is_admin(user_id) or user_id != user:
+    if not (utils.user_is_admin(user) or user_id == user):
         return problem(
             403, 'Forbidden',
             "You don't have permission to list other users' tokens."

@@ -123,16 +123,20 @@ def test_get_user(client):
     }
 
 
-def test_list_token(client):
+@pytest.mark.parametrize('is_admin', [True, False])
+def test_list_token(client, user_is_admin_mock, is_admin):
     model.Token.query.filter.return_value.all.return_value = [
         model.Token(
             id=1,
+            user_id=1,
             name='test token',
             created_at=DATE,
             expires_at=DATE,
         ),
     ]
     model.Token.query.filter.return_value.count.return_value = 1
+
+    user_is_admin_mock.return_value = is_admin
 
     rv = client.get(
         f'{API_BASE}/auth/user/1/token',
@@ -151,6 +155,28 @@ def test_list_token(client):
         ],
         'total': 1,
     }
+
+
+def test_list_token_forbidden(client, user_is_admin_mock):
+    model.Token.query.filter.return_value.all.return_value = [
+        model.Token(
+            id=1,
+            user_id=1234,
+            name='test token',
+            created_at=DATE,
+            expires_at=DATE,
+        ),
+    ]
+    model.Token.query.filter.return_value.count.return_value = 1
+
+    user_is_admin_mock.return_value = False
+
+    rv = client.get(
+        f'{API_BASE}/auth/user/1234/token',
+        headers=AUTH_HEADER,
+    )
+
+    assert rv.status_code == 403
 
 
 @pytest.mark.parametrize('expires_at', [None, DATE_STR])
