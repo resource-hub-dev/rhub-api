@@ -40,6 +40,9 @@ def bearer_auth(token):
 
     try:
         client = oic.Client()
+        if current_app.config.get('AUTH_OIDC_ALLOW_ISSUER_MISMATCH'):
+            client.allow["issuer_mismatch"] = True
+
         client.provider_config(oidc_endpoint)
 
         user_info = client.do_user_info_request(token=token)
