@@ -24,6 +24,10 @@ RHUB_LINKS = {
 
 
 AUTH_OIDC_ENDPOINT = os.getenv('AUTH_OIDC_ENDPOINT')
+AUTH_OIDC_ALLOW_ISSUER_MISMATCH = (
+    os.getenv('AUTH_OIDC_ALLOW_ISSUER_MISMATCH', '').lower()
+    in ['true', 'yes', '1']
+)
 
 # DB_TYPE can be 'postgresq', 'postgresql+psycopg', ... any postgres
 # implementation.
