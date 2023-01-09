@@ -8,6 +8,7 @@ from rhub.api.utils import date_now
 from rhub.lab import model as lab_model
 from rhub.lab import utils as lab_utils
 from rhub.messaging import Messaging
+from rhub.worker import celery
 
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,7 @@ class CronJob:
 
     def __init__(self, fn):
         self.fn = fn
+        self.task = celery.task(fn, ignore_result=True)
         self.__class__.__jobs[self.name] = self
 
     def __repr__(self):
@@ -34,7 +36,7 @@ class CronJob:
     def __call__(self, params):
         if params is None:
             params = {}
-        return self.fn(params)
+        return self.task.delay(params)
 
     @classmethod
     def get_jobs(cls):
