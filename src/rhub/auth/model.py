@@ -108,6 +108,23 @@ class Group(db.Model, ModelMixin):
 
     users = db.relationship('User', secondary='auth_user_group')
 
+    def update_from_ldap(self, ldap_client: ldap.LdapClient):
+        group_data = ldap_client.get_group(self.ldap_dn)
+
+        group_users = group_data.pop('users')
+        group_users_dn = [i['ldap_dn'] for i in group_users]
+        group_users_in_db = User.query.filter(User.ldap_dn.in_(group_users_dn)).all()
+
+        for user in group_users_in_db:
+            if user not in self.users:
+                self.users.append(user)
+
+        for user in list(self.users):
+            if user.ldap_dn and user.ldap_dn not in group_users_dn:
+                self.users.remove(user)
+
+        self.update_from_dict(group_data)
+
 
 class UserGroup(db.Model):
     __tablename__ = 'auth_user_group'
