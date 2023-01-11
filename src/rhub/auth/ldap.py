@@ -69,7 +69,7 @@ class LdapClient:
             for k in ['member', 'uniqueMember']:
                 if k in group:
                     users_set |= set(group[k].value)
-            return list(users_set)
+            return [{'ldap_dn': i} for i in users_set]
 
         group_dict = {
             'ldap_dn': group.entry_dn,
