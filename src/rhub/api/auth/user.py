@@ -12,15 +12,18 @@ logger = logging.getLogger(__name__)
 
 
 def _user_href(user):
-    return {
+    href = {
         'user': url_for('.rhub_api_auth_user_user_get',
                         user_id=user.id),
     }
+    if user.manager_id:
+        href['manager'] = url_for('.rhub_api_auth_user_user_get',
+                                  user_id=user.manager_id)
+    return href
 
 
 def user_list(filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
-    logger.debug(filter_)
-    users = model.User.query
+    users = model.User.query.filter(model.User.deleted.is_(False))
 
     if 'name' in filter_:
         users = users.filter(model.User.name.ilike(filter_['name']))
@@ -48,14 +51,14 @@ def user_list(filter_, sort=None, page=0, limit=DEFAULT_PAGE_LIMIT):
 
 def user_get(user_id):
     user_row = model.User.query.get(user_id)
-    if not user_row:
+    if not user_row or user_row.deleted:
         return problem(404, 'Not Found', f'User {user_id} does not exist')
     return user_row.to_dict() | {'_href': _user_href(user_row)}
 
 
 def user_ssh_keys(user_id):
     user_row = model.User.query.get(user_id)
-    if not user_row:
+    if not user_row or user_row.deleted:
         return problem(404, 'Not Found', f'User {user_id} does not exist')
     return '\n'.join(user_row.ssh_keys) + '\n'
 

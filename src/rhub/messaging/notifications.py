@@ -62,6 +62,7 @@ class Notifications(kombu.mixins.ConsumerMixin):
 
         with self.flask_app.app_context():
             topic = message.delivery_info['routing_key']
+
             if topic in {'lab.cluster.create', 'lab.cluster.delete'}:
                 cluster_owner = auth_model.User.query.get(body['owner_id'])
                 if cluster_owner and cluster_owner.email:
@@ -71,6 +72,10 @@ class Notifications(kombu.mixins.ConsumerMixin):
                         f"User ID={cluster_owner.id} doesn't exist or doesn't have an "
                         "email set."
                     )
+
+            elif topic == 'auth.user.delete':
+                manager = auth_model.User.query.get(body['manager_id'])
+                self.send_email('user_delete.j2', manager.email, body)
 
             message.ack()
 

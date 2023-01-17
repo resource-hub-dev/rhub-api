@@ -7,9 +7,11 @@ groups_base = "ou=groups,dc=example,dc=com"
 # groups_filter = "(objectClass=exampleGroup)"
 
 [ldap.user_attrs]
+external_uuid = "uuid"
 name = "uid"
 email = "mail"
 ssh_keys = "sshPublicKey"
+manager = "manager"
 
 [ldap.group_attrs]
 name = "cn"
