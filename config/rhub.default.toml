@@ -15,3 +15,11 @@ manager = "manager"
 
 [ldap.group_attrs]
 name = "cn"
+
+[messaging.email]
+# Links at the bottom of notifications emails.
+footer_links = [
+  { title = "RHub UI", url = "https://rhub.example.com/" },
+  { title = "RHub Documentation", url = "https://rhub-docs.example.com/" },
+  { title = "RHub Support (Email)", url = "mailto:rhub-support@example.com" },
+]

@@ -20,7 +20,7 @@ class Notifications(kombu.mixins.ConsumerMixin):
     smtp_port = attr.ib()
     email_from = attr.ib()
     email_reply_to = attr.ib()
-    rhub_links = attr.ib()
+    email_footer_links = attr.ib()
 
     def __attrs_post_init__(self):
         self.connection = kombu.Connection(self.broker_url)
@@ -38,7 +38,7 @@ class Notifications(kombu.mixins.ConsumerMixin):
         self._j2_env.globals.update({
             'EMAIL_FROM': self.email_from,
             'EMAIL_REPLY_TO': self.email_reply_to,
-            'RHUB_LINKS': self.rhub_links,
+            'EMAIL_FOOTER_LINKS': self.email_footer_links,
         })
 
         self._thread = None
