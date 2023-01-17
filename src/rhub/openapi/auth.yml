@@ -29,6 +29,8 @@ model:
         items:
           type: string
           example: ssh-ed25519 AAAAexamplesshkeyexamplesshkeyexamplesshkeyABCD
+      manager_id:
+        $ref: 'common.yml#/model/ID_null'
     allOf:
       - $ref: 'common.yml#/model/TimestampModel'
 

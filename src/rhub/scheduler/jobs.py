@@ -5,9 +5,9 @@ import logging
 import rhub.tower.model
 from rhub.api import db, di
 from rhub.api.utils import date_now
+from rhub.auth import tasks as auth_tasks
 from rhub.lab import model as lab_model
 from rhub.lab import utils as lab_utils
-from rhub.auth import tasks as auth_tasks
 from rhub.messaging import Messaging
 from rhub.worker import celery
 

@@ -17,6 +17,9 @@ class User(db.Model, ModelMixin, TimestampMixin):
     name = db.Column(db.String(64), unique=True, nullable=True)
     email = db.Column(db.String(128), nullable=True)
     ssh_keys = db.Column(db.ARRAY(db.Text), server_default='{}', nullable=False)
+    manager_id = db.Column(db.ForeignKey('auth_user.id'), nullable=True)
+    manager = db.relationship('User', remote_side=[id], uselist=False)
+    deleted = db.Column(db.Boolean, server_default='FALSE')
 
     ldap_dn = db.Column(db.String(256), nullable=True)
 
@@ -28,10 +31,31 @@ class User(db.Model, ModelMixin, TimestampMixin):
     def is_external(self):
         return self.external_uuid is not None
 
+    def to_dict(self):
+        data = super().to_dict()
+        del data['deleted']
+        return data
+
     @classmethod
-    def create_from_ldap(cls, ldap_client: ldap.LdapClient, external_uuid):
+    def create_from_external_uuid(cls, ldap_client: ldap.LdapClient, external_uuid):
         user_data = ldap_client.get_user_by_uuid(external_uuid)
-        user_data['external_uuid'] = external_uuid
+        return cls.create_from_ldap(user_data['ldap_dn'])
+
+    @classmethod
+    def _get_or_create(cls, ldap_client: ldap.LdapClient, ldap_dn):
+        user = cls.query.filter(cls.ldap_dn == ldap_dn).first()
+        if not user:
+            data = ldap_client.get_user(ldap_dn)
+            data.pop('groups')
+            data.pop('manager', None)
+            user = cls.from_dict(data)
+            db.session.add(user)
+            db.session.flush()
+        return user
+
+    @classmethod
+    def create_from_ldap(cls, ldap_client: ldap.LdapClient, ldap_dn):
+        user_data = ldap_client.get_user(ldap_dn)
 
         user_groups = user_data.pop('groups')
         user_groups_dn = [i['ldap_dn'] for i in user_groups]
@@ -39,14 +63,22 @@ class User(db.Model, ModelMixin, TimestampMixin):
 
         user_data['groups'] = user_groups_in_db
 
+        if manager_dn := user_data.pop('manager', None):
+            manager = cls._get_or_create(ldap_client, manager_dn)
+            user_data['manager_id'] = manager.id
+
         return cls.from_dict(user_data)
 
     def update_from_ldap(self, ldap_client: ldap.LdapClient):
-        user_data = ldap_client.get_user_by_uuid(self.external_uuid)
+        user_data = ldap_client.get_user(self.ldap_dn)
 
         user_groups = user_data.pop('groups')
         user_groups_dn = [i['ldap_dn'] for i in user_groups]
         user_groups_in_db = Group.query.filter(Group.ldap_dn.in_(user_groups_dn)).all()
+
+        if manager_dn := user_data.pop('manager', None):
+            manager = self._get_or_create(ldap_client, manager_dn)
+            user_data['manager_id'] = manager.id
 
         for group in user_groups_in_db:
             if group not in self.groups:

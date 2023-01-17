@@ -32,6 +32,7 @@ def test_me(client):
         ssh_keys=[SSH_KEY],
         created_at=DATE,
         updated_at=DATE,
+        manager_id=None,
     )
 
     rv = client.get(
@@ -49,12 +50,14 @@ def test_me(client):
         'ssh_keys': [SSH_KEY],
         'created_at': DATE_STR,
         'updated_at': DATE_STR,
+        'manager_id': None,
         '_href': ANY,
     }
 
 
 def test_list_users(client):
-    model.User.query.limit.return_value.offset.return_value = [
+    q = model.User.query.filter.return_value
+    q.limit.return_value.offset.return_value = [
         model.User(
             id=1,
             external_uuid=None,
@@ -64,9 +67,10 @@ def test_list_users(client):
             ssh_keys=[SSH_KEY],
             created_at=DATE,
             updated_at=DATE,
+            manager_id=None,
         )
     ]
-    model.User.query.count.return_value = 1
+    q.count.return_value = 1
 
     rv = client.get(
         f'{API_BASE}/auth/user',
@@ -85,6 +89,7 @@ def test_list_users(client):
                 'ssh_keys': [SSH_KEY],
                 'created_at': DATE_STR,
                 'updated_at': DATE_STR,
+                'manager_id': None,
                 '_href': ANY,
             },
         ],
@@ -102,6 +107,7 @@ def test_get_user(client):
         ssh_keys=[SSH_KEY],
         created_at=DATE,
         updated_at=DATE,
+        manager_id=None,
     )
 
     rv = client.get(
@@ -119,8 +125,31 @@ def test_get_user(client):
         'ssh_keys': [SSH_KEY],
         'created_at': DATE_STR,
         'updated_at': DATE_STR,
+        'manager_id': None,
         '_href': ANY,
     }
+
+
+def test_get_user_deleted(client):
+    model.User.query.get.return_value = model.User(
+        id=1,
+        external_uuid=None,
+        ldap_dn=None,
+        name='test',
+        email='test@example.com',
+        ssh_keys=[SSH_KEY],
+        created_at=DATE,
+        updated_at=DATE,
+        manager_id=None,
+        deleted=True,
+    )
+
+    rv = client.get(
+        f'{API_BASE}/auth/user/1',
+        headers=AUTH_HEADER,
+    )
+
+    assert rv.status_code == 404
 
 
 @pytest.mark.parametrize('is_admin', [True, False])

@@ -27,6 +27,10 @@ def basic_auth(username, password):
         logger.error(f'token ID={token_row.id} has expired')
         raise Unauthorized('Token has expired.')
 
+    if token_row.user.deleted:
+        logger.error(f'user ID={token_row.user_id} has been deleted')
+        raise Unauthorized()
+
     return {'uid': token_row.user_id}
 
 
@@ -63,6 +67,10 @@ def bearer_auth(token):
             logger.exception('failed to sync user data from LDAP')
 
         if not user_row:
+            raise Unauthorized()
+
+        if user_row.deleted:
+            logger.error(f'user ID={user_row.id} has been deleted')
             raise Unauthorized()
 
         return {'uid': user_row.id}
