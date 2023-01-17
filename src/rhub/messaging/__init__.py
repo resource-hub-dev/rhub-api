@@ -78,7 +78,7 @@ class MessagingModule(injector.Module):
                 smtp_port=self.app.config['SMTP_PORT'],
                 email_from=self.app.config['EMAIL_FROM'],
                 email_reply_to=self.app.config['EMAIL_REPLY_TO'],
-                rhub_links=self.app.config['RHUB_LINKS'],
+                email_footer_links=self.app.config['EMAIL_FOOTER_LINKS'],
             )
             notifications.start_thread()
             return notifications

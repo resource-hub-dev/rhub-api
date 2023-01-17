@@ -6,9 +6,9 @@ Subject: [RHub] {% filter trim %}{% block subject %}{% endblock %}{% endfilter %
 
 {% filter trim %}{% block body %}{% endblock %}{% endfilter %}
 
-{% if RHUB_LINKS -%}
+{% if EMAIL_FOOTER_LINKS -%}
 --
-{% for k, v in RHUB_LINKS.items() | sort -%}
-{{ k }}: {{ v }}
+{% for link in EMAIL_FOOTER_LINKS | sort -%}
+{{ link.title }}: {{ link.url }}
 {% endfor -%}
 {% endif -%}
