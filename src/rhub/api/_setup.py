@@ -59,14 +59,22 @@ def setup():
     )
     create_cronjob(
         scheduler_model.SchedulerCronJob(
-            name='Update LDAP groups',
-            description='Sync group data and group members from LDAP.',
+            name='Update LDAP users and groups',
+            description='Sync user data, group data and group members from LDAP.',
             enabled=True,
             time_expr='0 1 * * *',  # daily
-            job_name=scheduler_jobs.update_auth_groups.name,
+            job_name=scheduler_jobs.update_ldap_data.name,
             job_params=None,
         )
     )
+
+    # Cleanup invalid cron jobs (renamed or removed functions, etc.)
+    scheduler_model.SchedulerCronJob.query.filter(
+        scheduler_model.SchedulerCronJob.job_name.not_in(
+            scheduler_jobs.CronJob.get_jobs().keys()
+        )
+    ).delete()
+    db.session.commit()
 
     # Initial set of locations
     locations = [

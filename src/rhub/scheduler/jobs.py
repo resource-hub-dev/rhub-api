@@ -198,5 +198,6 @@ def cleanup_deleted_clusters(params):
 
 
 @CronJob
-def update_auth_groups(params):
+def update_ldap_data(params):
+    auth_tasks.update_users()
     auth_tasks.update_groups()
