@@ -107,7 +107,8 @@ def create_token_command(user_name):
 def log_request():
     try:
         path = flask.request.path.rstrip('/')
-        if path == '/v0/openapi.json' or path.startswith('/v0/ui'):
+        if (path == '/v0/openapi.json' or path.startswith('/v0/ui')
+                or path.endswith('/ping')):
             return
 
         request_method = flask.request.method
@@ -129,7 +130,8 @@ def log_request():
 def log_response(response):
     try:
         path = flask.request.path.rstrip('/')
-        if path == '/v0/openapi.json' or path.startswith('/v0/ui'):
+        if (path == '/v0/openapi.json' or path.startswith('/v0/ui')
+                or path.endswith('/ping')):
             return response
 
         response_status = response.status
