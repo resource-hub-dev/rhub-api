@@ -10,12 +10,12 @@ services:
       context: .
     image: quay.io/resource-hub-dev/rhub-api
     command: rhub-api
-    volumes:
+    volumes: &rhub-api-volumes
       - .:/opt/app-root/src/rhub_api/:delegated,z
       - ./data/bare_metal_logs/:/srv/bare_metal_logs/:delegated,z
       - ./data/vault.yml:/srv/vault.yml:delegated,z
       - ./data/vault-data.yml:/srv/vault-data.yml:delegated,z
-    environment:
+    environment: &rhub-api-environment
       FLASK_APP: ${FLASK_APP:-rhub.api:create_app()}
       FLASK_ENV: ${FLASK_ENV:-development}
       FLASK_RUN_HOST: ${FLASK_RUN_HOST:-0.0.0.0}
@@ -27,21 +27,14 @@ services:
       - .env
     ports:
       - "8081:8081"
-    #command: [tail, -f, /dev/null]
 
   rhub-worker:
     build:
       context: .
     image: quay.io/resource-hub-dev/rhub-api
     command: rhub-worker
-    volumes:
-      - .:/opt/app-root/src/rhub_api/:delegated,z
-      - ./data/vault.yml:/srv/vault.yml:delegated,z
-      - ./data/vault-data.yml:/srv/vault-data.yml:delegated,z
-    environment:
-      FLASK_ENV: ${FLASK_ENV:-development}
-      RHUB_SKIP_INIT: ${RHUB_SKIP_INIT:-False}
-      RHUB_RETURN_INITIAL_FLASK_APP: ${RHUB_RETURN_INITIAL_FLASK_APP:-False}
+    volumes: *rhub-api-volumes
+    environment: *rhub-api-environment
     env_file:
       - .env
     healthcheck:
@@ -55,14 +48,8 @@ services:
       context: .
     image: quay.io/resource-hub-dev/rhub-api
     command: rhub-cron
-    volumes:
-      - .:/opt/app-root/src/rhub_api/:delegated,z
-      - ./data/vault.yml:/srv/vault.yml:delegated,z
-      - ./data/vault-data.yml:/srv/vault-data.yml:delegated,z
-    environment:
-      FLASK_ENV: ${FLASK_ENV:-development}
-      RHUB_SKIP_INIT: ${RHUB_SKIP_INIT:-False}
-      RHUB_RETURN_INITIAL_FLASK_APP: ${RHUB_RETURN_INITIAL_FLASK_APP:-False}
+    volumes: *rhub-api-volumes
+    environment: *rhub-api-environment
     env_file:
       - .env
     healthcheck:
@@ -89,6 +76,7 @@ services:
       - .env
     ports:
       - '5672:5672'
+      - '15672:15672' # web UI
       - '15674:15674' #webstomp
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
@@ -98,7 +86,6 @@ services:
     volumes:
       - ./config/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
       - ./config/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
-
 
   otel:
     image: otel/opentelemetry-collector-contrib-dev:latest
