@@ -1,3 +1,5 @@
+import logging
+
 from rhub.api import db, di
 from rhub.auth import ADMIN_GROUP, model
 from rhub.auth.ldap import LdapClient
@@ -8,11 +10,18 @@ from rhub.openstack import model as openstack_model
 from rhub.satellite import model as satellite_model
 
 
+logger = logging.getLogger(__name__)
+
+
 def update_users():
     ldap_client = di.get(LdapClient)
 
     users_query = model.User.query.filter(model.User.ldap_dn.isnot(None))
     for user in users_query:
+        logger.info(
+            f'Updating user ID={user.id} LDAP_DN={user.ldap_dn} from LDAP',
+            extra={'user_id': user.id, 'user_ldap_dn': user.ldap_dn},
+        )
         user.update_from_ldap(ldap_client)
 
     db.session.commit()
@@ -23,6 +32,10 @@ def update_groups():
 
     groups_query = model.Group.query.filter(model.Group.ldap_dn.isnot(None))
     for group in groups_query:
+        logger.info(
+            f'Updating group ID={group.id} LDAP_DN={group.ldap_dn} from LDAP',
+            extra={'group_id': group.id, 'group_ldap_dn': group.ldap_dn},
+        )
         group.update_from_ldap(ldap_client)
 
     db.session.commit()
@@ -37,6 +50,11 @@ def cleanup_users():
         ldap_query = ldap_client.get(user.ldap_dn)
         if len(ldap_query) > 0:
             continue
+
+        logger.info(
+            f'User ID={user.id} LDAP_DN={user.ldap_dn} has been removed from LDAP.',
+            extra={'user_id': user.id, 'user_ldap_dn': user.ldap_dn},
+        )
 
         openstack_model.Project.query.filter(
             openstack_model.Project.owner_id == user.id,
@@ -71,6 +89,11 @@ def cleanup_groups():
         ldap_query = ldap_client.get(group.ldap_dn)
         if len(ldap_query) > 0:
             continue
+
+        logger.info(
+            f'Group ID={group.id} LDAP_DN={group.ldap_dn} has been removed from LDAP.',
+            extra={'group_id': group.id, 'group_ldap_dn': group.ldap_dn},
+        )
 
         lab_model.Region.query.filter(
             lab_model.Region.users_group_id == group.id,
