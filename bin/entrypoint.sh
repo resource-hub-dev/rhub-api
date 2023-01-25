@@ -32,7 +32,7 @@ elif [[ "$application" == 'rhub-worker' ]]; then
   temp=(${RHUB_API_URL//\// })
   export FLASK_SERVER_NAME=${temp[1]}
 
-  command=(celery -A rhub.worker:celery worker --loglevel "${LOG_LEVEL:-INFO}")
+  command=(celery -A rhub.worker:celery worker --loglevel "${LOG_LEVEL:-INFO}" --concurrency "${CELERY_CONCURRENCY:-1}")
 
 elif [[ "$application" == 'rhub-cron' ]]; then
   mkdir -p $RHUB_DATA_DIR/celery/
