@@ -23,7 +23,8 @@ class User(db.Model, ModelMixin, TimestampMixin):
 
     ldap_dn = db.Column(db.String(256), nullable=True)
 
-    groups = db.relationship('Group', secondary='auth_user_group')
+    groups = db.relationship('Group', secondary='auth_user_group',
+                             back_populates='users')
     tokens = db.relationship('Token', back_populates='user',
                              cascade='all,delete-orphan')
 
@@ -138,7 +139,8 @@ class Group(db.Model, ModelMixin):
 
     ldap_dn = db.Column(db.String(256), nullable=True)
 
-    users = db.relationship('User', secondary='auth_user_group')
+    users = db.relationship('User', secondary='auth_user_group',
+                            back_populates='groups')
 
     def update_from_ldap(self, ldap_client: ldap.LdapClient):
         group_data = ldap_client.get_group(self.ldap_dn)
