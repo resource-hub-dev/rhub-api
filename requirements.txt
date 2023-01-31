@@ -4,42 +4,40 @@
 #
 #    pip-compile
 #
-alembic==1.8.1
+alembic==1.9.2
     # via
     #   flask-migrate
     #   rhub (setup.py)
 amqp==5.1.1
     # via kombu
-ansible==6.5.0
+ansible==7.1.0
     # via rhub (setup.py)
-ansible-core==2.13.5
+ansible-core==2.14.2
     # via ansible
 appdirs==1.4.4
     # via
     #   openstacksdk
     #   python-ironicclient
-apscheduler==3.9.1
+apscheduler==3.9.1.post1
     # via flask-apscheduler
-attrs==22.1.0
+attrs==22.2.0
     # via
     #   cmd2
     #   jsonschema
     #   rhub (setup.py)
 autopage==0.5.1
     # via cliff
-beaker==1.11.0
-    # via oic
 billiard==3.6.4.0
     # via celery
 celery==5.2.7
     # via rhub (setup.py)
-certifi==2022.9.24
+certifi==2022.12.7
     # via requests
 cffi==1.15.1
     # via cryptography
 chardet==4.0.0
     # via prance
-charset-normalizer==2.1.1
+charset-normalizer==3.0.1
     # via requests
 click==8.1.3
     # via
@@ -58,19 +56,19 @@ click-repl==0.2.0
     # via celery
 clickclick==20.10.2
     # via connexion
-cliff==4.0.0
+cliff==4.1.0
     # via
     #   osc-lib
     #   python-ironicclient
-cmd2==2.4.2
+cmd2==2.4.3
     # via cliff
 coloredlogs==15.0.1
     # via rhub (setup.py)
-connexion[swagger-ui]==2.14.1
+connexion[swagger-ui]==2.14.2
     # via rhub (setup.py)
 cron-validator==1.0.6
     # via rhub (setup.py)
-cryptography==38.0.1
+cryptography==39.0.0
     # via
     #   ansible-core
     #   oic
@@ -87,7 +85,7 @@ dogpile-cache==1.1.8
     # via
     #   openstacksdk
     #   python-ironicclient
-dpath==2.0.6
+dpath==2.1.4
     # via rhub (setup.py)
 dynaconf==3.1.11
     # via rhub (setup.py)
@@ -110,15 +108,15 @@ flask-dotenv==0.1.2
     # via rhub (setup.py)
 flask-injector==0.14.0
     # via rhub (setup.py)
-flask-migrate==3.1.0
+flask-migrate==4.0.3
     # via rhub (setup.py)
 flask-sqlalchemy==2.5.1
     # via
     #   flask-migrate
     #   rhub (setup.py)
-future==0.18.2
+future==0.18.3
     # via pyjwkest
-greenlet==1.1.3.post0
+greenlet==2.0.2
     # via sqlalchemy
 gunicorn==20.1.0
     # via rhub (setup.py)
@@ -128,7 +126,7 @@ hvac==1.0.2
     # via rhub (setup.py)
 idna==3.4
     # via requests
-importlib-metadata==5.0.0
+importlib-metadata==6.0.0
     # via
     #   cliff
     #   flask
@@ -161,13 +159,16 @@ jsonpatch==1.32
     # via openstacksdk
 jsonpointer==2.3
     # via jsonpatch
-jsonschema==4.16.0
+jsonschema==4.17.3
     # via
     #   connexion
+    #   jsonschema-spec
     #   openapi-schema-validator
     #   openapi-spec-validator
     #   python-ironicclient
-keystoneauth1==5.0.0
+jsonschema-spec==0.1.2
+    # via openapi-spec-validator
+keystoneauth1==5.1.1
     # via
     #   openstacksdk
     #   osc-lib
@@ -176,13 +177,15 @@ kombu==5.2.4
     # via
     #   celery
     #   rhub (setup.py)
+lazy-object-proxy==1.9.0
+    # via openapi-spec-validator
 ldap3==2.9.1
     # via rhub (setup.py)
-mako==1.2.3
+mako==1.2.4
     # via
     #   alembic
     #   oic
-markupsafe==2.1.1
+markupsafe==2.1.2
     # via
     #   jinja2
     #   mako
@@ -197,15 +200,15 @@ netifaces==0.11.0
     #   oslo-utils
 nose==1.3.7
     # via inotify
-oic==1.4.0
+oic==1.5.0
     # via rhub (setup.py)
-openapi-schema-validator==0.2.3
+openapi-schema-validator==0.4.2
     # via openapi-spec-validator
-openapi-spec-validator==0.4.0
+openapi-spec-validator==0.5.2
     # via
     #   prance
     #   rhub (setup.py)
-openstacksdk==0.102.0
+openstacksdk==0.103.0
     # via
     #   osc-lib
     #   python-ironicclient
@@ -220,7 +223,7 @@ oslo-i18n==5.1.0
     # via
     #   osc-lib
     #   oslo-utils
-oslo-utils==6.0.1
+oslo-utils==6.1.0
     # via
     #   osc-lib
     #   python-ironicclient
@@ -229,7 +232,10 @@ packaging==21.3
     #   ansible-core
     #   connexion
     #   oslo-utils
-pbr==5.10.0
+    #   prance
+pathable==0.4.3
+    # via jsonschema-spec
+pbr==5.11.1
     # via
     #   keystoneauth1
     #   openstacksdk
@@ -238,23 +244,23 @@ pbr==5.10.0
     #   oslo-i18n
     #   python-ironicclient
     #   stevedore
-prance[osv]==0.21.8.0
+prance[osv]==0.22.11.4.0
     # via rhub (setup.py)
-prettytable==3.4.1
+prettytable==3.6.0
     # via cliff
-prometheus-client==0.15.0
+prometheus-client==0.16.0
     # via prometheus-flask-exporter
-prometheus-flask-exporter==0.20.3
+prometheus-flask-exporter==0.21.0
     # via rhub (setup.py)
-prompt-toolkit==3.0.31
+prompt-toolkit==3.0.36
     # via click-repl
-psycopg2-binary==2.9.4
+psycopg2-binary==2.9.5
     # via rhub (setup.py)
 pyasn1==0.4.8
     # via ldap3
 pycparser==2.21
     # via cffi
-pycryptodomex==3.15.0
+pycryptodomex==3.17
     # via
     #   oic
     #   pyjwkest
@@ -268,7 +274,7 @@ pyparsing==3.0.9
     #   packaging
 pyperclip==1.8.2
     # via cmd2
-pyrsistent==0.18.1
+pyrsistent==0.19.3
     # via jsonschema
 python-dateutil==2.8.2
     # via
@@ -277,7 +283,7 @@ python-dateutil==2.8.2
     #   rhub (setup.py)
 python-ironicclient==5.0.1
     # via rhub (setup.py)
-pytz==2022.4
+pytz==2022.7.1
     # via
     #   apscheduler
     #   celery
@@ -291,11 +297,11 @@ pyyaml==6.0
     #   clickclick
     #   cliff
     #   connexion
-    #   openapi-spec-validator
+    #   jsonschema-spec
     #   openstacksdk
     #   python-ironicclient
     #   rhub (setup.py)
-requests==2.28.1
+requests==2.28.2
     # via
     #   connexion
     #   hvac
@@ -311,11 +317,11 @@ resolvelib==0.8.1
     # via ansible-core
 ruamel-yaml==0.17.21
     # via prance
-ruamel-yaml-clib==0.2.6
+ruamel-yaml-clib==0.2.7
     # via ruamel-yaml
 semver==2.13.0
     # via prance
-simplejson==3.17.6
+simplejson==3.18.1
     # via osc-lib
 six==1.16.0
     # via
@@ -327,12 +333,12 @@ six==1.16.0
     #   prance
     #   pyjwkest
     #   python-dateutil
-sqlalchemy==1.4.42
+sqlalchemy==1.4.46
     # via
     #   alembic
     #   flask-sqlalchemy
     #   rhub (setup.py)
-stevedore==4.0.1
+stevedore==4.1.1
     # via
     #   cliff
     #   dogpile-cache
@@ -344,19 +350,21 @@ swagger-ui-bundle==0.0.9
 tenacity==8.1.0
     # via rhub (setup.py)
 typing-extensions==4.4.0
-    # via oic
-tzdata==2022.5
+    # via
+    #   jsonschema-spec
+    #   oic
+tzdata==2022.7
     # via pytz-deprecation-shim
 tzlocal==4.2
     # via apscheduler
-urllib3==1.26.12
+urllib3==1.26.14
     # via requests
 vine==5.0.0
     # via
     #   amqp
     #   celery
     #   kombu
-wcwidth==0.2.5
+wcwidth==0.2.6
     # via
     #   cmd2
     #   prettytable
@@ -368,7 +376,7 @@ werkzeug==2.2.2
     #   rhub (setup.py)
 wrapt==1.14.1
     # via debtcollector
-zipp==3.9.0
+zipp==3.12.0
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
