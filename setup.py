@@ -51,7 +51,7 @@ setup(
         "kombu",
         "ldap3",
         "oic",
-        "openapi_spec_validator < 0.5",  # https://github.com/RonnyPfannschmidt/prance/issues/131
+        "openapi_spec_validator",
         "openstacksdk",
         "prance[osv]",
         "prometheus_flask_exporter",
@@ -60,7 +60,7 @@ setup(
         "python-ironicclient",
         "pyyaml",
         "requests",
-        "SQLAlchemy",
+        "SQLAlchemy ~= 1.4",
         "tenacity",
         "Werkzeug",
     ],
