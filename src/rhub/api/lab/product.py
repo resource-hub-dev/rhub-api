@@ -132,9 +132,9 @@ def list_product_regions(product_id, user, filter_, page=0, limit=DEFAULT_PAGE_L
     if not auth_utils.user_is_admin(user):
         user_groups = auth_utils.user_group_ids(user)
         regions_relation = regions_relation.filter(sqlalchemy.or_(
-            model.Region.users_group.is_(None),
-            model.Region.users_group.in_(user_groups),
-            model.Region.owner_group.in_(user_groups),
+            model.Region.users_group_id.is_(None),
+            model.Region.users_group_id.in_(user_groups),
+            model.Region.owner_group_id.in_(user_groups),
         ))
 
     if 'name' in filter_:
