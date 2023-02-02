@@ -335,17 +335,13 @@ def get_all_usage(user):
     data[str(regions[0].id)] = region_to_usage(regions[0], user)
 
     def add_usage(usage1, usage2):
+        if not usage1:
+            usage1 = {}
+        if not usage2:
+            usage2 = {}
         result = {}
-        for key in usage1.keys():
-            try:
-                result[key] = usage1[key] + usage2[key]
-            except Exception:
-                if usage1[key]:
-                    result[key] = usage1[key]
-                elif usage2[key]:
-                    result[key] = usage2[key]
-                else:
-                    result[key] = None
+        for key in model.Quota.FIELDS:
+            result[key] = (usage1.get(key) or 0) + (usage2.get(key) or 0)
         return result
 
     for i in range(1, len(regions)):
