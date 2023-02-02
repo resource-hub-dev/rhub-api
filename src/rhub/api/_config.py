@@ -23,6 +23,7 @@ AUTH_OIDC_ALLOW_ISSUER_MISMATCH = (
     os.getenv('AUTH_OIDC_ALLOW_ISSUER_MISMATCH', '').lower()
     in ['true', 'yes', '1']
 )
+AUTH_OIDC_UUID_ATTR = os.getenv('AUTH_OIDC_UUID_ATTR')
 
 # DB_TYPE can be 'postgresq', 'postgresql+psycopg', ... any postgres
 # implementation.

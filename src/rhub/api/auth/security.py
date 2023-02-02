@@ -54,7 +54,11 @@ def bearer_auth(token):
             logger.error(f'invalid token, {user_info["error_description"]}')
             raise Unauthorized()
 
-        external_uuid = user_info['sub']
+        external_uuid_attr = current_app.config.get('AUTH_OIDC_UUID_ATTR')
+        if not external_uuid_attr:
+            external_uuid_attr = 'sub'
+
+        external_uuid = user_info[external_uuid_attr]
 
         user_row = auth_model.User.query.filter(
             auth_model.User.external_uuid == external_uuid
