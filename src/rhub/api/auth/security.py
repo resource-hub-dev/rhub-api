@@ -102,7 +102,7 @@ def _user_sync(ldap_client, external_uuid, user_row):
             f'user with {external_uuid=} does not exist, will try to '
             'create it from LDAP'
         )
-        user_row = auth_model.User.create_from_ldap(ldap_client, external_uuid)
+        user_row = auth_model.User.create_from_external_uuid(ldap_client, external_uuid)
         db.session.add(user_row)
         db.session.commit()
         logger.info(f'created user ID={user_row.id} {external_uuid=} in the DB')
