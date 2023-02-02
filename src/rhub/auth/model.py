@@ -40,7 +40,7 @@ class User(db.Model, ModelMixin, TimestampMixin):
     @classmethod
     def create_from_external_uuid(cls, ldap_client: ldap.LdapClient, external_uuid):
         user_data = ldap_client.get_user_by_uuid(external_uuid)
-        return cls.create_from_ldap(user_data['ldap_dn'])
+        return cls.create_from_ldap(ldap_client, user_data['ldap_dn'])
 
     @classmethod
     def _get_or_create(cls, ldap_client: ldap.LdapClient, ldap_dn):
