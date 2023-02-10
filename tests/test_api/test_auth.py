@@ -55,6 +55,16 @@ def test_me(client):
     }
 
 
+def test_me_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/me',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_list_users(client):
     q = model.User.query.filter.return_value
     q.limit.return_value.offset.return_value = [
@@ -95,6 +105,16 @@ def test_list_users(client):
         ],
         'total': 1,
     }
+
+
+def test_list_users_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/auth/user',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 def test_get_user(client):
@@ -152,6 +172,31 @@ def test_get_user_deleted(client):
     assert rv.status_code == 404
 
 
+def test_get_user_non_existent(client):
+    user_id = 1
+
+    rv = client.get(
+        f'{API_BASE}/auth/user/{user_id}',
+        headers=AUTH_HEADER,
+    )
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'User {user_id} does not exist'
+
+
+def test_get_user_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/auth/user/1',
+    )
+
+    model.User.query.get.asset_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 @pytest.mark.parametrize('is_admin', [True, False])
 def test_list_token(client, user_is_admin_mock, is_admin):
     model.Token.query.filter.return_value.all.return_value = [
@@ -206,6 +251,16 @@ def test_list_token_forbidden(client, user_is_admin_mock):
     )
 
     assert rv.status_code == 403
+
+
+def test_list_token_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/auth/user/1/token',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 @pytest.mark.parametrize('expires_at', [None, DATE_STR])
@@ -265,6 +320,65 @@ def test_create_token_invalid_expiration(client, db_session_mock, expires_at):
     db_session_mock.commit.assert_not_called()
 
 
+@pytest.mark.skip("TODO")
+def test_create_token_non_existent_user(
+    client,
+    db_session_mock,
+    user_is_admin_mock
+):
+    pass
+
+
+def test_create_token_forbidden(
+    client,
+    db_session_mock,
+    user_is_admin_mock
+):
+    token_data = {
+        'expires_at': DATE_STR,
+    }
+
+    def db_add(row):
+        row.id = 1
+        row.created_at = DATE
+
+    db_session_mock.add.side_effect = db_add
+
+    user_is_admin_mock.return_value = False
+
+    rv = client.post(
+        f'{API_BASE}/auth/user/42/token',
+        headers=AUTH_HEADER,
+        json=token_data,
+    )
+
+    db_session_mock.add.assert_not_called()
+
+    assert rv.status_code == 403, rv.data
+    assert rv.json['title'] == 'Forbidden'
+    assert rv.json['detail'] == (
+        "You don't have permission to create tokens for other users."
+    )
+
+
+def test_create_token_unauthorized(client, db_session_mock):
+    token_data = {
+        'name': 'test token',
+        'expires_at': DATE_STR,
+    }
+
+    rv = client.post(
+        f'{API_BASE}/auth/user/1/token',
+        json=token_data,
+    )
+
+    db_session_mock.add.assert_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_delete_token(client, db_session_mock, user_is_admin_mock):
     token_row = model.Token(
         id=1,
@@ -288,6 +402,11 @@ def test_delete_token(client, db_session_mock, user_is_admin_mock):
     db_session_mock.commit.assert_called()
 
 
+@pytest.mark.skip("TODO")
+def test_delete_token_non_existent(client, db_session_mock):
+    pass
+
+
 def test_delete_token_forbidden(client, db_session_mock, user_is_admin_mock):
     token_row = model.Token(
         id=1,
@@ -309,6 +428,18 @@ def test_delete_token_forbidden(client, db_session_mock, user_is_admin_mock):
 
     db_session_mock.delete.assert_not_called()
     db_session_mock.commit.assert_not_called()
+
+
+def test_delete_token_unauthorized(client, db_session_mock):
+    rv = client.delete(
+        f'{API_BASE}/auth/user/1/token/1',
+    )
+
+    db_session_mock.delete.assert_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 def test_list_groups(client):
@@ -340,6 +471,16 @@ def test_list_groups(client):
     }
 
 
+def test_list_groups_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/auth/group',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_get_group(client):
     model.Group.query.get.return_value = model.Group(
         id=1,
@@ -359,3 +500,28 @@ def test_get_group(client):
         'ldap_dn': None,
         '_href': ANY,
     }
+
+
+def test_get_group_non_existent(client):
+    group_id = 1
+
+    model.Group.query.get.return_value = None
+
+    rv = client.get(
+        f'{API_BASE}/auth/group/{group_id}',
+        headers=AUTH_HEADER,
+    )
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Group {group_id} does not exist'
+
+
+def test_get_group_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/auth/group/1',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
