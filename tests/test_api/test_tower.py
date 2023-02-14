@@ -12,6 +12,11 @@ API_BASE = '/v0'
 AUTH_HEADER = {'Authorization': 'Basic X190b2tlbl9fOmR1bW15Cg=='}
 
 
+@pytest.fixture
+def user_is_admin_mock(mocker):
+    yield mocker.patch('rhub.auth.utils.user_is_admin')
+
+
 def _db_add_row_side_effect(data_added):
     def side_effect(row):
         for k, v in data_added.items():
@@ -56,6 +61,16 @@ def test_list_servers(client):
     }
 
 
+def test_list_servers_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/tower/server',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_get_server(client):
     model.Server.query.get.return_value = model.Server(
         id=1,
@@ -85,6 +100,33 @@ def test_get_server(client):
         'credentials': 'kv/test',
         '_href': ANY,
     }
+
+
+def test_get_server_non_existent(client):
+    server_id = 1
+
+    model.Server.query.get.return_value = None
+
+    rv = client.get(
+        f'{API_BASE}/tower/server/{server_id}',
+        headers=AUTH_HEADER,
+    )
+
+    model.Server.query.get.assert_called_with(server_id)
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Server {server_id} does not exist'
+
+
+def test_get_server_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/tower/server/1',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 def test_create_server(client, db_session_mock, mocker):
@@ -117,6 +159,101 @@ def test_create_server(client, db_session_mock, mocker):
     assert rv.status_code == 200
 
 
+@pytest.mark.parametrize(
+    'server_data, missing_property',
+    [
+        pytest.param(
+            {
+                'name': 'test',
+                'url': 'https://tower.example.com',
+            },
+            'credentials',
+            id='missing_credentials',
+        ),
+        pytest.param(
+            {
+                'url': 'https://tower.example.com',
+                'credentials': 'kv/test',
+            },
+            'name',
+            id='missing_name',
+        ),
+        pytest.param(
+            {
+                'name': 'test',
+                'credentials': 'kv/test',
+            },
+            'url',
+            id='missing_url',
+        ),
+    ]
+)
+def test_create_server_missing_properties(
+    client,
+    db_session_mock,
+    server_data,
+    missing_property,
+):
+    model.Server.query.filter.return_value.count.return_value = 0
+
+    rv = client.post(
+        f'{API_BASE}/tower/server',
+        headers=AUTH_HEADER,
+        json=server_data,
+    )
+
+    db_session_mock.add.assert_not_called()
+
+    assert rv.status_code == 400, rv.data
+    assert rv.json['title'] == 'Bad Request'
+    assert rv.json['detail'] == f'{missing_property!r} is a required property'
+
+
+def test_create_server_duplicate_name(client, db_session_mock):
+    server_data = {
+        'name': 'test',
+        'description': 'test server',
+        'url': 'https://tower.example.com',
+        'credentials': 'kv/test',
+    }
+
+    model.Server.query.filter.return_value.count.return_value = 1
+
+    rv = client.post(
+        f'{API_BASE}/tower/server',
+        headers=AUTH_HEADER,
+        json=server_data,
+    )
+
+    db_session_mock.add.assert_not_called()
+
+    assert rv.status_code == 400, rv.data
+    assert rv.json['title'] == 'Bad Request'
+    assert rv.json['detail'] == (
+        f'Server with name {server_data["name"]!r} already exists'
+    )
+
+
+def test_create_server_unauthorized(client, db_session_mock):
+    server_data = {
+        'name': 'test',
+        'description': 'test server',
+        'url': 'https://tower.example.com',
+        'credentials': 'kv/test',
+    }
+
+    rv = client.post(
+        f'{API_BASE}/tower/server',
+        json=server_data,
+    )
+
+    db_session_mock.add.assert_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_update_server(client):
     server = model.Server(
         id=1,
@@ -146,6 +283,67 @@ def test_update_server(client):
     assert rv.status_code == 200
 
 
+def test_update_server_duplicate_name(client, db_unique_violation):
+    db_unique_violation('name', 'new')
+
+    rv = client.patch(
+        f'{API_BASE}/tower/server/1',
+        headers=AUTH_HEADER,
+        json={'name': 'new'},
+    )
+
+    assert rv.status_code == 400, rv.data
+    assert rv.json['title'] == 'Bad Request'
+    assert rv.json['detail'] == f'Key (name)=(new) already exists.'
+
+
+def test_update_server_non_existent(client, db_session_mock):
+    server_id = 1
+
+    model.Server.query.get.return_value = None
+
+    rv = client.patch(
+        f'{API_BASE}/tower/server/1',
+        headers=AUTH_HEADER,
+        json={'name': 'new'},
+
+    )
+
+    db_session_mock.commit.assert_not_called()
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Server {server_id} does not exist'
+
+
+def test_update_server_unauthorized(client, db_session_mock):
+    expected_name = 'test'
+
+    server = model.Server(
+        id=1,
+        name=expected_name,
+        description='',
+        enabled=True,
+        url='https://tower.example.com',
+        verify_ssl=True,
+        credentials='kv/test',
+    )
+    model.Server.query.get.return_value = server
+
+    rv = client.patch(
+        f'{API_BASE}/tower/server/1',
+        json={'name': 'new'},
+    )
+
+    db_session_mock.commit.assert_not_called()
+
+    assert server.name == expected_name
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_delete_server(client, db_session_mock):
     server = model.Server(
         id=1,
@@ -167,6 +365,35 @@ def test_delete_server(client, db_session_mock):
     db_session_mock.delete.assert_called_with(server)
 
     assert rv.status_code == 204
+
+
+def test_delete_server_non_existent(client, db_session_mock):
+    server_id = 1
+
+    model.Server.query.get.return_value = None
+
+    rv = client.delete(
+        f'{API_BASE}/tower/server/{server_id}',
+        headers=AUTH_HEADER,
+    )
+
+    db_session_mock.delete.assert_not_called()
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Server {server_id} does not exist'
+
+
+def test_delete_server_unauthorized(client, db_session_mock):
+    rv = client.delete(
+        f'{API_BASE}/tower/server/1',
+    )
+
+    db_session_mock.delete.assert_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 def test_list_templates(client):
@@ -211,6 +438,16 @@ def test_list_templates(client):
         ],
         'total': 1,
     }
+
+
+def test_list_templates_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/tower/template',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 @pytest.mark.parametrize(
@@ -310,6 +547,33 @@ def test_get_template_towererror(client, mocker):
     assert rv.json['detail'] != 'Not found.'
 
 
+def test_get_template_non_existent(client):
+    template_id = 1
+
+    model.Template.query.get.return_value = None
+
+    rv = client.get(
+        f'{API_BASE}/tower/template/{template_id}',
+        headers=AUTH_HEADER,
+    )
+
+    model.Template.query.get.assert_called_with(template_id)
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Template {template_id} does not exist'
+
+
+def test_get_template_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/tower/template/1',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_create_template(client, db_session_mock, mocker):
     template_data = {
         'name': 'test',
@@ -336,6 +600,113 @@ def test_create_template(client, db_session_mock, mocker):
         assert getattr(template, k) == v
 
     assert rv.status_code == 200
+
+
+def test_create_template_duplicate_name(client, db_session_mock):
+    template_data = {
+        'name': 'test',
+        'description': 'test tpl',
+        'server_id': 1,
+        'tower_template_id': 1,
+        'tower_template_is_workflow': False,
+    }
+
+    model.Template.query.filter.return_value.count.return_value = 1
+
+    rv = client.post(
+        f'{API_BASE}/tower/template',
+        headers=AUTH_HEADER,
+        json=template_data,
+    )
+
+    db_session_mock.add.assert_not_called()
+
+    assert rv.status_code == 400, rv.data
+    assert rv.json['title'] == 'Bad Request'
+    assert rv.json['detail'] == (
+        f'Template with name {template_data["name"]!r} already exists'
+    )
+
+
+@pytest.mark.parametrize(
+    'template_data, missing_property',
+    [
+        pytest.param(
+            {
+                'server_id': 1,
+                'tower_template_id': 1,
+                'tower_template_is_workflow': False,
+            },
+            'name',
+            id='missing_name',
+        ),
+        pytest.param(
+            {
+                'name': 'test',
+                'tower_template_id': 1,
+                'tower_template_is_workflow': False,
+            },
+            'server_id',
+            id='missing_server_id',
+        ),
+        pytest.param(
+            {
+                'name': 'test',
+                'server_id': 1,
+                'tower_template_is_workflow': False,
+            },
+            'tower_template_id',
+            id='missing_tower_template_id',
+        ),
+        pytest.param(
+            {
+                'name': 'test',
+                'server_id': 1,
+                'tower_template_id': 1,
+            },
+            'tower_template_is_workflow',
+            id='missing_tower_template_is_workflow',
+        ),
+    ]
+)
+def test_create_template_missing_properties(
+    client,
+    db_session_mock,
+    template_data,
+    missing_property,
+):
+    rv = client.post(
+        f'{API_BASE}/tower/template',
+        headers=AUTH_HEADER,
+        json=template_data,
+    )
+
+    db_session_mock.add.assert_not_called()
+
+    assert rv.status_code == 400, rv.data
+    assert rv.json['title'] == 'Bad Request'
+    assert rv.json['detail'] == f'{missing_property!r} is a required property'
+
+
+def test_create_template_unauthorized(client, db_session_mock):
+    template_data = {
+        'name': 'test',
+        'description': 'test tpl',
+        'server_id': 1,
+        'tower_template_id': 1,
+        'tower_template_is_workflow': False,
+    }
+
+    rv = client.post(
+        f'{API_BASE}/tower/template',
+        json=template_data,
+    )
+
+    db_session_mock.add.assert_not_called
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 def test_update_template(client, mocker):
@@ -367,6 +738,80 @@ def test_update_template(client, mocker):
     assert rv.status_code == 200
 
 
+def test_update_template_duplicate_name(
+    client,
+    db_unique_violation,
+    mocker,
+):
+    template = model.Template(
+        id=1,
+        name='test',
+        description='',
+        server_id=1,
+        tower_template_id=1,
+        tower_template_is_workflow=False,
+    )
+    model.Template.query.get.return_value = template
+    mocker.patch('rhub.api.tower._template_href').return_value = {}
+
+    db_unique_violation('name', 'new')
+
+    rv = client.patch(
+        f'{API_BASE}/tower/template/{template.id}',
+        headers=AUTH_HEADER,
+        json={'name': 'new'},
+    )
+
+    assert rv.status_code == 400, rv.data
+    assert rv.json['title'] == 'Bad Request'
+    assert rv.json['detail'] == f'Key (name)=(new) already exists.'
+
+
+def test_update_template_non_existent(client, db_session_mock):
+    template_id = 1
+
+    model.Template.query.get.return_value = None
+
+    rv = client.patch(
+        f'{API_BASE}/tower/template/{template_id}',
+        headers=AUTH_HEADER,
+        json={'name': 'new'},
+    )
+
+    db_session_mock.commit.assert_not_called()
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Template {template_id} does not exist'
+
+
+def test_update_template_unauthorized(client, db_session_mock):
+    expected_name = 'test'
+
+    template = model.Template(
+        id=1,
+        name=expected_name,
+        description='',
+        server_id=1,
+        tower_template_id=1,
+        tower_template_is_workflow=False,
+    )
+    model.Template.query.get.return_value = template
+
+    rv = client.patch(
+        f'{API_BASE}/tower/template/{template.id}',
+        json={'name': 'new'},
+    )
+
+    db_session_mock.commit.assert_not_called()
+
+    assert template.name == expected_name
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_delete_template(client, db_session_mock):
     template = model.Template(
         id=1,
@@ -387,6 +832,37 @@ def test_delete_template(client, db_session_mock):
     db_session_mock.delete.assert_called_with(template)
 
     assert rv.status_code == 204
+
+
+def test_delete_non_existent(client, db_session_mock):
+    template_id = 1
+
+    model.Template.query.get.return_value = None
+
+    rv = client.delete(
+        f'{API_BASE}/tower/template/{template_id}',
+        headers=AUTH_HEADER,
+    )
+
+    model.Template.query.get.assert_called_with(template_id)
+
+    db_session_mock.delete.assert_not_called()
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Template {template_id} does not exist'
+
+
+def test_delete_template_unauthorized(client, db_session_mock):
+    rv = client.delete(
+        f'{API_BASE}/tower/template/1',
+    )
+
+    db_session_mock.delete.assert_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 @pytest.mark.parametrize(
@@ -432,9 +908,9 @@ def test_template_launch(client, db_session_mock, mocker, workflow):
     )
 
     if workflow:
-        tower_client_mock.workflow_launch.assert_called_with(1, {'extra_vars':{'foo': 'bar'}})
+        tower_client_mock.workflow_launch.assert_called_with(1, {'extra_vars': {'foo': 'bar'}})
     else:
-        tower_client_mock.template_launch.assert_called_with(1, {'extra_vars':{'foo': 'bar'}})
+        tower_client_mock.template_launch.assert_called_with(1, {'extra_vars': {'foo': 'bar'}})
 
     assert rv.status_code == 200
     assert rv.json == {
@@ -486,6 +962,35 @@ def test_template_launch_towererror(client, mocker):
 
     assert rv.status_code == 400
     assert rv.json['variables_needed_to_start'] == ["'foobar' value missing"]
+
+
+def test_template_launch_non_existent(client):
+    template_id = 1
+
+    model.Template.query.get.return_value = None
+
+    rv = client.post(
+        f'{API_BASE}/tower/template/{template_id}/launch',
+        headers=AUTH_HEADER,
+        json={'extra_vars': {'foo': 'bar'}},
+    )
+
+    model.Template.query.get.assert_called_with(template_id)
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Template {template_id} does not exist'
+
+
+def test_template_launch_unauthorized(client):
+    rv = client.post(
+        f'{API_BASE}/tower/template/1/launch',
+        json={'extra_vars': {'foo': 'bar'}},
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 def test_job_relaunch(client, db_session_mock, mocker):
@@ -544,6 +1049,81 @@ def test_job_relaunch(client, db_session_mock, mocker):
     }
 
 
+def test_job_relaunch_forbidden(client, user_is_admin_mock, mocker):
+    job = model.Job.query.get.return_value = model.Job(
+        id=1,
+        template_id=1,
+        tower_job_id=1,
+        launched_by=1234,
+    )
+    template = job.template = model.Template(
+        id=1,
+        name='test',
+        description='',
+        server_id=1,
+        tower_template_id=1,
+        tower_template_is_workflow=False,
+    )
+
+    server_mock = template.server = mocker.Mock()
+    tower_client_mock = server_mock.create_tower_client.return_value = mocker.Mock()
+
+    tower_data = {
+        'id': 123,
+        'status': 'finished',
+        'created': '2020-01-01T00:00:00.001020Z',
+        'started': '2020-01-01T00:00:00.001020Z',
+        'finished': '2020-01-01T00:00:00.001020Z',
+        'failed': False,
+    }
+    tower_client_mock.template_job_relaunch.return_value = tower_data
+
+    user_is_admin_mock.return_value = False
+
+    rv = client.post(
+        f'{API_BASE}/tower/job/{job.id}/relaunch',
+        headers=AUTH_HEADER,
+        json={'extra_vars': {'foo': 'bar'}},
+    )
+
+    model.Job.query.get.assert_called_with(job.id)
+
+    tower_client_mock.template_job_relaunch.assert_not_called()
+
+    assert rv.status_code == 403, rv.data
+    assert rv.json['title'] == 'Forbidden'
+    assert rv.json['detail'] == f"You don't have permissions to relaunch job {job.id}"
+
+
+def test_job_relaunch_non_existent(client):
+    job_id = 1
+
+    model.Job.query.get.return_value = None
+
+    rv = client.post(
+        f'{API_BASE}/tower/job/{job_id}/relaunch',
+        headers=AUTH_HEADER,
+        json={'extra_vars': {'foo': 'bar'}},
+    )
+
+    model.Job.query.get.assert_called_with(job_id)
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Job {job_id} does not exist'
+
+
+def test_job_relaunch_unauthorized(client):
+    rv = client.post(
+        f'{API_BASE}/tower/job/1/relaunch',
+        json={'extra_vars': {'foo': 'bar'}},
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_list_jobs(client, mocker):
     model.Job.query.limit.return_value.offset.return_value = [
         model.Job(
@@ -575,6 +1155,16 @@ def test_list_jobs(client, mocker):
         ],
         'total': 1,
     }
+
+
+def test_list_jobs_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/tower/job',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 def test_get_job(client, mocker):
@@ -630,6 +1220,33 @@ def test_get_job(client, mocker):
         'failed': tower_data['failed'],
         '_href': ANY,
     }
+
+
+def test_get_job_non_existent(client):
+    job_id = 1
+
+    model.Job.query.get.return_value = None
+
+    rv = client.get(
+        f'{API_BASE}/tower/job/{job_id}',
+        headers=AUTH_HEADER,
+    )
+
+    model.Job.query.get.assert_called_with(job_id)
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Job {job_id} does not exist'
+
+
+def test_get_job_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/tower/job/1',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 def test_get_job_towererror(client, mocker):
