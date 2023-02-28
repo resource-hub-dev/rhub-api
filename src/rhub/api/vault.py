@@ -18,6 +18,15 @@ class Vault(abc.ABC):
     def write(self, path, data):
         raise NotImplementedError
 
+    def check_write(self, path):
+        """
+        Check if can write to the specified path, and pre-create path if does
+        not exists so :meth:`exists` returns `True` (needed to pass validations
+        in DB model classes).
+        """
+        logger.debug(f'Trying to write credentials to {self!r} at path {path!r}')
+        self.write(path, self.read(path) or {})
+
     def exists(self, path):
         return self.read(path) is not None
 
