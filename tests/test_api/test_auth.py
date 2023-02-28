@@ -199,6 +199,8 @@ def test_get_user_unauthorized(client):
 
 @pytest.mark.parametrize('is_admin', [True, False])
 def test_list_token(client, user_is_admin_mock, is_admin):
+    model.User.query.get.return_value = model.User(id=1, name='testuser')
+
     model.Token.query.filter.return_value.all.return_value = [
         model.Token(
             id=1,
@@ -232,6 +234,8 @@ def test_list_token(client, user_is_admin_mock, is_admin):
 
 
 def test_list_token_forbidden(client, user_is_admin_mock):
+    model.User.query.get.return_value = model.User(id=1, name='testuser')
+
     model.Token.query.filter.return_value.all.return_value = [
         model.Token(
             id=1,
@@ -265,6 +269,8 @@ def test_list_token_unauthorized(client):
 
 @pytest.mark.parametrize('expires_at', [None, DATE_STR])
 def test_create_token(client, db_session_mock, expires_at):
+    model.User.query.get.return_value = model.User(id=1, name='testuser')
+
     token_data = {
         'name': 'test token',
         'expires_at': expires_at,
@@ -297,6 +303,8 @@ def test_create_token(client, db_session_mock, expires_at):
 
 @pytest.mark.parametrize('expires_at', ['foobar', '1970-01-01T12:00:00Z'])
 def test_create_token_invalid_expiration(client, db_session_mock, expires_at):
+    model.User.query.get.return_value = model.User(id=1, name='testuser')
+
     token_data = {
         'expires_at': expires_at,
     }
@@ -320,13 +328,24 @@ def test_create_token_invalid_expiration(client, db_session_mock, expires_at):
     db_session_mock.commit.assert_not_called()
 
 
-@pytest.mark.skip("TODO")
 def test_create_token_non_existent_user(
     client,
     db_session_mock,
     user_is_admin_mock
 ):
-    pass
+    model.User.query.get.return_value = None
+
+    rv = client.post(
+        f'{API_BASE}/auth/user/1234/token',
+        headers=AUTH_HEADER,
+        json={},
+    )
+
+    assert rv.status_code == 404
+    assert rv.json['title'] == 'Not Found'
+
+    db_session_mock.add.assert_not_called()
+    db_session_mock.commit.assert_not_called()
 
 
 def test_create_token_forbidden(
@@ -334,6 +353,8 @@ def test_create_token_forbidden(
     db_session_mock,
     user_is_admin_mock
 ):
+    model.User.query.get.return_value = model.User(id=42, name='testuser')
+
     token_data = {
         'expires_at': DATE_STR,
     }
@@ -380,6 +401,8 @@ def test_create_token_unauthorized(client, db_session_mock):
 
 
 def test_delete_token(client, db_session_mock, user_is_admin_mock):
+    model.User.query.get.return_value = model.User(id=1, name='testuser')
+
     token_row = model.Token(
         id=1,
         user_id=1,
@@ -402,12 +425,52 @@ def test_delete_token(client, db_session_mock, user_is_admin_mock):
     db_session_mock.commit.assert_called()
 
 
-@pytest.mark.skip("TODO")
-def test_delete_token_non_existent(client, db_session_mock):
-    pass
+def test_delete_token_non_existent_user(client, db_session_mock):
+    model.User.query.get.return_value = None
+
+    token_row = model.Token(
+        id=1,
+        user_id=1,
+        name='test token',
+        created_at=DATE,
+        expires_at=DATE,
+    )
+    model.Token.query.get.return_value = token_row
+
+    user_is_admin_mock.return_value = True
+
+    rv = client.delete(
+        f'{API_BASE}/auth/user/1/token/1',
+        headers=AUTH_HEADER,
+    )
+
+    assert rv.status_code == 404
+
+    db_session_mock.delete.assert_not_called()
+    db_session_mock.commit.assert_not_called()
+
+
+def test_delete_token_non_existent_token(client, db_session_mock):
+    model.User.query.get.return_value = model.User(id=1, name='testuser')
+
+    model.Token.query.get.return_value = None
+
+    user_is_admin_mock.return_value = True
+
+    rv = client.delete(
+        f'{API_BASE}/auth/user/1/token/1',
+        headers=AUTH_HEADER,
+    )
+
+    assert rv.status_code == 404
+
+    db_session_mock.delete.assert_not_called()
+    db_session_mock.commit.assert_not_called()
 
 
 def test_delete_token_forbidden(client, db_session_mock, user_is_admin_mock):
+    model.User.query.get.return_value = model.User(id=1234, name='testuser')
+
     token_row = model.Token(
         id=1,
         user_id=1234,
