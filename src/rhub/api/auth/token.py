@@ -12,6 +12,10 @@ logger = logging.getLogger(__name__)
 
 
 def token_list(user_id, user):
+    user_row = model.User.query.get(user_id)
+    if not user_row or user_row.deleted:
+        return problem(404, 'Not Found', f'User ID={user_id} does not exist')
+
     if not (utils.user_is_admin(user) or user_id == user):
         return problem(
             403, 'Forbidden',
@@ -27,13 +31,17 @@ def token_list(user_id, user):
 
 
 def token_create(user_id, body, user):
+    user_row = model.User.query.get(user_id)
+    if not user_row or user_row.deleted:
+        return problem(404, 'Not Found', f'User ID={user_id} does not exist')
+
     if not (utils.user_is_admin(user) or user_id == user):
         return problem(
             403, 'Forbidden',
             "You don't have permission to create tokens for other users."
         )
 
-    token_data = {'user_id': user} | body
+    token_data = {'user_id': user_id} | body
 
     if token_data.get('expires_at'):
         try:
@@ -54,10 +62,18 @@ def token_create(user_id, body, user):
 
 
 def token_delete(user_id, token_id, user):
-    token_row = model.Token.query.get(token_id)
-    token_user = token_row.user_id if token_row else -1
+    user_row = model.User.query.get(user_id)
+    if not user_row or user_row.deleted:
+        return problem(404, 'Not Found', f'User ID={user_id} does not exist')
 
-    if not (utils.user_is_admin(user) or token_user == user):
+    token_row = model.Token.query.get(token_id)
+    if not token_row or token_row.user_id != user_id:
+        return problem(
+            404, 'Not Found',
+            f'Token ID={token_id} does not exist or is not owned by user ID={user_id}.'
+        )
+
+    if not (utils.user_is_admin(user) or user_id == user):
         return problem(
             403, 'Forbidden',
             "You don't have permission to delete other users' tokens."
