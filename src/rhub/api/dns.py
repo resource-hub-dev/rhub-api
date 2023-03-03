@@ -63,8 +63,7 @@ def server_create(vault: Vault, body, user):
         body['credentials'] = credentials
     else:
         body['credentials'] = f'{VAULT_PATH_PREFIX}/{body["name"]}'
-
-    vault.check_write(body['credentials'])
+        vault.check_write(body['credentials'])
 
     server = model.DnsServer.from_dict(body)
 
@@ -103,8 +102,8 @@ def server_update(vault: Vault, server_id, body, user):
     credentials = body.pop('credentials', None)
     if isinstance(credentials, str):
         server.credentials = credentials
-
-    vault.check_write(server.credentials)
+    elif credentials:
+        vault.check_write(server.credentials)
 
     server.update_from_dict(body)
     db.session.flush()

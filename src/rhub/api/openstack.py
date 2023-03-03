@@ -94,8 +94,7 @@ def cloud_create(vault: Vault, body, user):
         body['credentials'] = credentials
     else:
         body['credentials'] = f'{VAULT_PATH_PREFIX}/{body["name"]}'
-
-    vault.check_write(body['credentials'])
+        vault.check_write(body['credentials'])
 
     cloud = model.Cloud.from_dict(body)
 
@@ -134,8 +133,8 @@ def cloud_update(vault: Vault, cloud_id, body, user):
     credentials = body.pop('credentials', None)
     if isinstance(credentials, str):
         cloud.credentials = credentials
-
-    vault.check_write(cloud.credentials)
+    elif credentials:
+        vault.check_write(cloud.credentials)
 
     cloud.update_from_dict(body)
     db.session.flush()
