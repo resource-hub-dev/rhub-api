@@ -4,6 +4,7 @@ import logging
 import hvac
 import injector
 import yaml
+from connexion.exceptions import ProblemException
 
 
 logger = logging.getLogger(__name__)
@@ -24,8 +25,13 @@ class Vault(abc.ABC):
         not exists so :meth:`exists` returns `True` (needed to pass validations
         in DB model classes).
         """
-        logger.debug(f'Trying to write credentials to {self!r} at path {path!r}')
-        self.write(path, self.read(path) or {})
+        try:
+            logger.debug(f'Trying to write credentials to {self!r} at path {path!r}')
+            self.write(path, self.read(path) or {})
+        except Exception:
+            logger.exception(f'Failed to write to {self!r} at path {path!r}')
+            raise ProblemException(400, 'Bad Request',
+                                   'Failed to write credentials to Vault')
 
     def exists(self, path):
         return self.read(path) is not None
