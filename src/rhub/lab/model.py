@@ -14,6 +14,7 @@ from rhub.lab import SHAREDCLUSTER_GROUP
 from rhub.openstack import model as openstack_model
 from rhub.satellite import model as satellite_model
 from rhub.tower import model as tower_model
+from rhub.auth import model as user_model
 
 
 class Location(db.Model, ModelMixin):
@@ -378,6 +379,10 @@ class Cluster(db.Model, ModelMixin):
         keys = set(self.owner.ssh_keys)
         if self.group:
             for user in self.group.users:
+                keys |= set(user.ssh_keys)
+        elif self.shared:
+            users_query = user_model.User.query.filter(user_model.User.deleted.isnot(True))
+            for user in users_query:
                 keys |= set(user.ssh_keys)
         return list(keys)
 
