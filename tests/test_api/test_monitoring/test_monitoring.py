@@ -25,6 +25,24 @@ def test_bm_list_hosts(client):
     assert "data" in rv.json
 
 
+def test_bm_list_hosts_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/monitor/bm/hosts/node',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+    rv = client.get(
+        f'{API_BASE}/monitor/bm/hosts/app',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_bm_power_states_metrics(client):
     rv = client.get(
         f'{API_BASE}/monitor/bm/power_states_metrics',
@@ -33,6 +51,16 @@ def test_bm_power_states_metrics(client):
 
     assert rv.status_code == 200
     assert "data" in rv.json
+
+
+def test_bm_power_states_metrics_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/monitor/bm/power_states_metrics',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 def test_bm_metrics(client):
@@ -45,6 +73,16 @@ def test_bm_metrics(client):
     assert "data" in rv.json
 
 
+def test_bm_metrics_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/monitor/bm/metrics',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_vm_metrics(client):
     rv = client.get(
         f'{API_BASE}/monitor/vm/metrics',
@@ -55,6 +93,16 @@ def test_vm_metrics(client):
     assert "data" in rv.json
 
 
+def test_vm_metrics_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/monitor/vm/metrics',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_lab_metrics(client):
     rv = client.get(
         f'{API_BASE}/monitor/lab/metrics',
@@ -63,6 +111,16 @@ def test_lab_metrics(client):
 
     assert rv.status_code == 200
     assert "data" in rv.json
+
+
+def test_lab_metrics_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/monitor/lab/metrics',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 @contextmanager
