@@ -459,6 +459,10 @@ def get_cluster(cluster_id, user):
 
 
 def update_cluster(cluster_id, body, user):
+    return update_cluster_extra(cluster_id, {'cluster_data': body}, user)
+
+
+def update_cluster_extra(cluster_id, body, user):
     cluster = model.Cluster.query.get(cluster_id)
     if not cluster:
         return problem(404, 'Not Found', f'Cluster {cluster_id} does not exist')
@@ -470,7 +474,8 @@ def update_cluster(cluster_id, body, user):
         return problem(400, 'Bad Request',
                        f"Can't update, cluster {cluster_id} is in deleted state")
 
-    cluster_data = body.copy()
+    cluster_data = body['cluster_data'].copy()
+    tower_job_id = body.get('tower_job_id')
 
     for key in ['name', 'region_id', 'product_id', 'product_params']:
         if key in cluster_data:
@@ -557,20 +562,22 @@ def update_cluster(cluster_id, body, user):
 
         cluster_data['status'] = model.ClusterStatus(cluster_data['status'])
 
-        cluster_event = model.ClusterStatusChangeEvent(
-            cluster_id=cluster.id,
-            user_id=user,
-            date=date_now(),
-            old_value=cluster.status,
-            new_value=cluster_data['status']
-        )
-        db.session.add(cluster_event)
+        if tower_job_id:
+            cluster_event = model.ClusterTowerJobEvent(
+                cluster_id=cluster.id,
+                user_id=user,
+                date=date_now(),
+                status=cluster_data['status'],
+                tower_id=cluster.region.tower_id,
+                tower_job_id=tower_job_id,
+            )
+            db.session.add(cluster_event)
 
-        logger.info(
-            f'User {user} changed status of cluster ID={cluster.id}'
-            f'from {cluster_event.old_value} to {cluster_event.new_value}',
-            extra={'user_id': user, 'cluster_id': cluster.id},
-        )
+            logger.info(
+                f'Tower job ID={tower_job_id} changed status of cluster '
+                f'ID={cluster.id} {cluster_data["status"]}',
+                extra={'cluster_id': cluster.id, 'tower_job_id': tower_job_id},
+            )
 
     cluster.update_from_dict(cluster_data)
 

@@ -1511,6 +1511,50 @@ endpoints:
       - basic: []
       - bearer: []
 
+  cluster_update_extra:
+    summary: Update cluster and add extra information to the cluster event
+    description: |
+      This endpoint works the same as
+      [PATCH lab/cluster](#/lab/rhub.api.lab.cluster.create_update),
+      but allows to add extra information (ie. Tower job ID) that is then
+      available in [cluster events](#/lab/rhub.api.lab.cluster.list_cluster_events).
+      Cluster event with Tower job ID is created only for status changes, but
+      other fields can also be changed in a single request.
+    tags: [lab]
+    operationId: rhub.api.lab.cluster.update_cluster_extra
+    parameters:
+      - $ref: '#/parameters/cluster_id'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              cluster_data:
+                $ref: '#/model/Cluster'
+              tower_job_id:
+                $ref: 'common.yml#/model/ID_null'
+            required:
+              - cluster_data
+            example:
+              cluster_data:
+                status: Active
+                description: Example cluster description.
+              tower_job_id: 1234
+    responses:
+      '200':
+        description: Cluster
+        content:
+          application/json:
+            schema:
+              $ref: '#/model/Cluster'
+      default:
+        $ref: 'common.yml#/responses/problem'
+    security:
+      - basic: []
+      - bearer: []
+
   cluster_delete:
     summary: Delete cluster
     description: |
