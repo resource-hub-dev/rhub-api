@@ -9,6 +9,7 @@ from rhub.auth import model as auth_model
 from rhub.lab import SHAREDCLUSTER_GROUP, model
 from rhub.openstack import model as openstack_model
 from rhub.tower import model as tower_model
+from rhub.tower.client import TowerError
 
 
 API_BASE = '/v0'
@@ -1201,6 +1202,29 @@ def test_get_cluster_event_stdout(client, mocker):
     )
 
     assert rv.data == b'Ansible output.'
+
+
+def test_get_cluster_event_stdout_towererror(client, mocker):
+    event = model.ClusterTowerJobEvent(
+        id=1,
+        date=datetime.datetime(2000, 1, 1, 1, 0, 0, tzinfo=tzutc()),
+        user_id=1,
+        cluster_id=1,
+        tower_id=1,
+        tower=tower_model.Server(id=1),
+        tower_job_id=1,
+        status=model.ClusterStatus.ACTIVE,
+    )
+    mocker.patch.object(event, 'get_tower_job_output').side_effect = TowerError
+
+    model.ClusterTowerJobEvent.query.get.return_value = event
+
+    rv = client.get(
+        f'{API_BASE}/lab/cluster_event/1/stdout',
+        headers=AUTH_HEADER,
+    )
+
+    assert rv.status_code != 200
 
 
 def test_get_cluster_hosts(client, project):
