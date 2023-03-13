@@ -974,6 +974,86 @@ def test_update_cluster_set_lifespan_forbidden(
     assert rv.status_code == 403
 
 
+def test_update_cluster_status(client, db_session_mock, mocker,
+                               region, project, product):
+    cluster = model.Cluster(
+        id=1,
+        name='testcluster',
+        description='test cluster',
+        created=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
+        region_id=region.id,
+        region=region,
+        project_id=project.id,
+        project=project,
+        reservation_expiration=None,
+        lifespan_expiration=None,
+        status=model.ClusterStatus.PROVISIONING,
+        product_id=1,
+        product_params={},
+        product=product,
+    )
+    model.Cluster.query.get.return_value = cluster
+
+    rv = client.patch(
+        f'{API_BASE}/lab/cluster/1',
+        headers=AUTH_HEADER,
+        json={
+            'status': 'Active',
+        },
+    )
+
+    assert rv.status_code == 200
+
+    # Only update, no events added
+    db_session_mock.add.assert_not_called()
+
+
+def test_update_cluster_extra(client, db_session_mock, mocker,
+                              region, project, product):
+    cluster = model.Cluster(
+        id=1,
+        name='testcluster',
+        description='test cluster',
+        created=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
+        region_id=region.id,
+        region=region,
+        project_id=project.id,
+        project=project,
+        reservation_expiration=None,
+        lifespan_expiration=None,
+        status=model.ClusterStatus.PROVISIONING,
+        product_id=1,
+        product_params={},
+        product=product,
+    )
+    model.Cluster.query.get.return_value = cluster
+
+    rv = client.post(
+        f'{API_BASE}/lab/cluster/1/update',
+        headers=AUTH_HEADER,
+        json={
+            'cluster_data': {
+                'description': 'foo bar',
+                'status': 'Active',
+            },
+            'tower_job_id': 1234,
+        },
+    )
+
+    assert rv.status_code == 200
+
+    assert cluster.description == 'foo bar'
+    assert cluster.status == model.ClusterStatus.ACTIVE
+
+    assert len(db_session_mock.add.call_args_list) == 1
+    event = db_session_mock.add.call_args_list[0].args[0]
+    assert isinstance(event, model.ClusterTowerJobEvent)
+    assert event.type == model.ClusterEventType.TOWER_JOB
+    assert event.status == model.ClusterStatus.ACTIVE
+    assert event.tower_id == region.tower_id
+    assert event.tower_job_id == 1234
+
+
 def test_delete_cluster(client, db_session_mock, mocker,
                         region, project, product, tower_client):
     cluster = model.Cluster(

@@ -161,6 +161,9 @@ paths:
   /lab/cluster/{cluster_id}/authorized_keys:
     get:
       $ref: 'lab.yml#/endpoints/cluster_authorized_keys'
+  /lab/cluster/{cluster_id}/update:
+    post:
+      $ref: 'lab.yml#/endpoints/cluster_update_extra'
   /lab/cluster/{cluster_id}/events:
     get:
       $ref: 'lab.yml#/endpoints/cluster_list_events'
