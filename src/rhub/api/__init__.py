@@ -23,10 +23,10 @@ from werkzeug import Response
 
 from rhub import ROOT_PKG_PATH
 from rhub.api.vault import VaultModule
+from rhub.auth.ldap import LdapModule
 from rhub.messaging import MessagingModule
 from rhub.scheduler import SchedulerModule
 from rhub.worker import celery
-from rhub.auth.ldap import LdapModule
 
 
 logger = logging.getLogger(__name__)

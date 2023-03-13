@@ -15,6 +15,7 @@ from rhub.auth import utils as auth_utils
 from rhub.lab import CLUSTER_ADMIN_GROUP, SHAREDCLUSTER_GROUP, model
 from rhub.lab import utils as lab_utils
 from rhub.openstack import model as openstack_model
+from rhub.tower.client import TowerError
 
 
 logger = logging.getLogger(__name__)
@@ -654,7 +655,11 @@ def get_cluster_event_stdout(event_id, user):
     if not _user_can_access_cluster(event.cluster, user):
         return problem(403, 'Forbidden', "You don't have access to related cluster.")
 
-    return Response(event.get_tower_job_output(), 200, content_type='text/plain')
+    try:
+        return Response(event.get_tower_job_output(), 200, content_type='text/plain')
+    except TowerError as e:
+        logger.exception(f'Failed to get job {event.tower_job_id} stdout, {e}')
+        return problem(404, 'Error', 'Failed to get output from Tower')
 
 
 def list_cluster_hosts(cluster_id, user):
