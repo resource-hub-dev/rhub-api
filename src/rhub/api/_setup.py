@@ -27,6 +27,20 @@ def create_cronjob(cronjob):
         db.session.commit()
 
 
+def create_group(**group_data):
+    group = auth_model.Group.query.filter(
+        auth_model.Group.name == group_data['name']
+    ).first()
+    if group:
+        logger.info(f'Updating group {group.name!r}.')
+        group.update_from_dict(group_data)
+    else:
+        group = auth_model.Group.from_dict(group_data)
+        logger.info(f'Creating group {group.name!r}.')
+        db.session.add(group)
+    db.session.commit()
+
+
 # This function must be idempotent. In container, it may be called on every
 # start.
 def setup():
@@ -96,8 +110,6 @@ def setup():
             db.session.add(lab_model.Location(**loc))
         db.session.commit()
 
-    groups = [ADMIN_GROUP, SHAREDCLUSTER_GROUP, CLUSTER_ADMIN_GROUP]
-    if auth_model.Group.query.count() == 0:
-        for group_name in groups:
-            db.session.add(auth_model.Group(name=group_name))
-        db.session.commit()
+    create_group(name=ADMIN_GROUP, roles=[auth_model.Role.ADMIN])
+    create_group(name=CLUSTER_ADMIN_GROUP, roles=[auth_model.Role.LAB_CLUSTER_ADMIN])
+    create_group(name=SHAREDCLUSTER_GROUP)
