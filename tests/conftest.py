@@ -10,8 +10,8 @@ import sqlalchemy.exc
 
 from rhub.api import create_app
 from rhub.api.vault import Vault
-from rhub.messaging import Messaging
 from rhub.auth.ldap import LdapClient
+from rhub.messaging import Messaging
 
 
 @pytest.fixture
@@ -72,6 +72,8 @@ def auth_mock(mocker):
     user_data = {'uid': 1}
     mocker.patch('rhub.api.auth.security.basic_auth').return_value = user_data
     mocker.patch('rhub.auth.utils.is_user_in_group').return_value = True
+    mocker.patch('rhub.auth.utils.user_is_admin').return_value = True
+    mocker.patch('rhub.auth.utils.route_require_admin', new=lambda fn: fn)
     yield user_data
 
 

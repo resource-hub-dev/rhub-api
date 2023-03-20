@@ -22,7 +22,7 @@ def user_is_admin_mock(mocker):
     yield mocker.patch('rhub.auth.utils.user_is_admin')
 
 
-def test_me(client):
+def test_me(client, mocker):
     model.User.query.get.return_value = model.User(
         id=1,
         external_uuid=None,
@@ -34,6 +34,7 @@ def test_me(client):
         updated_at=DATE,
         manager_id=None,
     )
+    mocker.patch.object(model.User, 'roles', [model.Role.ADMIN])
 
     rv = client.get(
         f'{API_BASE}/me',
@@ -51,6 +52,7 @@ def test_me(client):
         'created_at': DATE_STR,
         'updated_at': DATE_STR,
         'manager_id': None,
+        'roles': [model.Role.ADMIN.value],
         '_href': ANY,
     }
 
@@ -65,7 +67,7 @@ def test_me_unauthorized(client):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_list_users(client):
+def test_list_users(client, mocker):
     q = model.User.query.filter.return_value
     q.limit.return_value.offset.return_value = [
         model.User(
@@ -81,6 +83,8 @@ def test_list_users(client):
         )
     ]
     q.count.return_value = 1
+
+    mocker.patch.object(model.User, 'roles', [model.Role.ADMIN])
 
     rv = client.get(
         f'{API_BASE}/auth/user',
@@ -100,6 +104,7 @@ def test_list_users(client):
                 'created_at': DATE_STR,
                 'updated_at': DATE_STR,
                 'manager_id': None,
+                'roles': [model.Role.ADMIN.value],
                 '_href': ANY,
             },
         ],
@@ -117,7 +122,7 @@ def test_list_users_unauthorized(client):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_get_user(client):
+def test_get_user(client, mocker):
     model.User.query.get.return_value = model.User(
         id=1,
         external_uuid=None,
@@ -129,6 +134,8 @@ def test_get_user(client):
         updated_at=DATE,
         manager_id=None,
     )
+
+    mocker.patch.object(model.User, 'roles', [model.Role.ADMIN])
 
     rv = client.get(
         f'{API_BASE}/auth/user/1',
@@ -146,6 +153,7 @@ def test_get_user(client):
         'created_at': DATE_STR,
         'updated_at': DATE_STR,
         'manager_id': None,
+        'roles': [model.Role.ADMIN.value],
         '_href': ANY,
     }
 
@@ -511,6 +519,7 @@ def test_list_groups(client):
             id=1,
             name='test',
             ldap_dn=None,
+            roles=[model.Role.ADMIN],
         )
     ]
     model.Group.query.count.return_value = 1
@@ -527,6 +536,7 @@ def test_list_groups(client):
                 'id': 1,
                 'name': 'test',
                 'ldap_dn': None,
+                'roles': [model.Role.ADMIN.value],
                 '_href': ANY,
             },
         ],
@@ -549,6 +559,7 @@ def test_get_group(client):
         id=1,
         name='test',
         ldap_dn=None,
+        roles=[model.Role.ADMIN],
     )
 
     rv = client.get(
@@ -561,6 +572,7 @@ def test_get_group(client):
         'id': 1,
         'name': 'test',
         'ldap_dn': None,
+        'roles': [model.Role.ADMIN.value],
         '_href': ANY,
     }
 

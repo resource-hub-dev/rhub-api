@@ -9,10 +9,9 @@ from flask import Response, url_for
 from rhub.api import DEFAULT_PAGE_LIMIT, db
 from rhub.api.lab.region import _user_can_access_region
 from rhub.api.utils import date_now, db_sort
-from rhub.auth import ADMIN_GROUP
 from rhub.auth import model as auth_model
 from rhub.auth import utils as auth_utils
-from rhub.lab import CLUSTER_ADMIN_GROUP, SHAREDCLUSTER_GROUP, model
+from rhub.lab import SHAREDCLUSTER_GROUP, model
 from rhub.lab import utils as lab_utils
 from rhub.openstack import model as openstack_model
 from rhub.tower.client import TowerError
@@ -23,7 +22,8 @@ logger = logging.getLogger(__name__)
 
 def _user_is_cluster_admin(user_id):
     """Check if user is cluster admin."""
-    return auth_utils.is_user_in_group(user_id, ADMIN_GROUP, CLUSTER_ADMIN_GROUP)
+    user = auth_model.User.query.get(user_id)
+    return user.is_admin or auth_model.Role.LAB_CLUSTER_ADMIN in user.roles
 
 
 def _user_can_access_cluster(cluster, user_id):
@@ -39,7 +39,7 @@ def _user_can_access_cluster(cluster, user_id):
 
 def _user_can_create_reservation(region, user_id):
     """Check if user can create in reservations in the region."""
-    if auth_utils.user_is_admin(user_id):
+    if _user_is_cluster_admin(user_id):
         return True
     if region.reservations_enabled:
         return True
@@ -48,20 +48,26 @@ def _user_can_create_reservation(region, user_id):
 
 def _user_can_set_lifespan(region, user_id):
     """Check if user can set/change lifespan expiration of cluster in the region."""
-    if auth_utils.is_user_in_group(user_id, ADMIN_GROUP, SHAREDCLUSTER_GROUP):
+    if _user_is_cluster_admin(user_id):
+        return True
+    if auth_utils.is_user_in_group(user_id, SHAREDCLUSTER_GROUP):
         return True
     return region.owner_group_id in auth_utils.user_group_ids(user_id)
 
 
 def _user_can_disable_expiration(region, user_id):
     """Check if user can disable cluster reservation expiration."""
-    if auth_utils.is_user_in_group(user_id, ADMIN_GROUP, SHAREDCLUSTER_GROUP):
+    if _user_is_cluster_admin(user_id):
+        return True
+    if auth_utils.is_user_in_group(user_id, SHAREDCLUSTER_GROUP):
         return True
     return region.owner_group_id in auth_utils.user_group_ids(user_id)
 
 
 def _user_can_create_sharedcluster(user_id):
-    return auth_utils.is_user_in_group(user_id, ADMIN_GROUP, SHAREDCLUSTER_GROUP)
+    if _user_is_cluster_admin(user_id):
+        return True
+    return auth_utils.is_user_in_group(user_id, SHAREDCLUSTER_GROUP)
 
 
 @functools.lru_cache()

@@ -2,7 +2,7 @@ import functools
 
 from werkzeug.exceptions import Forbidden
 
-from rhub.auth import ADMIN_GROUP, model
+from rhub.auth import model
 
 
 def is_user_in_group(user_id, *group_name):
@@ -17,7 +17,7 @@ def is_user_in_group(user_id, *group_name):
 
 def user_is_admin(user_id):
     """Check if user is admin, belongs to :const:`rhub.auth.ADMIN_GROUP` group."""
-    return is_user_in_group(user_id, ADMIN_GROUP)
+    return model.User.query.get(user_id).is_admin
 
 
 def user_group_ids(user_id):
@@ -26,18 +26,15 @@ def user_group_ids(user_id):
     return set(row.group_id for row in q)
 
 
-def route_require_group(*group_name,
-                        forbidden_message="You don't have permissions for this."):
+def route_require_role(role: model.Role,
+                       forbidden_message="You don't have permissions for this."):
     """
-    Decorator to require user group to use API endpoint route. If user doesn't
-    beloing to any of the specified groups, Forbidden exception will be raised
-    to prevent user from using the endpoint.
+    Decorator to require user role to use API endpoint route. If user doesn't
+    have specified role and the user is not admin, Forbidden exception will be
+    raised to prevent user from using the endpoint.
 
     Decorated handler must have `user` in its parameters!
     """
-    if not group_name:
-        raise ValueError('At least one group name is required')
-
     def decorator(fn):
         if 'user' not in fn.__code__.co_varnames:
             raise ValueError(
@@ -47,8 +44,8 @@ def route_require_group(*group_name,
 
         @functools.wraps(fn)
         def inner(*args, **kwargs):
-            user_id = kwargs['user']
-            if not is_user_in_group(user_id, *group_name):
+            user = model.User.query.get(kwargs['user'])
+            if role not in user.roles and not user.is_admin:
                 raise Forbidden(forbidden_message)
             return fn(*args, **kwargs)
         return inner
@@ -58,7 +55,7 @@ def route_require_group(*group_name,
 
 def route_require_admin(fn):
     """
-    Shortcut to require admin group (:const:`rhub.auth.ADMIN_GROUP`) to use API
-    endpoint.
+    Shortcut to require admin role (:const:`rhub.auth.model.Role.ADMIN`) to use
+    API endpoint.
     """
-    return route_require_group(ADMIN_GROUP)(fn)
+    return route_require_role(model.Role.ADMIN)(fn)

@@ -1,11 +1,14 @@
+import enum
 import hashlib
 import secrets
 
+from sqlalchemy import func
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.orm import validates
 from sqlalchemy.sql import functions
 
 from rhub.api import db
-from rhub.api.utils import ModelMixin, TimestampMixin, date_now
+from rhub.api.utils import ModelMixin, ModelValueError, TimestampMixin, date_now
 from rhub.auth import ldap
 
 
@@ -32,8 +35,26 @@ class User(db.Model, ModelMixin, TimestampMixin):
     def is_external(self):
         return self.external_uuid is not None
 
+    @property
+    def is_admin(self):
+        return Role.ADMIN in self.roles
+
+    @property
+    def roles(self):
+        query = db.session.query(
+            func.distinct(func.unnest(Group.roles))
+        ).join(
+            UserGroup, UserGroup.group_id == Group.id,
+        ).join(
+            User, User.id == UserGroup.user_id,
+        ).where(
+            User.id == self.id
+        )
+        return [Role[i[0]] for i in query]
+
     def to_dict(self):
         data = super().to_dict()
+        data['roles'] = [i.value for i in self.roles]
         del data['deleted']
         return data
 
@@ -131,16 +152,28 @@ class Token(db.Model, ModelMixin):
         return data
 
 
+class Role(str, enum.Enum):
+    ADMIN = 'admin'
+    LAB_CLUSTER_ADMIN = 'lab-cluster-admin'
+
+
 class Group(db.Model, ModelMixin):
     __tablename__ = 'auth_group'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
+    roles = db.Column(db.ARRAY(db.Enum(Role)), nullable=False, server_default='{}')
 
     ldap_dn = db.Column(db.String(256), nullable=True)
 
     users = db.relationship('User', secondary='auth_user_group',
                             back_populates='groups')
+
+    @validates('roles')
+    def validate_roles(self, key, value):
+        if len(value) != len(set(value)):
+            raise ModelValueError('Duplicate roles')
+        return value
 
     def update_from_ldap(self, ldap_client: ldap.LdapClient):
         group_data = ldap_client.get_group(self.ldap_dn)

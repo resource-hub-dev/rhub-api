@@ -31,6 +31,14 @@ model:
           example: ssh-ed25519 AAAAexamplesshkeyexamplesshkeyexamplesshkeyABCD
       manager_id:
         $ref: 'common.yml#/model/ID_null'
+      roles:
+        type: array
+        items:
+          type: string
+          enum:
+            - admin
+            - lab-cluster-admin
+        example: [admin]
     allOf:
       - $ref: 'common.yml#/model/TimestampModel'
 
@@ -69,6 +77,10 @@ model:
       name:
         type: string
         maxLength: 64
+      roles:
+        type: array
+        items:
+          type: string
 
 parameters:
 
