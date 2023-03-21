@@ -6,13 +6,14 @@ from connexion import problem
 from dateutil.parser import isoparse as date_parse
 from flask import Response, url_for
 
-from rhub.api import DEFAULT_PAGE_LIMIT, db
+from rhub.api import DEFAULT_PAGE_LIMIT, db, di
 from rhub.api.lab.region import _user_can_access_region
 from rhub.api.utils import date_now, db_sort
 from rhub.auth import model as auth_model
 from rhub.auth import utils as auth_utils
 from rhub.lab import SHAREDCLUSTER_GROUP, model
 from rhub.lab import utils as lab_utils
+from rhub.messaging import Messaging
 from rhub.openstack import model as openstack_model
 from rhub.tower.client import TowerError
 
@@ -589,6 +590,18 @@ def update_cluster_extra(cluster_id, body, user):
     cluster.update_from_dict(cluster_data)
 
     db.session.commit()
+
+    messaging = di.get(Messaging)
+    messaging.send(
+        'lab.cluster.update',
+        f'Cluster "{cluster.name}" (ID={cluster.id}) has been updated.',
+        extra={
+            'cluster_id': cluster.id,
+            'cluster_name': cluster.name,
+            'update_data': body['cluster_data'],
+            'tower_job_id': body.get('tower_job_id'),
+        },
+    )
 
     logger.info(
         f'Cluster {cluster.name} (id {cluster.id}) updated by user {user}',

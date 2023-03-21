@@ -794,7 +794,7 @@ def test_create_cluster_quota(
         assert rv.status_code == 200, rv.data
 
 
-def test_update_cluster(client, db_session_mock, mocker,
+def test_update_cluster(client, db_session_mock, di_mock, messaging_mock, mocker,
                         region, project, product):
     cluster = model.Cluster(
         id=1,
@@ -814,6 +814,8 @@ def test_update_cluster(client, db_session_mock, mocker,
     )
     model.Cluster.query.get.return_value = cluster
 
+    mocker.patch('rhub.api.lab.cluster.di', new=di_mock)
+
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
         headers=AUTH_HEADER,
@@ -826,6 +828,8 @@ def test_update_cluster(client, db_session_mock, mocker,
 
     db_session_mock.commit.assert_called()
 
+    messaging_mock.send.assert_called_with('lab.cluster.update', ANY, extra=ANY)
+
     assert cluster.description == 'test change'
 
 
@@ -836,7 +840,7 @@ def test_update_cluster(client, db_session_mock, mocker,
         pytest.param({'region_id': 2}, id='region'),
     ],
 )
-def test_update_cluster_ro_field(client, cluster_data, mocker,
+def test_update_cluster_ro_field(client, cluster_data, di_mock, messaging_mock, mocker,
                                  region, project, product):
     cluster = model.Cluster(
         id=1,
@@ -856,6 +860,8 @@ def test_update_cluster_ro_field(client, cluster_data, mocker,
     )
     model.Cluster.query.get.return_value = cluster
 
+    mocker.patch('rhub.api.lab.cluster.di', new=di_mock)
+
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
         headers=AUTH_HEADER,
@@ -864,9 +870,11 @@ def test_update_cluster_ro_field(client, cluster_data, mocker,
 
     assert rv.status_code == 400
 
+    messaging_mock.send.assert_not_called()
 
-def test_update_cluster_reservation(client, db_session_mock, mocker,
-                                    region, project, product):
+
+def test_update_cluster_reservation(client, db_session_mock, di_mock, messaging_mock,
+                                    mocker, region, project, product):
     old_expiration = datetime.datetime(2100, 1, 1, 0, 0, tzinfo=tzutc())
     new_expiration = datetime.datetime(2100, 1, 2, 0, 0, tzinfo=tzutc())
 
@@ -888,6 +896,8 @@ def test_update_cluster_reservation(client, db_session_mock, mocker,
     )
     model.Cluster.query.get.return_value = cluster
 
+    mocker.patch('rhub.api.lab.cluster.di', new=di_mock)
+
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
         headers=AUTH_HEADER,
@@ -904,8 +914,11 @@ def test_update_cluster_reservation(client, db_session_mock, mocker,
     assert event.old_value == old_expiration
     assert event.new_value == new_expiration
 
+    messaging_mock.send.assert_called_with('lab.cluster.update', ANY, extra=ANY)
 
-def test_update_cluster_exceeded_reservation(client, mocker, region, project, product):
+
+def test_update_cluster_exceeded_reservation(client, di_mock, messaging_mock, mocker,
+                                             region, project, product):
     region.reservation_expiration_max = 1
 
     cluster = model.Cluster(
@@ -928,6 +941,8 @@ def test_update_cluster_exceeded_reservation(client, mocker, region, project, pr
 
     new_expiration = datetime.datetime(2100, 1, 1, 0, 0, tzinfo=tzutc())
 
+    mocker.patch('rhub.api.lab.cluster.di', new=di_mock)
+
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
         headers=AUTH_HEADER,
@@ -939,10 +954,13 @@ def test_update_cluster_exceeded_reservation(client, mocker, region, project, pr
     assert rv.status_code == 403
     assert rv.json['detail'] == 'Exceeded maximal reservation time.'
 
+    messaging_mock.send.assert_not_called()
+
 
 def test_update_cluster_set_lifespan_forbidden(
-        client, mocker, region, project, product):
+        client, di_mock, messaging_mock, mocker, region, project, product):
     mocker.patch('rhub.api.lab.cluster._user_can_set_lifespan').return_value = False
+    mocker.patch('rhub.api.lab.cluster.di', new=di_mock)
 
     region.lifespan_length = 30
 
@@ -974,8 +992,10 @@ def test_update_cluster_set_lifespan_forbidden(
 
     assert rv.status_code == 403
 
+    messaging_mock.send.assert_not_called()
 
-def test_update_cluster_status(client, db_session_mock, mocker,
+
+def test_update_cluster_status(client, db_session_mock, di_mock, messaging_mock, mocker,
                                region, project, product):
     cluster = model.Cluster(
         id=1,
@@ -995,6 +1015,8 @@ def test_update_cluster_status(client, db_session_mock, mocker,
     )
     model.Cluster.query.get.return_value = cluster
 
+    mocker.patch('rhub.api.lab.cluster.di', new=di_mock)
+
     rv = client.patch(
         f'{API_BASE}/lab/cluster/1',
         headers=AUTH_HEADER,
@@ -1008,8 +1030,10 @@ def test_update_cluster_status(client, db_session_mock, mocker,
     # Only update, no events added
     db_session_mock.add.assert_not_called()
 
+    messaging_mock.send.assert_called_with('lab.cluster.update', ANY, extra=ANY)
 
-def test_update_cluster_extra(client, db_session_mock, mocker,
+
+def test_update_cluster_extra(client, db_session_mock, di_mock, messaging_mock, mocker,
                               region, project, product):
     cluster = model.Cluster(
         id=1,
@@ -1028,6 +1052,8 @@ def test_update_cluster_extra(client, db_session_mock, mocker,
         product=product,
     )
     model.Cluster.query.get.return_value = cluster
+
+    mocker.patch('rhub.api.lab.cluster.di', new=di_mock)
 
     rv = client.post(
         f'{API_BASE}/lab/cluster/1/update',
@@ -1053,6 +1079,8 @@ def test_update_cluster_extra(client, db_session_mock, mocker,
     assert event.status == model.ClusterStatus.ACTIVE
     assert event.tower_id == region.tower_id
     assert event.tower_job_id == 1234
+
+    messaging_mock.send.assert_called_with('lab.cluster.update', ANY, extra=ANY)
 
 
 def test_delete_cluster(client, db_session_mock, mocker,
