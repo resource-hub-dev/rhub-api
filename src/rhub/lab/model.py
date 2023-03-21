@@ -343,7 +343,7 @@ class Cluster(db.Model, ModelMixin):
         usage = dict.fromkeys(Quota.FIELDS, 0)
         for host in self.hosts:
             for k in usage:
-                usage[k] += getattr(host, k)
+                usage[k] += getattr(host, k) or 0
         return usage
 
     @hybrid_property

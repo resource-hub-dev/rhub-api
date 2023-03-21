@@ -141,6 +141,58 @@ def region(mocker, auth_group, openstack_cloud):
 
 
 @pytest.fixture
+def region_with_quotas(mocker, auth_group, openstack_cloud):
+    quota = model.Quota(
+        id=1,
+        num_vcpus=1000,
+        ram_mb=1000,
+        num_volumes=1000,
+        volumes_gb=1000,
+    )
+
+    region = model.Region(
+        id=1,
+        name='test',
+        location_id=1,
+        location=model.Location(
+            id=1,
+            name='RDU',
+            description='Raleigh',
+        ),
+        description='',
+        banner='',
+        enabled=True,
+        user_quota_id=quota.id,
+        user_quota=quota,
+        total_quota_id=quota.id,
+        total_quota=quota,
+        lifespan_length=None,
+        reservations_enabled=True,
+        reservation_expiration_max=None,
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
+        users_group_id=None,
+        users_group=None,
+        tower_id=1,
+        openstack_id=openstack_cloud.id,
+        openstack=openstack_cloud,
+    )
+
+    mocker.patch.object(model.Region, 'products_relation')
+    mocker.patch.object(model.Region, 'is_product_enabled').return_value = True
+    mocker.patch.object(model.Region, 'get_user_quota_usage').return_value = {
+        'num_vcpus': 0,
+        'ram_mb': 0,
+        'num_volumes': 0,
+        'volumes_gb': 0,
+    }
+
+    model.Region.query.get.return_value = region
+
+    yield region
+
+
+@pytest.fixture
 def project(mocker, auth_user, auth_group, openstack_cloud):
     project = openstack_model.Project(
         id=1,
@@ -303,7 +355,9 @@ def test_list_clusters(client, mocker, region, project, product):
     }
 
 
-def test_get_cluster(client, mocker, region, project, product):
+def test_get_cluster(client, mocker, region_with_quotas, project, product):
+    region = region_with_quotas
+
     model.Cluster.query.get.return_value = model.Cluster(
         id=1,
         name='testcluster',
@@ -340,6 +394,16 @@ def test_get_cluster(client, mocker, region, project, product):
             ram_mb=4096,
             num_volumes=1,
             volumes_gb=20,
+        ),
+        model.ClusterHost(
+            id=3,
+            cluster_id=1,
+            fqdn='test2.localhost',
+            ipaddr=['127.0.0.1', '::1'],
+            num_vcpus=None,
+            ram_mb=None,
+            num_volumes=None,
+            volumes_gb=None,
         ),
     ])
     mocker.patch.object(model.Cluster, 'quota', model.Quota(
@@ -396,7 +460,17 @@ def test_get_cluster(client, mocker, region, project, product):
                 'ram_mb': 4096,
                 'num_volumes': 1,
                 'volumes_gb': 20,
-            }
+            },
+            {
+                'id': 3,
+                'cluster_id': 1,
+                'fqdn': 'test2.localhost',
+                'ipaddr': ['127.0.0.1', '::1'],
+                'num_vcpus': None,
+                'ram_mb': None,
+                'num_volumes': None,
+                'volumes_gb': None,
+            },
         ],
         'quota': {
             'num_vcpus': 20,
