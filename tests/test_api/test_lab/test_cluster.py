@@ -868,6 +868,47 @@ def test_create_cluster_quota(
         assert rv.status_code == 200, rv.data
 
 
+def test_create_cluster_default_expirations(
+    client, db_session_mock, tower_client, mocker, region, project, product,
+):
+    cluster_data = {
+        'name': 'testcluster',
+        'description': 'Test cluster.',
+        'region_id': 1,
+        'product_id': 1,
+        'product_params': {},
+    }
+
+    model.Cluster.query.filter.return_value.count.return_value = 0
+
+    def db_add(row):
+        row.id = 1
+        if isinstance(row, model.Cluster):
+            mocker.patch.object(model.Cluster, 'region', region)
+            mocker.patch.object(model.Cluster, 'product', product)
+            mocker.patch.object(model.Cluster, 'project', project)
+
+    db_session_mock.add.side_effect = db_add
+
+    tower_client.template_get.return_value = {'id': 123, 'name': 'dummy-create'}
+    tower_client.template_launch.return_value = {'id': 321}
+
+    rv = client.post(
+        f'{API_BASE}/lab/cluster',
+        headers=AUTH_HEADER,
+        json=cluster_data,
+    )
+
+    assert rv.status_code == 200, rv.data
+
+    db_session_mock.add.assert_called()
+    db_session_mock.commit.assert_called()
+
+    cluster = db_session_mock.add.call_args_list[0].args[0]
+    assert cluster.reservation_expiration == None
+    assert cluster.lifespan_expiration == None
+
+
 def test_update_cluster(client, db_session_mock, di_mock, messaging_mock, mocker,
                         region, project, product):
     cluster = model.Cluster(

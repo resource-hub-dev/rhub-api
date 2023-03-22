@@ -285,6 +285,8 @@ def create_cluster(body, user):
                 cluster_data['lifespan_expiration'] = date_parse(
                     cluster_data['lifespan_expiration']
                 )
+            else:
+                cluster_data['lifespan_expiration'] = None
         else:
             cluster_data['lifespan_expiration'] = (
                 cluster_data['created'] + region.lifespan_delta
@@ -292,9 +294,11 @@ def create_cluster(body, user):
     else:
         cluster_data['lifespan_expiration'] = None
 
-    if cluster_data['reservation_expiration'] is not None:
+    if cluster_data.get('reservation_expiration') is not None:
         reservation_expiration = date_parse(cluster_data['reservation_expiration'])
         cluster_data['reservation_expiration'] = reservation_expiration
+    else:
+        cluster_data['reservation_expiration'] = None
 
     if region.reservation_expiration_max:
         if cluster_data['reservation_expiration'] is None:
