@@ -1059,19 +1059,57 @@ endpoints:
           application/json:
             schema:
               type: object
-              properties:
-                user_quota:
-                  anyOf:
-                    - $ref: '#/model/Quota'
-                    - nullable: true
-                user_quota_usage:
-                  $ref: '#/model/Quota'
-                total_quota:
-                  anyOf:
-                    - $ref: '#/model/Quota'
-                    - nullable: true
-                total_quota_usage:
-                  $ref: '#/model/Quota'
+              description: Properties are `all` and ID of the region.
+              additionalProperties:
+                type: object
+                properties:
+                  user_quota:
+                    anyOf:
+                      - $ref: '#/model/Quota'
+                      - nullable: true
+                  user_quota_usage:
+                    $ref: '#/model/Quota'
+                  total_quota:
+                    anyOf:
+                      - $ref: '#/model/Quota'
+                      - nullable: true
+                  total_quota_usage:
+                    $ref: '#/model/Quota'
+              example:
+                all:
+                  user_quota:
+                    num_vcpus: 0
+                    ram_mb: 0
+                    num_volumes: 0
+                    volumes_gb: 0
+                  user_quota_usage:
+                    num_vcpus: 1
+                    ram_mb: 1024
+                    num_volumes: 1
+                    volumes_gb: 32
+                  total_quota:
+                    num_vcpus: 0
+                    ram_mb: 0
+                    num_volumes: 0
+                    volumes_gb: 0
+                  total_quota_usage:
+                    num_vcpus: 1
+                    ram_mb: 1024
+                    num_volumes: 1
+                    volumes_gb: 32
+                '1':
+                  user_quota: null
+                  user_quota_usage:
+                    num_vcpus: 1
+                    ram_mb: 1024
+                    num_volumes: 1
+                    volumes_gb: 32
+                  total_quota: null
+                  total_quota_usage:
+                    num_vcpus: 1
+                    ram_mb: 1024
+                    num_volumes: 1
+                    volumes_gb: 32
       default:
         $ref: 'common.yml#/responses/problem'
     security:
