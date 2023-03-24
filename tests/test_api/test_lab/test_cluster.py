@@ -355,6 +355,16 @@ def test_list_clusters(client, mocker, region, project, product):
     }
 
 
+def test_list_clusters_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/lab/cluster',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_get_cluster(client, mocker, region_with_quotas, project, product):
     region = region_with_quotas
 
@@ -490,6 +500,53 @@ def test_get_cluster(client, mocker, region_with_quotas, project, product):
         'shared': False,
         '_href': ANY,
     }
+
+
+def test_get_cluster_forbidden(client, mocker):
+    cluster_id = 1
+
+    mocker.patch(
+        'rhub.api.lab.cluster._user_can_access_cluster',
+    ).return_value = False
+    
+    rv = client.get(
+        f'{API_BASE}/lab/cluster/{cluster_id}',
+        headers=AUTH_HEADER,
+    )
+
+    model.Cluster.query.get.assert_called_with(cluster_id)
+
+    assert rv.status_code == 403, rv.data
+    assert rv.json['title'] == 'Forbidden'
+    assert rv.json['detail'] == "You don't have access to this cluster."
+
+
+
+def test_get_cluster_non_existent(client):
+    cluster_id = 1
+
+    model.Cluster.query.get.return_value = None
+
+    rv = client.get(
+        f'{API_BASE}/lab/cluster/{cluster_id}',
+        headers=AUTH_HEADER,
+    )
+
+    model.Cluster.query.get.assert_called_with(cluster_id)
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Cluster {cluster_id} does not exist'
+
+
+def test_get_cluster_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/lab/cluster/1',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 def test_create_cluster(client, db_session_mock, mocker,
@@ -944,6 +1001,111 @@ def test_create_cluster_invalid_expirations(
     db_session_mock.commit.assert_not_called()
 
 
+def test_create_cluster_existing_name(client, db_session_mock):
+    cluster_data = {
+        'name': 'testcluster',
+        'region_id': 1,
+        'product_id': 1,
+        'product_params': {},
+    }
+
+    model.Cluster.query.filter.return_value.count.return_value = 1
+
+    rv = client.post(
+        f'{API_BASE}/lab/cluster',
+        headers=AUTH_HEADER,
+        json=cluster_data,
+    )
+    
+    db_session_mock.add.assert_not_called()
+
+    assert rv.status_code == 400, rv.data
+    assert rv.json['title'] == 'Bad Request'
+    assert rv.json['detail'] == (
+        f'Cluster with name {cluster_data["name"]!r} already exists'
+    )
+
+
+@pytest.mark.parametrize(
+    'cluster_data, missing_property',
+    [
+        pytest.param(
+            {
+                'region_id': 1,
+                'product_id': 1,
+                'product_params': {},
+            },
+            'name',
+            id='missing_name',
+        ),
+        pytest.param(
+            {
+                'name': 'testcluster',
+                'product_id': 1,
+                'product_params': {},
+            },
+            'region_id',
+            id='missing_region_id',
+        ),
+        pytest.param(
+            {
+                'name': 'testcluster',
+                'region_id': 1,
+                'product_params': {},
+            },
+            'product_id',
+            id='missing_product_id',
+        ),
+        pytest.param(
+            {
+                'name': 'testcluster',
+                'region_id': 1,
+                'product_id': 1,
+            },
+            'product_params',
+            id='missing_product_params',
+        ),
+    ]
+)
+def test_create_cluster_missing_properties(
+    client, 
+    db_session_mock, 
+    cluster_data, 
+    missing_property
+):
+    rv = client.post(
+        f'{API_BASE}/lab/cluster',
+        headers=AUTH_HEADER,
+        json=cluster_data,
+    ) 
+
+    db_session_mock.add.assert_not_called()
+
+    assert rv.status_code == 400, rv.data
+    assert rv.json['title'] == 'Bad Request'
+    assert rv.json['detail'] == f'{missing_property!r} is a required property'
+
+
+def test_create_cluster_unauthorized(client, db_session_mock):
+    cluster_data = {
+        'name': 'testcluster',
+        'region_id': 1,
+        'product_id': 1,
+        'product_params': {},
+    }
+
+    rv = client.post(
+        f'{API_BASE}/lab/cluster',
+        json=cluster_data,
+    )
+
+    db_session_mock.add.assert_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_update_cluster(client, db_session_mock, di_mock, messaging_mock, mocker,
                         region, project, product):
     cluster = model.Cluster(
@@ -1275,6 +1437,65 @@ def test_update_cluster_invalid_expirations(
     db_session_mock.commit.assert_not_called()
 
 
+def test_update_cluster_forbidden(client, db_session_mock, mocker):
+    cluster_id = 1
+    
+    mocker.patch(
+        'rhub.api.lab.cluster._user_can_access_cluster',
+    ).return_value = False
+
+    rv = client.patch(
+        f'{API_BASE}/lab/cluster/{cluster_id}',
+        headers=AUTH_HEADER,
+        json={
+            'description': 'test change',
+        },
+    )
+
+    model.Cluster.query.get.assert_called_with(cluster_id)
+
+    db_session_mock.commit.assert_not_called
+
+    assert rv.status_code == 403, rv.data
+    assert rv.json['title'] == 'Forbidden'
+    assert rv.json['detail'] == "You don't have access to this cluster."
+
+
+def test_update_cluster_non_existent(client, db_session_mock):
+    cluster_id = 1
+
+    model.Cluster.query.get.return_value = None
+
+    rv = client.patch(
+        f'{API_BASE}/lab/cluster/{cluster_id}',
+        headers=AUTH_HEADER,
+        json={
+            'description': 'test change',
+        },
+    )
+
+    db_session_mock.commit.assert_not_called()
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Cluster {cluster_id} does not exist'
+
+
+def test_update_cluster_unauthorized(client, db_session_mock):
+    rv = client.patch(
+        f'{API_BASE}/lab/cluster/1',
+        json={
+            'description': 'test change',
+        },
+    )
+
+    db_session_mock.commit.assert_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_delete_cluster(client, db_session_mock, mocker,
                         region, project, product, tower_client):
     cluster = model.Cluster(
@@ -1325,6 +1546,56 @@ def test_delete_cluster(client, db_session_mock, mocker,
     # Clusters should not be deleted immediately
     db_session_mock.delete.assert_not_called()
     db_session_mock.commit.assert_called()
+
+
+def test_delete_cluster_forbidden(client, db_session_mock, mocker):
+    cluster_id = 1
+
+    mocker.patch(
+        'rhub.api.lab.cluster._user_can_access_cluster',
+    ).return_value = False
+
+    rv = client.delete(
+        f'{API_BASE}/lab/cluster/{cluster_id}',
+        headers=AUTH_HEADER,
+    )
+
+    model.Cluster.query.get.assert_called_with(cluster_id)
+
+    db_session_mock.delete.assert_not_called()
+
+    assert rv.status_code == 403, rv.data
+    assert rv.json['title'] == 'Forbidden'
+    assert rv.json['detail'] == "You don't have access to this cluster."
+
+
+def test_delete_cluster_non_existent(client, db_session_mock):
+    cluster_id = 1
+    
+    model.Cluster.query.get.return_value = None
+
+    rv = client.delete(
+        f'{API_BASE}/lab/cluster/{cluster_id}',
+        headers=AUTH_HEADER,
+    )
+
+    db_session_mock.delete.assert_not_called()
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Cluster {cluster_id} does not exist'
+
+
+def test_delete_cluster_unauthorized(client, db_session_mock):
+    rv = client.delete(
+        f'{API_BASE}/lab/cluster/1',
+    )
+
+    db_session_mock.delete.assert_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 def test_get_cluster_events(client, mocker, project, auth_user):
@@ -1401,6 +1672,52 @@ def test_get_cluster_events(client, mocker, project, auth_user):
     ]
 
 
+def test_get_cluster_events_forbidden(client, mocker):
+    cluster_id = 1
+
+    mocker.patch(
+        'rhub.api.lab.cluster._user_can_access_cluster',
+    ).return_value = False
+
+    rv = client.get(
+        f'{API_BASE}/lab/cluster/{cluster_id}/events',
+        headers=AUTH_HEADER,
+    )
+
+    model.Cluster.query.get.assert_called_with(cluster_id)
+
+    assert rv.status_code == 403, rv.data
+    assert rv.json['title'] == 'Forbidden'
+    assert rv.json['detail'] == "You don't have access to this cluster."
+
+
+def test_get_cluster_events_non_existent_cluster(client):
+    cluster_id = 1
+
+    model.Cluster.query.get.return_value = None
+
+    rv = client.get(
+        f'{API_BASE}/lab/cluster/1/events',
+        headers=AUTH_HEADER,
+    )
+
+    model.Cluster.query.get.assert_called_with(cluster_id)
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Cluster {cluster_id} does not exist'
+    
+
+def test_get_cluster_events_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/lab/cluster/1/events',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_get_cluster_event_stdout(client, mocker):
     event = model.ClusterTowerJobEvent(
         id=1,
@@ -1422,6 +1739,52 @@ def test_get_cluster_event_stdout(client, mocker):
     )
 
     assert rv.data == b'Ansible output.'
+
+
+def test_get_cluster_event_stdout_forbidden(client, mocker):
+    event_id = 1
+    
+    mocker.patch(
+        'rhub.api.lab.cluster._user_can_access_cluster'
+    ).return_value = False
+
+    rv = client.get(
+        f'{API_BASE}/lab/cluster_event/{event_id}/stdout',
+        headers=AUTH_HEADER,
+    )
+
+    model.ClusterTowerJobEvent.query.get.assert_called_with(event_id)
+
+    assert rv.status_code == 403, rv.data
+    assert rv.json['title'] == 'Forbidden'
+    assert rv.json['detail'] == "You don't have access to related cluster."
+
+
+def test_get_cluster_event_stdout_non_existent(client):
+    event_id = 1
+
+    model.ClusterTowerJobEvent.query.get.return_value = None
+
+    rv = client.get(
+        f'{API_BASE}/lab/cluster_event/{event_id}/stdout',
+        headers=AUTH_HEADER,
+    )
+
+    model.ClusterTowerJobEvent.query.get.assert_called_with(event_id)
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Event {event_id} does not exist'
+
+
+def test_get_cluster_event_stdout_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/lab/cluster_event/1/stdout',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 def test_get_cluster_event_stdout_towererror(client, mocker):
@@ -1518,6 +1881,52 @@ def test_get_cluster_hosts(client, project):
     ]
 
 
+def test_get_cluster_hosts_forbidden(client, mocker):
+    cluster_id = 1
+
+    mocker.patch(
+        'rhub.api.lab.cluster._user_can_access_cluster'
+    ).return_value = False
+
+    rv = client.get(
+        f'{API_BASE}/lab/cluster/{cluster_id}/hosts',
+        headers=AUTH_HEADER,
+    )
+
+    model.Cluster.query.get.assert_called_with(cluster_id)
+
+    assert rv.status_code == 403, rv.data
+    assert rv.json['title'] == 'Forbidden'
+    assert rv.json['detail'] == "You don't have access to this cluster."
+
+
+def test_get_cluster_hosts_non_existent(client):
+    cluster_id = 1
+
+    model.Cluster.query.get.return_value = None
+
+    rv = client.get(
+        f'{API_BASE}/lab/cluster/{cluster_id}/hosts',
+        headers=AUTH_HEADER,
+    )
+
+    model.Cluster.query.get.assert_called_with(cluster_id)
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Cluster {cluster_id} does not exist'
+
+
+def test_get_cluster_hosts_unauthorized(client):
+    rv = client.get(
+        f'{API_BASE}/lab/cluster/1/hosts',
+    )
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_create_cluster_hosts(client, db_session_mock, project):
     model.Cluster.query.get.return_value = model.Cluster(
         id=1,
@@ -1567,6 +1976,77 @@ def test_create_cluster_hosts(client, db_session_mock, project):
             assert getattr(host_row, k) == v
 
 
+def test_create_cluster_hosts_non_existent_cluster(client, db_session_mock):
+    cluster_id = 1
+
+    hosts_data = [
+        {
+            'fqdn': 'host0.example.com',
+            'ipaddr': ['1.2.3.4'],
+            'num_vcpus': 2,
+            'ram_mb': 2048,
+            'num_volumes': 3,
+            'volumes_gb': 30,
+        },
+        {
+            'fqdn': 'host1.example.com',
+            'ipaddr': ['1:2::3:4'],
+            'num_vcpus': 2,
+            'ram_mb': 2048,
+            'num_volumes': 3,
+            'volumes_gb': 30,
+        },
+    ]
+
+    model.Cluster.query.get.return_value = None
+
+    rv = client.post(
+        f'{API_BASE}/lab/cluster/{cluster_id}/hosts',
+        headers=AUTH_HEADER,
+        json=hosts_data,
+    )
+
+    model.Cluster.query.get.assert_called_with(cluster_id)
+
+    db_session_mock.add.assert_not_called()
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Cluster {cluster_id} does not exist'
+
+
+def test_create_cluster_hosts_unauthorized(client, db_session_mock):
+    hosts_data = [
+        {
+            'fqdn': 'host0.example.com',
+            'ipaddr': ['1.2.3.4'],
+            'num_vcpus': 2,
+            'ram_mb': 2048,
+            'num_volumes': 3,
+            'volumes_gb': 30,
+        },
+        {
+            'fqdn': 'host1.example.com',
+            'ipaddr': ['1:2::3:4'],
+            'num_vcpus': 2,
+            'ram_mb': 2048,
+            'num_volumes': 3,
+            'volumes_gb': 30,
+        },
+    ]
+
+    rv = client.post(
+        f'{API_BASE}/lab/cluster/1/hosts',
+        json=hosts_data,
+    )
+
+    db_session_mock.add.assert_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
+
+
 def test_delete_cluster_hosts(client, db_session_mock, project):
     hosts = [
         model.ClusterHost(
@@ -1607,6 +2087,35 @@ def test_delete_cluster_hosts(client, db_session_mock, project):
     for host in hosts:
         db_session_mock.delete.assert_any_call(host)
     db_session_mock.commit.assert_called()
+
+
+def test_delete_cluster_hosts_non_existent_cluster(client, db_session_mock):
+    cluster_id = 1
+
+    model.Cluster.query.get.return_value = None
+
+    rv = client.delete(
+        f'{API_BASE}/lab/cluster/{cluster_id}/hosts',
+        headers=AUTH_HEADER,
+    )
+
+    db_session_mock.delete.assert_not_called()
+
+    assert rv.status_code == 404, rv.data
+    assert rv.json['title'] == 'Not Found'
+    assert rv.json['detail'] == f'Cluster {cluster_id} does not exist'
+
+
+def test_delete_cluster_hosts_unauthorized(client, db_session_mock):
+    rv = client.delete(
+        f'{API_BASE}/lab/cluster/1/hosts',
+    )
+
+    db_session_mock.delete.assert_not_called()
+
+    assert rv.status_code == 401, rv.data
+    assert rv.json['title'] == 'Unauthorized'
+    assert rv.json['detail'] == 'No authorization token provided'
 
 
 def test_tower_webhook_cluster(
