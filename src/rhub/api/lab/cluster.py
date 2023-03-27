@@ -3,12 +3,11 @@ import logging
 
 import sqlalchemy
 from connexion import problem
-from dateutil.parser import isoparse as date_parse
 from flask import Response, url_for
 
 from rhub.api import DEFAULT_PAGE_LIMIT, db, di
 from rhub.api.lab.region import _user_can_access_region
-from rhub.api.utils import date_now, db_sort
+from rhub.api.utils import date_now, date_parse, db_sort
 from rhub.auth import model as auth_model
 from rhub.auth import utils as auth_utils
 from rhub.lab import SHAREDCLUSTER_GROUP, model

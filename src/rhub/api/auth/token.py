@@ -1,10 +1,9 @@
 import logging
 
 from connexion import problem
-from dateutil.parser import isoparse as date_parse
 
 from rhub.api import db
-from rhub.api.utils import date_now
+from rhub.api.utils import date_now, date_parse
 from rhub.auth import model, utils
 
 

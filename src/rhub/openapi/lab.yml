@@ -201,7 +201,7 @@ model:
         type: boolean
       created:
         type: string
-        format: date-time
+        format: isodate
         readOnly: true
       region_id:
         $ref: 'common.yml#/model/ID'
@@ -210,12 +210,12 @@ model:
         readOnly: true
       reservation_expiration:
         type: string
-        format: date-time
+        format: isodate
         description: Soft-limit expiration.
         nullable: true
       lifespan_expiration:
         type: string
-        format: date-time
+        format: isodate
         description: Hard-limit expiration.
         nullable: true
       status:
@@ -269,7 +269,7 @@ model:
           - readOnly: true
       date:
         type: string
-        format: date-time
+        format: isodate
         readOnly: true
       user_id:
         $ref: 'common.yml#/model/ID_null'
@@ -316,11 +316,11 @@ model:
             enum: [reservation_change, lifespan_change]
           old_value:
             type: string
-            format: date-time
+            format: isodate
             nullable: true
           new_value:
             type: string
-            format: date-time
+            format: isodate
             nullable: true
 
   ClusterHost:

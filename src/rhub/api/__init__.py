@@ -18,6 +18,7 @@ from flask_injector import FlaskInjector
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from jinja2 import BaseLoader, Environment
+from jsonschema import draft4_format_checker
 from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
 from werkzeug import Response
 
@@ -187,6 +188,18 @@ def value_error_handler(ex: ValueError):
         ext['invalid_field'] = ex.attr_name
 
     return problem_response(400, 'Bad Request', str(ex), ext=ext)
+
+
+@draft4_format_checker.checks('isodate')
+def jsonschema_format_isodate(value):
+    if not isinstance(value, str):
+        return True
+    try:
+        from .utils import date_parse
+        date_parse(value)
+        return True
+    except Exception:
+        return False
 
 
 def create_app(extra_config=None):

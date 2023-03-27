@@ -26,7 +26,7 @@ model:
             type: array
             items:
               type: string
-              format: date-time
+              format: isodate
             maxItems: 2
             nullable: true
           serv_avail:
