@@ -60,11 +60,11 @@ model:
         readOnly: true
       created_at:
         type: string
-        format: date-time
+        format: isodate
         readOnly: true
       expires_at:
         type: string
-        format: date-time
+        format: isodate
         nullable: true
 
   Group:

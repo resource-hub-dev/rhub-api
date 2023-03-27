@@ -309,12 +309,38 @@ def test_create_token(client, db_session_mock, expires_at):
     db_session_mock.commit.assert_called()
 
 
-@pytest.mark.parametrize('expires_at', ['foobar', '1970-01-01T12:00:00Z'])
+@pytest.mark.parametrize('expires_at', ['foobar', '9999-99-99T99:99:99Z'])
 def test_create_token_invalid_expiration(client, db_session_mock, expires_at):
     model.User.query.get.return_value = model.User(id=1, name='testuser')
 
     token_data = {
         'expires_at': expires_at,
+    }
+
+    def db_add(row):
+        row.id = 1
+        row.created_at = DATE
+
+    db_session_mock.add.side_effect = db_add
+
+    rv = client.post(
+        f'{API_BASE}/auth/user/1/token',
+        headers=AUTH_HEADER,
+        json=token_data,
+    )
+
+    assert rv.status_code == 400
+    assert "'expires_at'" in rv.json['detail']
+
+    db_session_mock.add.assert_not_called()
+    db_session_mock.commit.assert_not_called()
+
+
+def test_create_token_expiration_in_past(client, db_session_mock):
+    model.User.query.get.return_value = model.User(id=1, name='testuser')
+
+    token_data = {
+        'expires_at': '1970-01-01T12:00:00Z',
     }
 
     def db_add(row):

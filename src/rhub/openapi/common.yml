@@ -29,7 +29,7 @@ model:
       - $ref: '#/model/ID'
 
   ReadOnlyDateTime:
-    format: date-time
+    format: isodate
     readOnly: true
     type: string
 

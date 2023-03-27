@@ -869,7 +869,7 @@ def test_create_cluster_quota(
 
 
 def test_create_cluster_default_expirations(
-    client, db_session_mock, tower_client, mocker, region, project, product,
+    client, mocker, db_session_mock, tower_client, region, project, product,
 ):
     cluster_data = {
         'name': 'testcluster',
@@ -907,6 +907,41 @@ def test_create_cluster_default_expirations(
     cluster = db_session_mock.add.call_args_list[0].args[0]
     assert cluster.reservation_expiration == None
     assert cluster.lifespan_expiration == None
+
+
+@pytest.mark.parametrize('data_key', ['reservation_expiration', 'lifespan_expiration'])
+@pytest.mark.parametrize('data_value', ['', '9999-99-99T99:99:99Z'])
+def test_create_cluster_invalid_expirations(
+    client, mocker, db_session_mock, tower_client, region, project, product,
+    data_key, data_value,
+):
+    cluster_data = {
+        'name': 'testcluster',
+        'description': 'Test cluster.',
+        'region_id': 1,
+        'product_id': 1,
+        'product_params': {},
+        data_key: data_value,
+    }
+
+    region.lifespan_length = 7
+    mocker.patch('rhub.api.lab.cluster._user_can_set_lifespan').return_value = True
+
+    model.Cluster.query.filter.return_value.count.return_value = 0
+
+    tower_client.template_get.return_value = {'id': 123, 'name': 'dummy-create'}
+
+    rv = client.post(
+        f'{API_BASE}/lab/cluster',
+        headers=AUTH_HEADER,
+        json=cluster_data,
+    )
+
+    assert rv.status_code == 400, rv.data
+    assert f"'{data_key}'" in rv.json['detail']
+
+    tower_client.template_launch.assert_not_called()
+    db_session_mock.commit.assert_not_called()
 
 
 def test_update_cluster(client, db_session_mock, di_mock, messaging_mock, mocker,
@@ -1196,6 +1231,48 @@ def test_update_cluster_extra(client, db_session_mock, di_mock, messaging_mock, 
     assert event.tower_job_id == 1234
 
     messaging_mock.send.assert_called_with('lab.cluster.update', ANY, extra=ANY)
+
+
+@pytest.mark.parametrize('data_key', ['reservation_expiration', 'lifespan_expiration'])
+@pytest.mark.parametrize('data_value', ['', '9999-99-99T99:99:99Z'])
+def test_update_cluster_invalid_expirations(
+    client, mocker, db_session_mock, di_mock, region, project, product,
+    data_key, data_value,
+):
+    cluster = model.Cluster(
+        id=1,
+        name='testcluster',
+        description='test cluster',
+        created=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
+        region_id=region.id,
+        region=region,
+        project_id=project.id,
+        project=project,
+        reservation_expiration=None,
+        lifespan_expiration=None,
+        status=model.ClusterStatus.ACTIVE,
+        product_id=1,
+        product_params={},
+        product=product,
+    )
+    model.Cluster.query.get.return_value = cluster
+
+    region.lifespan_length = 7
+    mocker.patch('rhub.api.lab.cluster._user_can_set_lifespan').return_value = True
+    mocker.patch('rhub.api.lab.cluster.di', new=di_mock)
+
+    rv = client.patch(
+        f'{API_BASE}/lab/cluster/1',
+        headers=AUTH_HEADER,
+        json={
+            data_key: data_value
+        },
+    )
+
+    assert rv.status_code == 400, rv.data
+    assert f"'{data_key}'" in rv.json['detail']
+
+    db_session_mock.commit.assert_not_called()
 
 
 def test_delete_cluster(client, db_session_mock, mocker,

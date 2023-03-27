@@ -68,18 +68,18 @@ model:
         type: string
       created_at:
         type: string
-        format: date-time
+        format: isodate
       started:
         type: boolean
       started_at:
         type: string
-        format: date-time
+        format: isodate
         nullable: true
       finished:
         type: boolean
       finished_at:
         type: string
-        format: date-time
+        format: isodate
         nullable: true
       failed:
         type: boolean
@@ -101,12 +101,10 @@ model:
       started:
         description: Date/Time job started
         type: string
-        format: date-time
         nullable: true
       finished:
         description: Date/Time job finished
         type: string
-        format: date-time
         nullable: true
       status:
         description: Job status
