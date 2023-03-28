@@ -3,6 +3,7 @@ import datetime
 import socket
 import urllib.parse
 
+import dateutil.parser
 from sqlalchemy import event
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import declarative_mixin, declared_attr
@@ -99,6 +100,13 @@ def validate_url(url):
 
 def date_now():
     return datetime.datetime.now().astimezone(datetime.timezone.utc)
+
+
+def date_parse(value):
+    try:
+        return dateutil.parser.isoparse(value)
+    except Exception as e:
+        raise ValueError(f'{value!r} is not valid ISO date - {e!s}') from e
 
 
 def db_sort(query, sort_by, column_remap=None):
