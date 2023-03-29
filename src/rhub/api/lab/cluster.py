@@ -376,14 +376,16 @@ def create_cluster(body, user):
     except ValueError as e:
         return problem(400, 'Bad Request', str(e))
 
-    try:
-        product.validate_cluster_params(cluster.product_params)
-    except Exception as e:
-        db.session.rollback()
-        return problem(400, 'Bad Request', 'Invalid product parameters.',
-                       ext={'invalid_product_params': e.args[0]})
+    # We don't validate shared cluster params as they can exceed allowed values
+    if not shared:
+        try:
+            product.validate_cluster_params(cluster.product_params)
+        except Exception as e:
+            db.session.rollback()
+            return problem(400, 'Bad Request', 'Invalid product parameters.',
+                           ext={'invalid_product_params': e.args[0]})
 
-    if region.user_quota is not None and product.flavors is not None:
+    if region.user_quota is not None and product.flavors is not None and not shared:
         try:
             cluster_usage = lab_utils.calculate_cluster_usage(cluster)
 
