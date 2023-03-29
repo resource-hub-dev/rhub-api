@@ -377,12 +377,12 @@ class Cluster(db.Model, ModelMixin):
     @property
     def authorized_keys(self):
         keys = set(self.owner.ssh_keys)
-        if self.group:
-            for user in self.group.users:
-                keys |= set(user.ssh_keys)
-        elif self.shared:
+        if self.shared:
             users_query = user_model.User.query.filter(user_model.User.deleted.isnot(True))
             for user in users_query:
+                keys |= set(user.ssh_keys)
+        elif self.group:
+            for user in self.group.users:
                 keys |= set(user.ssh_keys)
         return list(keys)
 
