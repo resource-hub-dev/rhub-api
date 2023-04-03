@@ -1,7 +1,0 @@
-nodes:
-  - localhost:9999
-  - localhost:9111
-
-ipmi:
-  - ipmi.host.01.com:9233
-  - ipmi.host.02.com:9233
