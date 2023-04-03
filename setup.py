@@ -27,7 +27,6 @@ setup(
     python_requires=">=3.7, <4",
     install_requires=[
         "alembic",
-        "ansible",
         "attrs",
         "celery",
         "click",
@@ -57,7 +56,6 @@ setup(
         "prometheus_flask_exporter",
         "psycopg2-binary",
         "python-dateutil",
-        "python-ironicclient",
         "pyyaml",
         "requests",
         "SQLAlchemy ~= 1.4",
