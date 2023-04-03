@@ -67,22 +67,10 @@ RHUB_BROKER_MESSAGING_EXCHANGE = os.getenv('RHUB_BROKER_MESSAGING_EXCHANGE', '')
 CELERY_BROKER_URL = RHUB_BROKER_URL
 CELERY_RESULT_BACKEND = 'db+postgresql:' + SQLALCHEMY_DATABASE_URI.split(':', 1)[1]
 CELERY_RESULT_EXPIRES = timedelta(days=7)
-CELERYBEAT_SCHEDULE = {
-    'refresh_ironic_instances_status_task---every_10_minutes': {
-        'task': 'rhub.bare_metal.tasks.handler.refresh_ironic_instances_status_task',
-        'schedule': timedelta(minutes=10),
-    },
-    'stop_provision_after_expiration_task---every_hour': {
-        'task': 'rhub.bare_metal.tasks.provision.stop_provision_after_expiration_task',
-        'schedule': timedelta(hours=1),
-    },
-}
 
 # required on celery worker to generate external urls
 # https://flask.palletsprojects.com/en/2.1.x/config/#SERVER_NAME
 SERVER_NAME = os.getenv('FLASK_SERVER_NAME')
-
-BARE_METAL_LOGS_PATH = Path(os.getenv('RHUB_BARE_METAL_LOGS_DIR', RHUB_DATA_DIR / 'bm-logs'))
 
 
 _log_config_path = os.getenv('LOG_CONFIG')
