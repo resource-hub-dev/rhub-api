@@ -365,7 +365,21 @@ def test_list_clusters_unauthorized(client):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_get_cluster(client, mocker, region_with_quotas, project, product):
+@pytest.mark.parametrize(
+    'is_shared', [pytest.param(False, id='personal'), pytest.param(True, id='shared')],
+)
+@pytest.mark.parametrize(
+    'is_admin', [pytest.param(False, id='user'), pytest.param(True, id='admin')],
+)
+def test_get_cluster(client, mocker, region_with_quotas, project, shared_project,
+                     product, is_shared, is_admin):
+    if is_shared:
+        project = shared_project
+
+    mocker.patch('rhub.api.lab.cluster._user_can_access_cluster').side_effect = (
+        lambda cluster, user_id: is_admin or cluster.owner_id == user_id
+    )
+
     region = region_with_quotas
 
     model.Cluster.query.get.return_value = model.Cluster(
@@ -497,18 +511,33 @@ def test_get_cluster(client, mocker, region_with_quotas, project, product):
         'product_id': 1,
         'product_name': 'dummy',
         'product_params': {},
-        'shared': False,
+        'shared': is_shared,
         '_href': ANY,
     }
 
 
-def test_get_cluster_forbidden(client, mocker):
+def test_get_cluster_forbidden(client, mocker, region, project, product):
     cluster_id = 1
 
-    mocker.patch(
-        'rhub.api.lab.cluster._user_can_access_cluster',
-    ).return_value = False
-    
+    model.Cluster.query.get.return_value = model.Cluster(
+        id=cluster_id,
+        name='testcluster',
+        description='test cluster',
+        created=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
+        region_id=region.id,
+        region=region,
+        project_id=project.id,
+        project=project,
+        reservation_expiration=None,
+        lifespan_expiration=None,
+        status=model.ClusterStatus.ACTIVE,
+        product_id=product.id,
+        product_params={},
+        product=product,
+    )
+
+    mocker.patch('rhub.api.lab.cluster._user_can_access_cluster').return_value = False
+
     rv = client.get(
         f'{API_BASE}/lab/cluster/{cluster_id}',
         headers=AUTH_HEADER,
@@ -1016,7 +1045,7 @@ def test_create_cluster_existing_name(client, db_session_mock):
         headers=AUTH_HEADER,
         json=cluster_data,
     )
-    
+
     db_session_mock.add.assert_not_called()
 
     assert rv.status_code == 400, rv.data
@@ -1068,16 +1097,16 @@ def test_create_cluster_existing_name(client, db_session_mock):
     ]
 )
 def test_create_cluster_missing_properties(
-    client, 
-    db_session_mock, 
-    cluster_data, 
+    client,
+    db_session_mock,
+    cluster_data,
     missing_property
 ):
     rv = client.post(
         f'{API_BASE}/lab/cluster',
         headers=AUTH_HEADER,
         json=cluster_data,
-    ) 
+    )
 
     db_session_mock.add.assert_not_called()
 
@@ -1106,12 +1135,25 @@ def test_create_cluster_unauthorized(client, db_session_mock):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
+@pytest.mark.parametrize(
+    'is_shared', [pytest.param(False, id='personal'), pytest.param(True, id='shared')],
+)
+@pytest.mark.parametrize(
+    'is_admin', [pytest.param(False, id='user'), pytest.param(True, id='admin')],
+)
 def test_update_cluster(client, db_session_mock, di_mock, messaging_mock, mocker,
-                        region, project, product):
+                        region, project, shared_project, product, is_shared, is_admin):
+    if is_shared:
+        project = shared_project
+
+    mocker.patch('rhub.api.lab.cluster._user_can_access_cluster').side_effect = (
+        lambda cluster, user_id: is_admin or cluster.owner_id == user_id
+    )
+
     cluster = model.Cluster(
         id=1,
         name='testcluster',
-        description='test cluster',
+        description='initial value',
         created=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
         region_id=region.id,
         region=region,
@@ -1132,17 +1174,23 @@ def test_update_cluster(client, db_session_mock, di_mock, messaging_mock, mocker
         f'{API_BASE}/lab/cluster/1',
         headers=AUTH_HEADER,
         json={
-            'description': 'test change',
+            'description': 'changed value',
         },
     )
 
-    assert rv.status_code == 200
+    if is_shared and not is_admin:
+        assert rv.status_code == 403
+        assert cluster.description == 'initial value'
 
-    db_session_mock.commit.assert_called()
+        db_session_mock.commit.assert_not_called()
 
-    messaging_mock.send.assert_called_with('lab.cluster.update', ANY, extra=ANY)
+    else:
+        assert rv.status_code == 200
+        assert cluster.description == 'changed value'
 
-    assert cluster.description == 'test change'
+        db_session_mock.commit.assert_called()
+
+        messaging_mock.send.assert_called_with('lab.cluster.update', ANY, extra=ANY)
 
 
 @pytest.mark.parametrize(
@@ -1439,7 +1487,7 @@ def test_update_cluster_invalid_expirations(
 
 def test_update_cluster_forbidden(client, db_session_mock, mocker):
     cluster_id = 1
-    
+
     mocker.patch(
         'rhub.api.lab.cluster._user_can_access_cluster',
     ).return_value = False
@@ -1496,8 +1544,22 @@ def test_update_cluster_unauthorized(client, db_session_mock):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
+@pytest.mark.parametrize(
+    'is_shared', [pytest.param(False, id='personal'), pytest.param(True, id='shared')],
+)
+@pytest.mark.parametrize(
+    'is_admin', [pytest.param(False, id='user'), pytest.param(True, id='admin')],
+)
 def test_delete_cluster(client, db_session_mock, mocker,
-                        region, project, product, tower_client):
+                        region, project, shared_project, product, tower_client,
+                        is_shared, is_admin):
+    if is_shared:
+        project = shared_project
+
+    mocker.patch('rhub.api.lab.cluster._user_can_access_cluster').side_effect = (
+        lambda cluster, user_id: is_admin or cluster.owner_id == user_id
+    )
+
     cluster = model.Cluster(
         id=1,
         name='testcluster',
@@ -1524,28 +1586,33 @@ def test_delete_cluster(client, db_session_mock, mocker,
         headers=AUTH_HEADER,
     )
 
-    assert rv.status_code == 204
+    if is_shared and not is_admin:
+        assert rv.status_code == 403
+        region.tower.create_tower_client.assert_not_called()
+        db_session_mock.commit.assert_not_called()
 
-    region.tower.create_tower_client.assert_called()
-    tower_client.template_get.assert_called_with(template_name='dummy-delete')
-    tower_client.template_launch.assert_called_with(123, {
-        'extra_vars': {
-            'rhub_cluster_id': 1,
-            'rhub_cluster_name': 'testcluster',
-            'rhub_product_id': product.id,
-            'rhub_product_name': product.name,
-            'rhub_region_id': region.id,
-            'rhub_region_name': region.name,
-            'rhub_project_id': project.id,
-            'rhub_project_name': project.name,
-            'rhub_user_id': project.owner_id,
-            'rhub_user_name': project.owner.name,
-        },
-    })
+    else:
+        assert rv.status_code == 204
+        region.tower.create_tower_client.assert_called()
+        tower_client.template_get.assert_called_with(template_name='dummy-delete')
+        tower_client.template_launch.assert_called_with(123, {
+            'extra_vars': {
+                'rhub_cluster_id': 1,
+                'rhub_cluster_name': 'testcluster',
+                'rhub_product_id': product.id,
+                'rhub_product_name': product.name,
+                'rhub_region_id': region.id,
+                'rhub_region_name': region.name,
+                'rhub_project_id': project.id,
+                'rhub_project_name': project.name,
+                'rhub_user_id': project.owner_id,
+                'rhub_user_name': project.owner.name,
+            },
+        })
 
-    # Clusters should not be deleted immediately
-    db_session_mock.delete.assert_not_called()
-    db_session_mock.commit.assert_called()
+        # Clusters should not be deleted immediately
+        db_session_mock.delete.assert_not_called()
+        db_session_mock.commit.assert_called()
 
 
 def test_delete_cluster_forbidden(client, db_session_mock, mocker):
@@ -1571,7 +1638,7 @@ def test_delete_cluster_forbidden(client, db_session_mock, mocker):
 
 def test_delete_cluster_non_existent(client, db_session_mock):
     cluster_id = 1
-    
+
     model.Cluster.query.get.return_value = None
 
     rv = client.delete(
@@ -1706,7 +1773,7 @@ def test_get_cluster_events_non_existent_cluster(client):
     assert rv.status_code == 404, rv.data
     assert rv.json['title'] == 'Not Found'
     assert rv.json['detail'] == f'Cluster {cluster_id} does not exist'
-    
+
 
 def test_get_cluster_events_unauthorized(client):
     rv = client.get(
@@ -1743,7 +1810,7 @@ def test_get_cluster_event_stdout(client, mocker):
 
 def test_get_cluster_event_stdout_forbidden(client, mocker):
     event_id = 1
-    
+
     mocker.patch(
         'rhub.api.lab.cluster._user_can_access_cluster'
     ).return_value = False
