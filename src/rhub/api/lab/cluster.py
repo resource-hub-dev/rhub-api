@@ -465,7 +465,7 @@ def get_cluster(cluster_id, user):
     if not cluster:
         return problem(404, 'Not Found', f'Cluster {cluster_id} does not exist')
 
-    if not _user_can_access_cluster(cluster, user):
+    if not _user_can_access_cluster(cluster, user) and not cluster.shared:
         return problem(403, 'Forbidden', "You don't have access to this cluster.")
 
     return cluster.to_dict() | {'_href': _cluster_href(cluster)}
