@@ -116,7 +116,8 @@ def _cluster_event_href(cluster_event):
     if cluster_event.user_id:
         href['user'] = url_for('.rhub_api_auth_user_user_get',
                                user_id=cluster_event.user_id)
-    if cluster_event.type == model.ClusterEventType.TOWER_JOB:
+    if (cluster_event.type == model.ClusterEventType.TOWER_JOB
+            and cluster_event.tower_id and cluster_event.tower_job_id):
         href['tower'] = url_for('.rhub_api_tower_get_server',
                                 server_id=cluster_event.tower_id)
         href['event_stdout'] = url_for('.rhub_api_lab_cluster_get_cluster_event_stdout',
@@ -575,22 +576,21 @@ def update_cluster_extra(cluster_id, body, user):
 
         cluster_data['status'] = model.ClusterStatus(cluster_data['status'])
 
-        if tower_job_id:
-            cluster_event = model.ClusterTowerJobEvent(
-                cluster_id=cluster.id,
-                user_id=user,
-                date=date_now(),
-                status=cluster_data['status'],
-                tower_id=cluster.region.tower_id,
-                tower_job_id=tower_job_id,
-            )
-            db.session.add(cluster_event)
+        cluster_event = model.ClusterTowerJobEvent(
+            cluster_id=cluster.id,
+            user_id=user,
+            date=date_now(),
+            status=cluster_data['status'],
+            tower_id=cluster.region.tower_id if tower_job_id else None,
+            tower_job_id=tower_job_id,
+        )
+        db.session.add(cluster_event)
 
-            logger.info(
-                f'Tower job ID={tower_job_id} changed status of cluster '
-                f'ID={cluster.id} {cluster_data["status"]}',
-                extra={'cluster_id': cluster.id, 'tower_job_id': tower_job_id},
-            )
+        logger.info(
+            f'Tower job ID={tower_job_id} changed status of cluster '
+            f'ID={cluster.id} {cluster_data["status"]}',
+            extra={'cluster_id': cluster.id, 'tower_job_id': tower_job_id},
+        )
 
     cluster.update_from_dict(cluster_data)
 
