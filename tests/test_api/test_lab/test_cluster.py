@@ -1387,8 +1387,13 @@ def test_update_cluster_status(client, db_session_mock, di_mock, messaging_mock,
 
     assert rv.status_code == 200
 
-    # Only update, no events added
-    db_session_mock.add.assert_not_called()
+    assert len(db_session_mock.add.call_args_list) == 1
+    event = db_session_mock.add.call_args_list[0].args[0]
+    assert isinstance(event, model.ClusterTowerJobEvent)
+    assert event.type == model.ClusterEventType.TOWER_JOB
+    assert event.status == model.ClusterStatus.ACTIVE
+    assert event.tower_id is None
+    assert event.tower_job_id is None
 
     messaging_mock.send.assert_called_with('lab.cluster.update', ANY, extra=ANY)
 
