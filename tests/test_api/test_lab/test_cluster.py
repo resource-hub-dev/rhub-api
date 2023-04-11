@@ -1670,7 +1670,21 @@ def test_delete_cluster_unauthorized(client, db_session_mock):
     assert rv.json['detail'] == 'No authorization token provided'
 
 
-def test_get_cluster_events(client, mocker, project, auth_user):
+@pytest.mark.parametrize(
+    'is_shared', [pytest.param(False, id='personal'), pytest.param(True, id='shared')],
+)
+@pytest.mark.parametrize(
+    'is_admin', [pytest.param(False, id='user'), pytest.param(True, id='admin')],
+)
+def test_get_cluster_events(client, mocker, project, shared_project, auth_user,
+                            is_shared, is_admin):
+    if is_shared:
+        project = shared_project
+
+    mocker.patch('rhub.api.lab.cluster._user_can_access_cluster').side_effect = (
+        lambda cluster, user_id: is_admin or cluster.owner_id == user_id
+    )
+
     events = [
         model.ClusterTowerJobEvent(
             id=1,
@@ -1744,12 +1758,27 @@ def test_get_cluster_events(client, mocker, project, auth_user):
     ]
 
 
-def test_get_cluster_events_forbidden(client, mocker):
+def test_get_cluster_events_forbidden(client, mocker, region, project, product):
     cluster_id = 1
 
-    mocker.patch(
-        'rhub.api.lab.cluster._user_can_access_cluster',
-    ).return_value = False
+    model.Cluster.query.get.return_value = model.Cluster(
+        id=cluster_id,
+        name='testcluster',
+        description='test cluster',
+        created=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
+        region_id=region.id,
+        region=region,
+        project_id=project.id,
+        project=project,
+        reservation_expiration=None,
+        lifespan_expiration=None,
+        status=model.ClusterStatus.ACTIVE,
+        product_id=product.id,
+        product_params={},
+        product=product,
+    )
+
+    mocker.patch('rhub.api.lab.cluster._user_can_access_cluster').return_value = False
 
     rv = client.get(
         f'{API_BASE}/lab/cluster/{cluster_id}/events',
@@ -1813,12 +1842,39 @@ def test_get_cluster_event_stdout(client, mocker):
     assert rv.data == b'Ansible output.'
 
 
-def test_get_cluster_event_stdout_forbidden(client, mocker):
+def test_get_cluster_event_stdout_forbidden(client, mocker, region, project, product):
     event_id = 1
 
-    mocker.patch(
-        'rhub.api.lab.cluster._user_can_access_cluster'
-    ).return_value = False
+    cluster = model.Cluster(
+        id=1,
+        name='testcluster',
+        description='test cluster',
+        created=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
+        region_id=region.id,
+        region=region,
+        project_id=project.id,
+        project=project,
+        reservation_expiration=None,
+        lifespan_expiration=None,
+        status=model.ClusterStatus.ACTIVE,
+        product_id=product.id,
+        product_params={},
+        product=product,
+    )
+
+    model.ClusterTowerJobEvent.query.get.return_value = model.ClusterTowerJobEvent(
+        id=1,
+        date=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
+        user_id='00000000-0000-0000-0000-000000000000',
+        cluster_id=1,
+        cluster=cluster,
+        tower_id=1,
+        tower=tower_model.Server(id=1),
+        tower_job_id=1,
+        status=model.ClusterStatus.POST_PROVISIONING,
+    )
+
+    mocker.patch('rhub.api.lab.cluster._user_can_access_cluster').return_value = False
 
     rv = client.get(
         f'{API_BASE}/lab/cluster_event/{event_id}/stdout',
@@ -1882,7 +1938,20 @@ def test_get_cluster_event_stdout_towererror(client, mocker):
     assert rv.status_code != 200
 
 
-def test_get_cluster_hosts(client, project):
+@pytest.mark.parametrize(
+    'is_shared', [pytest.param(False, id='personal'), pytest.param(True, id='shared')],
+)
+@pytest.mark.parametrize(
+    'is_admin', [pytest.param(False, id='user'), pytest.param(True, id='admin')],
+)
+def test_get_cluster_hosts(mocker, client, project, shared_project, is_shared, is_admin):
+    if is_shared:
+        project = shared_project
+
+    mocker.patch('rhub.api.lab.cluster._user_can_access_cluster').side_effect = (
+        lambda cluster, user_id: is_admin or cluster.owner_id == user_id
+    )
+
     model.Cluster.query.get.return_value = model.Cluster(
         id=1,
         name='testcluster',
@@ -1953,12 +2022,24 @@ def test_get_cluster_hosts(client, project):
     ]
 
 
-def test_get_cluster_hosts_forbidden(client, mocker):
+def test_get_cluster_hosts_forbidden(client, mocker, project):
     cluster_id = 1
 
-    mocker.patch(
-        'rhub.api.lab.cluster._user_can_access_cluster'
-    ).return_value = False
+    model.Cluster.query.get.return_value = model.Cluster(
+        id=cluster_id,
+        name='testcluster',
+        description='test cluster',
+        created=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
+        region_id=1,
+        project_id=project.id,
+        project=project,
+        reservation_expiration=None,
+        lifespan_expiration=None,
+        status=model.ClusterStatus.ACTIVE,
+        hosts=[],
+    )
+
+    mocker.patch('rhub.api.lab.cluster._user_can_access_cluster').return_value = False
 
     rv = client.get(
         f'{API_BASE}/lab/cluster/{cluster_id}/hosts',
