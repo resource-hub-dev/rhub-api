@@ -651,7 +651,7 @@ def list_cluster_events(cluster_id, user):
     if not cluster:
         return problem(404, 'Not Found', f'Cluster {cluster_id} does not exist')
 
-    if not _user_can_access_cluster(cluster, user):
+    if not _user_can_access_cluster(cluster, user) and not cluster.shared:
         return problem(403, 'Forbidden', "You don't have access to this cluster.")
 
     return [
@@ -665,7 +665,7 @@ def get_cluster_event(event_id, user):
     if not event:
         return problem(404, 'Not Found', f'Event {event_id} does not exist')
 
-    if not _user_can_access_cluster(event.cluster, user):
+    if not _user_can_access_cluster(event.cluster, user) and not event.cluster.shared:
         return problem(403, 'Forbidden', "You don't have access to related cluster.")
 
     return event.to_dict() | {'_href': _cluster_event_href(event)}
@@ -676,7 +676,7 @@ def get_cluster_event_stdout(event_id, user):
     if not event:
         return problem(404, 'Not Found', f'Event {event_id} does not exist')
 
-    if not _user_can_access_cluster(event.cluster, user):
+    if not _user_can_access_cluster(event.cluster, user) and not event.cluster.shared:
         return problem(403, 'Forbidden', "You don't have access to related cluster.")
 
     try:
@@ -691,7 +691,7 @@ def list_cluster_hosts(cluster_id, user):
     if not cluster:
         return problem(404, 'Not Found', f'Cluster {cluster_id} does not exist')
 
-    if not _user_can_access_cluster(cluster, user):
+    if not _user_can_access_cluster(cluster, user) and not cluster.shared:
         return problem(403, 'Forbidden', "You don't have access to this cluster.")
 
     return [
