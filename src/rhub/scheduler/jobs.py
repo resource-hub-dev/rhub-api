@@ -137,7 +137,7 @@ def delete_expired_clusters(params):
 
         msg_extra = {
             'owner_id': cluster.owner_id,
-            'owner_name': cluster.owner_name,
+            'owner_name': cluster.owner.name,
             'cluster_id': cluster.id,
             'cluster_name': cluster.name,
             'cluster_reservation_expiration': (
