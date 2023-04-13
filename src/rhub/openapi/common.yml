@@ -13,37 +13,10 @@ model:
     minimum: 1
     nullable: true
 
-  MACAddress:
-    description: MAC address
-    example: 11:22:33:44:55:66
-    maxLength: 17
-    minLength: 17
-    pattern: ^([A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2}$
-    type: string
-
-  ReadOnlyID:
-    description: Database ID
-    format: int64
-    readOnly: true
-    allOf:
-      - $ref: '#/model/ID'
-
   ReadOnlyDateTime:
     format: isodate
     readOnly: true
     type: string
-
-  String64:
-    type: string
-    maxLength: 64
-
-  String128:
-    type: string
-    maxLength: 128
-
-  String1024:
-    type: string
-    maxLength: 1024
 
   TimestampModel:
     type: object
