@@ -603,6 +603,8 @@ def update_cluster_extra(cluster_id, body, user):
         extra={
             'cluster_id': cluster.id,
             'cluster_name': cluster.name,
+            'owner_id': cluster.owner_id,
+            'owner_name': cluster.owner.name,
             'update_data': body['cluster_data'],
             'tower_job_id': body.get('tower_job_id'),
         },
