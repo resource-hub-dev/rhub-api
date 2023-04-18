@@ -232,7 +232,7 @@ def project_create(body, user):
     return project.to_dict() | {'_href': _project_href(project)}
 
 
-def project_get(project_id, user):
+def project_get(project_id, user, with_credentials=False):
     project = model.Project.query.get(project_id)
     if not project:
         return problem(404, 'Not Found', f'Project {project_id} does not exist')
@@ -240,7 +240,7 @@ def project_get(project_id, user):
     if not _user_can_access_project(project, user):
         return problem(403, 'Forbidden', "You don't have access to this project.")
 
-    return project.to_dict() | {'_href': _project_href(project)}
+    return project.to_dict(with_credentials) | {'_href': _project_href(project)}
 
 
 def project_update(project_id, body, user):
