@@ -564,6 +564,50 @@ def test_get_project(client, auth_user, auth_group):
     }
 
 
+@pytest.mark.parametrize('with_credentials', [True, False])
+def test_get_project_credentials(client, auth_user, auth_group, with_credentials):
+    cloud = model.Cloud(
+        id=1,
+        name='test_cloud',
+        description='',
+        owner_group_id=auth_group.id,
+        owner_group=auth_group,
+        url='https://openstack.example.com:13000',
+        domain_name='Default',
+        domain_id='default',
+        networks=['test_net'],
+    )
+
+    credentials = {'application_id': 'foo', 'application_secret': 'bar'}
+
+    model.Project.query.get.return_value = model.Project(
+        id=1,
+        cloud_id=1,
+        cloud=cloud,
+        name='test_project',
+        description='',
+        owner_id=auth_user.id,
+        owner=auth_user,
+        credentials=credentials,
+    )
+
+    query_string = f'with_credentials={"true" if with_credentials else "false"}'
+
+    rv = client.get(
+        f'{API_BASE}/openstack/project/1?{query_string}',
+        headers=AUTH_HEADER,
+    )
+
+    model.Project.query.get.assert_called_with(1)
+
+    assert rv.status_code == 200, rv.data
+
+    if with_credentials:
+        assert 'credentials' in rv.json
+        assert rv.json['credentials'] == credentials
+    else:
+        assert 'credentials' not in rv.json
+
 def test_get_project_non_existent(client):
     project_id = 1
 

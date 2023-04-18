@@ -22,7 +22,7 @@ class Cloud(db.Model, ModelMixin):
     owner_group = db.relationship(auth_model.Group)
     url = db.Column(db.String(256), nullable=False)
     #: OpenStack credentials path in Vault
-    credentials = db.Column(db.String(256), nullable=False)
+    credentials = db.Column(db.String(256), nullable=True)
     domain_name = db.Column(db.String(64), nullable=False)
     domain_id = db.Column(db.String(64), nullable=False)
     #: Network providers that can be used in the cloud
@@ -38,10 +38,11 @@ class Cloud(db.Model, ModelMixin):
 
     @validates('credentials')
     def _validate_credentials(self, key, value):
-        vault = di.get(Vault)
-        if not vault.exists(value):
-            raise ModelValueError(f'{value!r} does not exist in Vault',
-                                  self, key, value)
+        if value is not None:
+            vault = di.get(Vault)
+            if not vault.exists(value):
+                raise ModelValueError(f'{value!r} does not exist in Vault',
+                                      self, key, value)
         return value
 
     @validates('url')
@@ -71,9 +72,12 @@ class Project(db.Model, ModelMixin):
     owner = db.relationship(auth_model.User)
     group_id = db.Column(db.ForeignKey('auth_group.id'), nullable=True)
     group = db.relationship(auth_model.Group)
+    credentials = db.Column(db.JSON, nullable=True)
 
-    def to_dict(self):
+    def to_dict(self, with_credentials=False):
         data = super().to_dict()
+        if not with_credentials:
+            del data['credentials']
         data['cloud_name'] = self.cloud.name
         data['owner_name'] = self.owner.name
         data['group_name'] = self.group.name if self.group else None
@@ -86,19 +90,30 @@ class Project(db.Model, ModelMixin):
         Returns:
             openstack.connection.Connection
         """
-        vault = di.get(Vault)
-        credentials = vault.read(self.cloud.credentials)
-        if not credentials:
-            raise RuntimeError(
-                f'Missing credentials in vault; {vault!r} {self.cloud.credentials}'
-            )
+        auth_kwargs = {}
+        if self.credentials:
+            auth_kwargs.update(dict(
+                application_credential_id=self.credentials['application_id'],
+                application_credential_secret=self.credentials['application_secret'],
+            ))
+        else:
+            vault = di.get(Vault)
+            credentials = vault.read(self.cloud.credentials)
+            if not credentials:
+                raise RuntimeError(
+                    f'Missing credentials in vault; {vault!r} {self.cloud.credentials}'
+                )
+            auth_kwargs.update(dict(
+                username=credentials['username'],
+                password=credentials['password'],
+            ))
+
         connection = openstack.connection.Connection(
             auth=dict(
                 auth_url=self.cloud.url,
-                username=credentials['username'],
-                password=credentials['password'],
                 project_name=self.name,
                 domain_name=self.cloud.domain_name,
+                **auth_kwargs,
             ),
             region_name="regionOne",
             interface="public",
@@ -110,3 +125,13 @@ class Project(db.Model, ModelMixin):
     def get_openstack_limits(self):
         os_client = self.create_openstack_client()
         return os_client.compute.get_limits()
+
+    @validates('credentials')
+    def _validate_credentials(self, key, value):
+        if value is not None:
+            for k in ['application_id', 'application_secret']:
+                if k not in value:
+                    raise ModelValueError(f"Missing '{k}' in credentials")
+                if not isinstance(value[k], str):
+                    raise ModelValueError(f"Invalid type of '{k}' in credentials")
+        return value

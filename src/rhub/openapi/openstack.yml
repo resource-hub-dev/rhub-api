@@ -25,6 +25,7 @@ model:
         maxLength: 256
         example: https://rhub-cloud.rdu.example.com:13000
       credentials:
+        nullable: true
         oneOf:
           - description: Credentials to store in Vault
             type: object
@@ -86,6 +87,14 @@ model:
         type: string
         nullable: true
         readOnly: true
+      credentials:
+        type: object
+        properties:
+          application_id:
+            type: string
+          application_secret:
+            type: string
+        nullable: true
 
 
 parameters:
@@ -185,7 +194,6 @@ endpoints:
             allOf:
               - $ref: '#/model/Cloud'
               - required:
-                  - credentials
                   - domain_id
                   - domain_name
                   - name
@@ -364,6 +372,11 @@ endpoints:
     operationId: rhub.api.openstack.project_get
     parameters:
       - $ref: '#/parameters/project_id'
+      - name: with_credentials
+        in: query
+        description: Return `credentials` in the response, disabled by default.
+        schema:
+          type: boolean
     responses:
       '200':
         description: Project
