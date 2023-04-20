@@ -31,14 +31,28 @@ class Messaging:
 
         logger.debug(f'Sending message {msg!r} to {topic!r}, {data!r}')
 
-        producer = self._connection.Producer()
-        producer.publish(
-            json.dumps(data),
-            content_type='application/json',
-            content_encoding='ASCII',
-            exchange=self._exchange,
-            routing_key=topic,
-        )
+        def publish_errback(ex, interval):
+            logger.error(
+                f'Failed to send message to {topic!r}, retry in {interval} seconds'
+            )
+
+        try:
+            producer = self._connection.Producer()
+            producer.publish(
+                json.dumps(data),
+                content_type='application/json',
+                content_encoding='ASCII',
+                exchange=self._exchange,
+                routing_key=topic,
+                retry=True,
+                retry_policy=dict(
+                    max_retries=3,
+                    interval_start=2,
+                    errback=publish_errback,
+                ),
+            )
+        except Exception:
+            logger.exception(f'Failed to send message {msg!r} to {topic!r}, {data!r}')
 
 
 class MessagingModule(injector.Module):
