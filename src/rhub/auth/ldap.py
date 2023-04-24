@@ -107,10 +107,18 @@ class LdapClient:
         if not isinstance(values, list):
             values = [values]
 
-        def remove_ssh_key_comment(ssh_key):
-            return ' '.join(ssh_key.split()[:2])
+        from .utils import normalize_ssh_key
 
-        return [remove_ssh_key_comment(i.decode()) for i in values]
+        keys = []
+        for item in values:
+            try:
+                keys.append(normalize_ssh_key(item.decode()))
+            except ValueError as e:
+                logger.error(
+                    f'Failed to extract SSH key from LDAP user entry, ignoring '
+                    f'ldap_dn={entry.entry_dn!r} ssh_key={item!r}: {e!s}'
+                )
+        return keys
 
 
 class LdapModule(injector.Module):
