@@ -1,4 +1,6 @@
+import base64
 import functools
+import struct
 
 from werkzeug.exceptions import Forbidden
 
@@ -59,3 +61,24 @@ def route_require_admin(fn):
     API endpoint.
     """
     return route_require_role(model.Role.ADMIN)(fn)
+
+
+def normalize_ssh_key(ssh_key):
+    """
+    Normalize SSH key format - can fix malformed SSH keys and removes comment
+    from the key.
+    """
+    # RFC 4253, Section 6.6; RFC 4251, Section 5
+    def norm(blob_b64):
+        blob = base64.b64decode(blob_b64)
+        key_type_len, *_ = struct.unpack('!I', blob[:4])
+        key_type = blob[4:4 + key_type_len].decode('ASCII')
+        return f'{key_type} {blob_b64}'
+
+    for i in ssh_key.split():
+        try:
+            return norm(i)
+        except Exception:
+            pass
+
+    raise ValueError('invalid SSH key')
