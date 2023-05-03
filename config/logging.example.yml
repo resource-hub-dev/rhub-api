@@ -12,6 +12,14 @@ handlers:
     stream: ext://sys.stdout
     level: NOTSET
     formatter: generic
+  splunk:
+    (): rhub.splunk_hec.SplunkHecHandler
+    base_url: https://splunk-hec.example.com:8088
+    token: 00000000-0000-0000-0000-000000000000
+    source: rhub-prod
+    sourcetype: openshift
+    index: rhub
+    fields: [name, pathname, lineno, funcName, module, levelno]
 
 root:
   level: WARN
