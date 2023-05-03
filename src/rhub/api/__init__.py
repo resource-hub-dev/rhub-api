@@ -138,10 +138,6 @@ def log_response(response):
         response_status = response.status
         if response.content_type in {'application/json', 'application/problem+json'}:
             response_data = response.json
-            # Don't display secrets in logs.
-            for k in response_data:
-                if k in {'access_token', 'refresh_token'}:
-                    response_data[k] = '***'
         else:
             response_data = response.data
 
@@ -247,7 +243,7 @@ def create_app(extra_config=None):
     flask_app.cli.add_command(create_user_command)
     flask_app.cli.add_command(create_token_command)
 
-    if logger.isEnabledFor(logging.DEBUG):
+    if flask.helpers.get_debug_flag():
         flask_app.before_request(log_request)
         flask_app.after_request(log_response)
 
