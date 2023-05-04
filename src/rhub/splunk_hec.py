@@ -1,6 +1,7 @@
 import json
 import logging
 import urllib.request
+import socket
 
 
 def _json_serializer(value):
@@ -20,7 +21,7 @@ class SplunkHecHandler(logging.Handler):
     }
 
     def __init__(self, base_url, token, source=None, sourcetype=None, index=None,
-                 fields=None):
+                 fields=None, host=None):
         super().__init__()
 
         self.base_url = base_url.rstrip('/')
@@ -29,6 +30,7 @@ class SplunkHecHandler(logging.Handler):
         self.sourcetype = sourcetype
         self.index = index
         self.fields = fields or []
+        self.host = host or socket.gethostname()
 
         self.request(f'{self.endpoint_url}/health')
 
@@ -60,6 +62,7 @@ class SplunkHecHandler(logging.Handler):
             'event': data,
             'fields': fields,
             'time': record.created,
+            'host': self.host,
         }
 
         if self.source:
