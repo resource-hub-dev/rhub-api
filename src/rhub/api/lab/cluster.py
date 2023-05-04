@@ -341,7 +341,7 @@ def create_cluster(body, user):
 
     else:
         user_row = auth_model.User.query.get(user)
-        project_name = f'ql_{user_row.name}'
+        project_name = f'rhb_{user_row.name}'
 
         project_query = openstack_model.Project.query.filter(
             db.and_(
