@@ -781,14 +781,15 @@ def reboot_hosts(cluster_id, body, user):
     try:
         os_client = cluster.project.create_openstack_client()
         for server in os_client.compute.servers():
-            if server.hostname in hosts_to_reboot:
+            hostname = server.name
+            if hostname in hosts_to_reboot:
                 logger.info(
-                    f'Rebooting cluster host {server.hostname}, '
+                    f'Rebooting cluster host {hostname}, '
                     f'cluster_id={cluster.id}',
                     extra={'user_id': user, 'cluster_id': cluster.id},
                 )
                 os_client.compute.reboot_server(server, reboot_type)
-                rebooted_hosts.append(hosts_to_reboot[server.hostname])
+                rebooted_hosts.append(hosts_to_reboot[hostname])
     except Exception as e:
         logger.exception(f'Failed to reboot nodes, {e!s}')
         return problem(500, 'Server Error', 'Failed to reboot nodes')
