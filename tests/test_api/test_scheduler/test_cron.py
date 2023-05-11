@@ -26,7 +26,7 @@ def test_list(client):
             description='',
             enabled=True,
             time_expr='0 */2 * * *',
-            job_name='example',
+            job_name='tower_launch',
             job_params={'foo': 'bar'},
             last_run=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
         ),
@@ -47,7 +47,7 @@ def test_list(client):
                 'description': '',
                 'enabled': True,
                 'time_expr': '0 */2 * * *',
-                'job_name': 'example',
+                'job_name': 'tower_launch',
                 'job_params': {'foo': 'bar'},
                 'last_run': '2021-01-01T01:00:00+00:00',
             },
@@ -72,7 +72,7 @@ def test_create(client, db_session_mock):
         'description': 'Example cron job',
         'enabled': True,
         'time_expr': '0 */2 * * *',
-        'job_name': 'example',
+        'job_name': 'tower_launch',
         'job_params': {'foo': 'bar'},
     }
 
@@ -114,10 +114,7 @@ def test_create_invalid_job_name(client, db_session_mock):
 
     assert rv.status_code == 400, rv.data
     assert rv.json['title'] == 'Bad Request'
-    assert rv.json['detail'] == (
-        f"{cron_job_data['job_name']!r} is not one of ['example', "
-        "'tower_launch', 'delete_expired_clusters'] - 'job_name'"
-    )
+    assert rv.json['detail'].startswith(f"{cron_job_data['job_name']!r} is not one of")
 
 
 @pytest.mark.parametrize(
@@ -134,7 +131,7 @@ def test_create_invalid_job_name(client, db_session_mock):
         pytest.param(
             {
                 'time_expr': '0 */2 * * *',
-                'job_name': 'example',
+                'job_name': 'tower_launch',
             },
             'name',
             id='missing_name'
@@ -142,7 +139,7 @@ def test_create_invalid_job_name(client, db_session_mock):
         pytest.param(
             {
                 'name': 'example',
-                'job_name': 'example',
+                'job_name': 'tower_launch',
             },
             'time_expr',
             id='missing_time_expr'
@@ -176,7 +173,7 @@ def test_create_unauthorized(client, db_session_mock):
         'description': 'Example cron job',
         'enabled': True,
         'time_expr': '0 */2 * * *',
-        'job_name': 'example',
+        'job_name': 'tower_launch',
         'job_params': {'foo': 'bar'},
     }
 
@@ -198,7 +195,7 @@ def test_create_duplicate_name(client, db_session_mock):
         'description': 'Example cron job',
         'enabled': True,
         'time_expr': '0 */2 * * *',
-        'job_name': 'example',
+        'job_name': 'tower_launch',
         'job_params': {'foo': 'bar'},
     }
 
@@ -221,7 +218,7 @@ def test_get(client):
         description='',
         enabled=True,
         time_expr='0 */2 * * *',
-        job_name='example',
+        job_name='tower_launch',
         job_params={'foo': 'bar'},
         last_run=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
     )
@@ -238,7 +235,7 @@ def test_get(client):
         'description': '',
         'enabled': True,
         'time_expr': '0 */2 * * *',
-        'job_name': 'example',
+        'job_name': 'tower_launch',
         'job_params': {'foo': 'bar'},
         'last_run': '2021-01-01T01:00:00+00:00',
     }
@@ -278,7 +275,7 @@ def test_update(client, db_session_mock):
         description='',
         enabled=True,
         time_expr='0 */2 * * *',
-        job_name='example',
+        job_name='tower_launch',
         job_params={'foo': 'bar'},
         last_run=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
     )
@@ -325,7 +322,7 @@ def test_update_non_existent(client, db_session_mock):
 
 
 def test_update_invalid_job_name(client):
-    expected_job_name = 'example'
+    expected_job_name = 'tower_launch'
 
     cron_job = model.SchedulerCronJob(
         id=1,
@@ -351,10 +348,7 @@ def test_update_invalid_job_name(client):
 
     assert rv.status_code == 400, rv.data
     assert rv.json['title'] == 'Bad Request'
-    assert rv.json['detail'] == (
-        f"{new_data['job_name']!r} is not one of ['example', "
-        "'tower_launch', 'delete_expired_clusters'] - 'job_name'"
-    )
+    assert rv.json['detail'].startswith(f"{new_data['job_name']!r} is not one of")
 
 
 def test_update_unauthorized(client, db_session_mock):
@@ -367,7 +361,7 @@ def test_update_unauthorized(client, db_session_mock):
         description='',
         enabled=True,
         time_expr=expected_time_expr,
-        job_name='example',
+        job_name='tower_launch',
         job_params=expected_job_params,
         last_run=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
     )
@@ -398,7 +392,7 @@ def test_update_duplicate_name(client, db_session_mock):
         description='',
         enabled=True,
         time_expr='0 */2 * * *',
-        job_name='example',
+        job_name='tower_launch',
         job_params={'foo': 'bar'},
         last_run=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
     )
@@ -425,7 +419,7 @@ def test_delete(client, db_session_mock):
         description='',
         enabled=True,
         time_expr='0 */2 * * *',
-        job_name='example',
+        job_name='tower_launch',
         job_params={'foo': 'bar'},
         last_run=datetime.datetime(2021, 1, 1, 1, 0, 0, tzinfo=tzutc()),
     )

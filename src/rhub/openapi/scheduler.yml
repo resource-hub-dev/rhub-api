@@ -21,9 +21,10 @@ model:
       job_name:
         type: string
         enum:
-          - example
-          - tower_launch
+          - cleanup_deleted_clusters
           - delete_expired_clusters
+          - tower_launch
+          - update_ldap_data
       job_params:
         type: object
         nullable: true
