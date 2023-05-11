@@ -49,12 +49,6 @@ class CronJob:
 
 
 @CronJob
-def example(params):
-    """Example cron job."""
-    logger.info(f'Executing example cron job, {params=}')
-
-
-@CronJob
 def tower_launch(params):
     """
     Launch template in Tower.
