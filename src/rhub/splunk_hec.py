@@ -10,6 +10,24 @@ def _json_serializer(value):
     return repr(value)
 
 
+def _flatten_dict(d, separator='_'):
+    out = {}
+
+    for k, v in d.items():
+        if isinstance(v, (list, tuple)):
+            if any(not (isinstance(i, (str, int, float, bool)) or i is None)
+                   for i in v):
+                v = json.dumps(v, default=_json_serializer, skipkeys=True)
+
+        if isinstance(v, dict):
+            for kk, vv in _flatten_dict(v).items():
+                out[f'{k}{separator}{kk}'] = vv
+        else:
+            out[k] = v
+
+    return out
+
+
 class SplunkHecHandler(logging.Handler):
     # http://docs.python.org/library/logging.html#logrecord-attributes
     _logrecord_attrs = {
@@ -60,7 +78,7 @@ class SplunkHecHandler(logging.Handler):
 
         event = {
             'event': data,
-            'fields': fields,
+            'fields': _flatten_dict(fields),
             'time': record.created,
             'host': self.host,
         }
