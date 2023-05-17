@@ -53,7 +53,6 @@ setup(
         "openapi_spec_validator",
         "openstacksdk",
         "prance[osv]",
-        "prometheus_flask_exporter",
         "psycopg2-binary",
         "python-dateutil",
         "pyyaml",

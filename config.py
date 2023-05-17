@@ -44,10 +44,3 @@ logger_class = CustomGunicornLogger
 # Must be set to True, otherwise scheduler and messaging thread are started
 # multiple times in each of gunicorn worker.
 preload_app = FLASK_ENV != 'development'
-
-
-from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
-
-
-def child_exit(server, worker):
-    GunicornInternalPrometheusMetrics.mark_process_dead_on_child_exit(worker.pid)

@@ -75,38 +75,5 @@ services:
       - ./config/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
       - ./config/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
 
-  otel:
-    image: otel/opentelemetry-collector-contrib-dev:latest
-    ports:
-      - "8889:8889" # prometheus federation
-      - "8888:8888" # metrics from otel itself
-      - "1888:1888" # pprof extension
-      - "55679:55679" # zpages extension
-    volumes:
-      - ./config/otel.yaml:/etc/otel/config.yaml:ro
-      - ./config/otel-internal-rhub-exporter.json:/etc/otel/otel-internal-rhub-exporter.json:ro
-      - ./config/otel-all-nodes.json:/etc/otel/otel-all-nodes.json:ro
-    healthcheck:
-      disable: true
-
-  blackbox_exporter:
-    image: prom/blackbox-exporter:master
-    privileged: yes # needs to be privileged because of ICMP
-    ports:
-      - "9115:9115"
-    volumes:
-      - ./config/blackbox.yaml:/config/blackbox.yml:ro
-    command:
-      - "--config.file=/config/blackbox.yml"
-    healthcheck:
-      disable: true
-
-  snmp_exporter:
-    image: prom/snmp-exporter
-    ports:
-      - "9116:9116"
-    healthcheck:
-      disable: true
-
 volumes:
   postgres_data:

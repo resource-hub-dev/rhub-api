@@ -19,7 +19,6 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from jinja2 import BaseLoader, Environment
 from jsonschema import draft4_format_checker
-from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
 from werkzeug import Response
 
 from rhub import ROOT_PKG_PATH
@@ -216,8 +215,6 @@ def create_app(extra_config=None):
 
     flask_app = connexion_app.app
     flask_app.url_map.strict_slashes = False
-    if os.getenv('PROMETHEUS_MULTIPROC_DIR'):
-        GunicornInternalPrometheusMetrics(flask_app)
 
     flask_app.config.from_object(_config)
     if extra_config:
