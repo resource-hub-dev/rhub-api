@@ -2,7 +2,7 @@
 set -e
 
 application="$1"
-command=(echo "Select one of: 'rhub-api', 'rhub-worker', 'rhub-cron'")
+command=(echo "Select one of: 'rhub-api', 'rhub-worker'")
 
 if [[ "$application" == 'rhub-api' ]]; then
   if [[ "$RHUB_SKIP_INIT" != 'True' ]]; then
@@ -33,11 +33,6 @@ elif [[ "$application" == 'rhub-worker' ]]; then
   export FLASK_SERVER_NAME=${temp[1]}
 
   command=(celery -A rhub.worker:celery worker --loglevel "${LOG_LEVEL:-INFO}" --concurrency "${CELERY_CONCURRENCY:-1}")
-
-elif [[ "$application" == 'rhub-cron' ]]; then
-  mkdir -p $RHUB_DATA_DIR/celery/
-
-  command=(celery -A rhub.worker:celery beat --schedule $RHUB_DATA_DIR/celery/celerybeat-schedule --loglevel "${LOG_LEVEL:-INFO}")
 fi
 
 exec "${command[@]}"
