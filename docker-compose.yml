@@ -43,18 +43,6 @@ services:
       retries: 5
       timeout: 30s
 
-  rhub-cron:
-    build:
-      context: .
-    image: quay.io/resource-hub-dev/rhub-api
-    command: rhub-cron
-    volumes: *rhub-api-volumes
-    environment: *rhub-api-environment
-    env_file:
-      - .env
-    healthcheck:
-      disable: true
-
   postgres:
     image: postgres:${RHUB_IMAGE_POSTGRES_VERSION:-13}
     env_file:
