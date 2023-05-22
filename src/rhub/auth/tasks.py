@@ -16,7 +16,12 @@ logger = logging.getLogger(__name__)
 def update_users():
     ldap_client = di.get(LdapClient)
 
-    users_query = model.User.query.filter(model.User.ldap_dn.isnot(None))
+    users_query = model.User.query.filter(
+        db.and_(
+            model.User.ldap_dn.isnot(None),
+            model.User.deleted.is_(False),
+        )
+    )
     for user in users_query:
         logger.info(
             f'Updating user ID={user.id} LDAP_DN={user.ldap_dn} from LDAP',
