@@ -44,3 +44,7 @@ logger_class = CustomGunicornLogger
 # Must be set to True, otherwise scheduler and messaging thread are started
 # multiple times in each of gunicorn worker.
 preload_app = FLASK_ENV != 'development'
+
+workers = int(os.getenv('GUNICORN_WORKERS', 1))
+timeout = int(os.getenv('GUNICORN_TIMEOUT', 30))
+graceful_timeout = int(os.getenv('GUNICORN_GRACEFUL_TIMEOUT', timeout))
