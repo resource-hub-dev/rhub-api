@@ -27,7 +27,13 @@ def update_users():
             f'Updating user ID={user.id} LDAP_DN={user.ldap_dn} from LDAP',
             extra={'user_id': user.id, 'user_ldap_dn': user.ldap_dn},
         )
-        user.update_from_ldap(ldap_client)
+        try:
+            user.update_from_ldap(ldap_client)
+        except Exception:
+            logger.exception(
+                f'Failed to update user ID={user.id} LDAP_DN={user.ldap_dn} from LDAP',
+                extra={'user_id': user.id, 'user_ldap_dn': user.ldap_dn},
+            )
 
     db.session.commit()
 
@@ -41,7 +47,14 @@ def update_groups():
             f'Updating group ID={group.id} LDAP_DN={group.ldap_dn} from LDAP',
             extra={'group_id': group.id, 'group_ldap_dn': group.ldap_dn},
         )
-        group.update_from_ldap(ldap_client)
+        try:
+            group.update_from_ldap(ldap_client)
+        except Exception:
+            logger.exception(
+                f'Failed to update group ID={group.id} LDAP_DN={group.ldap_dn} '
+                'from LDAP',
+                extra={'group_id': group.id, 'group_ldap_dn': group.ldap_dn},
+            )
 
     db.session.commit()
 
